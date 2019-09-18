@@ -1,0 +1,108 @@
+﻿<?xml version="1.0" encoding="utf-8"?><Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2010/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner"><AutoRefresh>0</AutoRefresh><DataSources><DataSource Name="DataSource1"><DataSourceReference>campus</DataSourceReference><rd:SecurityType>None</rd:SecurityType><rd:DataSourceID>e1f813fd-c685-42d6-ab7c-a5e400c3ee55</rd:DataSourceID></DataSource></DataSources><DataSets><DataSet Name="userCalendar"><Query><DataSourceName>DataSource1</DataSourceName><QueryParameters><QueryParameter Name="@userID"><Value>=Parameters!userID.Value</Value></QueryParameter></QueryParameters><CommandText>DECLARE @allCalendars bit
+SELECT @allCalendars = u.allCalendars FROM dbo.UserAccount u WHERE u.userID = @userID
+
+IF @allCalendars = 1
+BEGIN
+
+	SELECT c.districtID, c.schoolID, c.calendarID, c.name + ' - ' + s.name as Calendar, 1 as ModifyRights, 1 as ownerRights
+	FROM dbo.Calendar c
+	INNER JOIN school s on s.schoolID = c.schoolID
+	order by calendarID desc
+
+END
+
+ELSE
+BEGIN
+
+	SELECT c.districtID, c.schoolID, c.calendarID, c.name + ' - ' + s.name as calendar , mr.modifyRights, mr.ownerRights
+	FROM dbo.UserAccount ua
+	LEFT OUTER JOIN dbo.UserSchoolYearRights mr on mr.userID = ua.userID
+	INNER JOIN dbo.Calendar c on (mr.districtID = c.districtID)
+					AND ((c.endYear = mr.endYear AND c.schoolID = mr.schoolID AND mr.calendarID IS NULL)
+					OR (c.endYear = mr.endYear AND mr.schoolID IS NULL)
+					OR (c.schoolID = mr.schoolID AND mr.endYear IS NULL)
+					OR (c.calendarID = mr.calendarID)
+					OR (mr.endYear IS NULL AND mr.schoolID IS NULL))
+	INNER JOIN school s on s.schoolID = c.schoolID
+	WHERE ua.userID = @userID
+	UNION
+	SELECT c2.districtID, c2.schoolID, c2.calendarID, c2.name + ' - ' + s2.name as calendar, mr2.modifyRights, mr2.ownerRights
+	FROM dbo.UserGroupSchoolYearRights mr2
+	INNER JOIN dbo.Calendar c2 on mr2.districtID = c2.districtID
+					AND ((c2.endYear = mr2.endYear AND c2.schoolID = mr2.schoolID AND mr2.calendarID IS NULL)
+					OR (c2.endYear = mr2.endYear AND mr2.schoolID IS NULL)
+					OR (c2.schoolID = mr2.schoolID AND mr2.endYear IS NULL)
+					OR (c2.calendarID = mr2.calendarID)
+					OR (mr2.endYear IS NULL AND mr2.schoolID IS NULL))
+	INNER JOIN UserGroupMember gm2 on gm2.groupID = mr2.groupID
+	INNER JOIN school s2 on s2.schoolID = c2.schoolID
+	WHERE gm2.userID = @userID
+	ORDER BY calendarID DESC
+
+END</CommandText></Query><Fields><Field Name="districtID"><DataField>districtID</DataField><rd:TypeName>System.Int32</rd:TypeName></Field><Field Name="schoolID"><DataField>schoolID</DataField><rd:TypeName>System.Int32</rd:TypeName></Field><Field Name="calendarID"><DataField>calendarID</DataField><rd:TypeName>System.Int32</rd:TypeName></Field><Field Name="Calendar"><DataField>Calendar</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="ModifyRights"><DataField>ModifyRights</DataField><rd:TypeName>System.Int32</rd:TypeName></Field><Field Name="ownerRights"><DataField>ownerRights</DataField><rd:TypeName>System.Int32</rd:TypeName></Field></Fields></DataSet><DataSet Name="GPA"><Query><DataSourceName>DataSource1</DataSourceName><QueryParameters><QueryParameter Name="@calendarID"><Value>=Parameters!calendarID.Value</Value></QueryParameter><QueryParameter Name="@Term"><Value>=Parameters!Term.Value</Value></QueryParameter></QueryParameters><CommandText>select *
+from(
+	select x.studentNumber, x.lastName, x.firstName, x.grade, x.name
+		, max(case when x.grade = '07' and x.attributeID = 546 and x.value is not null then x.value
+			   when x.grade = '08' and x.attributeID = 548 and x.value is not null then x.value end) as [sem1GPA]
+		, max(case when x.grade = '07' and x.attributeID = 547 and x.value is not null then x.value
+			   when x.grade = '08' and x.attributeID = 549 and x.value is not null then x.value end) as [sem2GPA]
+		, x.addressID
+	from(
+	select p.studentNumber, i.lastName, i.firstName, e.grade, cal.name, cs.value, cs.attributeID, consum.addressID
+	FROM Person p 
+		JOIN [Identity] i ON i.personID = p.personID 
+			AND i.identityID = p.currentIdentityID 
+		JOIN Enrollment e ON e.personID = p.personID 
+			AND e.active = 1 
+		JOIN Calendar cal ON cal.calendarID = e.calendarID 
+			AND cal.endYear = e.endYear 
+		JOIN SchoolYear sy ON sy.endYear = cal.endYear 
+		JOIN ScheduleStructure ss ON ss.calendarID = cal.calendarID 
+		JOIN Trial tr ON tr.structureID = ss.structureID 
+			AND tr.active = 1 
+		JOIN SectionPlacement sp ON sp.trialID = tr.trialID
+		JOIN Term ter ON ter.termID = sp.termID 
+		join CustomStudent cs on cs.personID = p.personID
+			and cs.attributeID in (546,547,548,549)
+		Join (
+			select hhm.personID1, hhm.personID2
+				, hhm.relationship, hhm.guardian, hhm.mailing as relMail, hhm.seq, hhm.householdID, ad.hhName, hhm.secondary as secHHM
+				, ad.phone, ad.addressID, ad.secAdd, ad.addMail, ad.Address, ad.City, ad.State, ad.Zip, ad.rn
+			from(
+					select *
+					from(
+							select rp.personID1, rp.personID2, rp.name as relationship, rp.guardian, rp.mailing, ROW_NUMBER() over(PARTITION by rp.personID1 order by rp.seq desc) as seq
+								, hm.householdID, hm.secondary
+							from RelatedPair rp
+								join HouseholdMember hm on hm.personID = rp.personID1
+								left join HouseholdMember hm2 on hm2.personID = rp.personID2
+							where rp.endDate is null and hm.endDate is null and hm2.endDate is null and hm2.householdID = hm.householdID
+								and rp.guardian = 1
+								and rp.mailing = 1
+						) x
+				) hhm
+			left join (
+				select hh.name hhName, hh.phone, hl.addressID, hl.secondary secAdd, hl.mailing as addMail
+				, case when ad.postOfficeBox = 1 then 'PO Box ' + ad.number else isnull(ad.number + ISNULL(' ' + ad.dir,'')  + ' ' + ad.street + ' ' + isnull(ad.tag,'') + ISNULL(' #' + ad.apt, ''),'') end as [Address]
+				, ad.city as City, ad.state as [State], ad.zip as Zip, hh.householdID, ROW_NUMBER() over(PARTITION by hh.householdID order by hl.mailing desc) as rn
+					from Household hh
+						left join HouseholdLocation hl on hl.householdID = hh.householdID
+							and hl.endDate is null
+						left join Address ad on ad.addressID = hl.addressID
+					where hl.mailing = 1
+				) ad on ad.householdID = hhm.householdID
+		) consum on consum.personID1 = p.personID
+	where cs.value is not null
+		and cal.calendarID = @calendarID
+		and e.grade in ('07','08')
+		AND (ter.termID IN (@Term))
+		and (e.startDate &lt;= ter.endDate and (e.endDate &gt;= ter.endDate or e.endDate is null))
+	) x
+	group by x.studentNumber, x.lastName, x.firstName, x.grade, x.name, x.addressID
+) z
+order by z.grade, z.lastName, z.firstName</CommandText></Query><Fields><Field Name="studentNumber"><DataField>studentNumber</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="lastName"><DataField>lastName</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="firstName"><DataField>firstName</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="grade"><DataField>grade</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="name"><DataField>name</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="sem1GPA"><DataField>sem1GPA</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="sem2GPA"><DataField>sem2GPA</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="addressID"><DataField>addressID</DataField><rd:TypeName>System.Int32</rd:TypeName></Field></Fields></DataSet><DataSet Name="Term"><Query><DataSourceName>DataSource1</DataSourceName><QueryParameters><QueryParameter Name="@calendarID"><Value>=Parameters!calendarID.Value</Value></QueryParameter></QueryParameters><CommandText>select t.name, t.termID
+from Calendar cal
+	join ScheduleStructure ss on ss.calendarID = cal.calendarID
+	join TermSchedule ts on ts.structureID = ss.structureID
+	join Term t on t.termScheduleID = ts.termScheduleID
+where cal.calendarID in (@calendarID)</CommandText></Query><Fields><Field Name="name"><DataField>name</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="termID"><DataField>termID</DataField><rd:TypeName>System.Int32</rd:TypeName></Field></Fields></DataSet></DataSets><ReportSections><ReportSection><Body><ReportItems><Tablix Name="Tablix1"><TablixBody><TablixColumns><TablixColumn><Width>1.69792in</Width></TablixColumn><TablixColumn><Width>1.07292in</Width></TablixColumn><TablixColumn><Width>1.63542in</Width></TablixColumn><TablixColumn><Width>1.35417in</Width></TablixColumn><TablixColumn><Width>0.47917in</Width></TablixColumn><TablixColumn><Width>0.88542in</Width></TablixColumn><TablixColumn><Width>0.84375in</Width></TablixColumn></TablixColumns><TablixRows><TablixRow><Height>0.25in</Height><TablixCells><TablixCell><CellContents><Textbox Name="Textbox9"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>School</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox9</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox1"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Student Number</Value><Style><FontFamily>Segoe UI</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox1</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox3"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Last Name</Value><Style><FontFamily>Segoe UI</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox3</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox5"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>First Name</Value><Style><FontFamily>Segoe UI</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox5</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox7"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Grade</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox7</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox11"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Sem1GPA</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox11</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox13"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Sem2GPA</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox13</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell></TablixCells></TablixRow><TablixRow><Height>0.25in</Height><TablixCells><TablixCell><CellContents><Textbox Name="name"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!name.Value</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>name</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="studentNumber"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!studentNumber.Value</Value><Style><FontFamily>Segoe UI</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>studentNumber</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="lastName"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!lastName.Value</Value><Style><FontFamily>Segoe UI</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>lastName</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="firstName"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!firstName.Value</Value><Style><FontFamily>Segoe UI</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>firstName</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="grade"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!grade.Value</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>grade</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="sem1GPA"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!sem1GPA.Value</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>sem1GPA</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="sem2GPA"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!sem2GPA.Value</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>sem2GPA</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell></TablixCells></TablixRow></TablixRows></TablixBody><TablixColumnHierarchy><TablixMembers><TablixMember /><TablixMember /><TablixMember /><TablixMember /><TablixMember /><TablixMember /><TablixMember /></TablixMembers></TablixColumnHierarchy><TablixRowHierarchy><TablixMembers><TablixMember><KeepWithGroup>After</KeepWithGroup></TablixMember><TablixMember><Group Name="Details" /></TablixMember></TablixMembers></TablixRowHierarchy><DataSetName>GPA</DataSetName><Height>0.5in</Height><Width>7.96877in</Width><Style><Border><Style>None</Style></Border></Style></Tablix></ReportItems><Height>0.5in</Height><Style /></Body><Width>7.96877in</Width><Page><LeftMargin>1in</LeftMargin><RightMargin>1in</RightMargin><TopMargin>1in</TopMargin><BottomMargin>1in</BottomMargin><Style /></Page></ReportSection></ReportSections><ReportParameters><ReportParameter Name="nodeID"><DataType>String</DataType><DefaultValue><Values><Value>1</Value></Values></DefaultValue><Prompt>nodeID</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="userID"><DataType>String</DataType><DefaultValue><Values><Value>1</Value></Values></DefaultValue><Prompt>userID</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="calendarID"><DataType>String</DataType><DefaultValue><Values><Value>1</Value></Values></DefaultValue><Prompt>Calendar</Prompt><ValidValues><DataSetReference><DataSetName>userCalendar</DataSetName><ValueField>calendarID</ValueField><LabelField>Calendar</LabelField></DataSetReference></ValidValues></ReportParameter><ReportParameter Name="personID"><DataType>String</DataType><DefaultValue><Values><Value>1</Value></Values></DefaultValue><Prompt>personID</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="username"><DataType>String</DataType><DefaultValue><Values><Value>1</Value></Values></DefaultValue><Prompt>username</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="sectionID"><DataType>String</DataType><DefaultValue><Values><Value>1</Value></Values></DefaultValue><AllowBlank>true</AllowBlank><Prompt>sectionID</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="contextID"><DataType>String</DataType><DefaultValue><Values><Value>1</Value></Values></DefaultValue><Prompt>contextID</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="contextIDType"><DataType>String</DataType><DefaultValue><Values><Value>1</Value></Values></DefaultValue><Prompt>contextIDType</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="Term"><DataType>String</DataType><Prompt>Term</Prompt><ValidValues><DataSetReference><DataSetName>Term</DataSetName><ValueField>termID</ValueField><LabelField>name</LabelField></DataSetReference></ValidValues></ReportParameter></ReportParameters><rd:ReportUnitType>Inch</rd:ReportUnitType><rd:ReportID>30624d1a-8c6c-4846-9923-33bdc3ef0567</rd:ReportID></Report>

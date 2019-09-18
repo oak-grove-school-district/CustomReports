@@ -5,14 +5,14 @@
     <OutputPath>bin\Debug</OutputPath>
     <ErrorLevel>2</ErrorLevel>
     <OverwriteDatasets>False</OverwriteDatasets>
-    <OverwriteDataSources>True</OverwriteDataSources>
-    <TargetServerVersion>SSRS2008R2</TargetServerVersion>
+    <OverwriteDataSources>False</OverwriteDataSources>
+    <TargetServerVersion>SSRS2016</TargetServerVersion>
     <Platform>Win32</Platform>
-    <TargetReportFolder>Custom Reports</TargetReportFolder>
-    <TargetDatasetFolder />
+    <TargetReportFolder>FHUSD</TargetReportFolder>
+    <TargetDatasetFolder>Datasets</TargetDatasetFolder>
     <TargetDatasourceFolder>Data Sources</TargetDatasourceFolder>
-    <TargetReportPartFolder />
-    <TargetServerURL>http://do-ts1/ReportServer</TargetServerURL>
+    <TargetReportPartFolder>Report Parts</TargetReportPartFolder>
+    <TargetServerURL>http://localhost/reportserver</TargetServerURL>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'DebugLocal' ">
     <FullPath>DebugLocal</FullPath>
@@ -22,7 +22,7 @@
     <OverwriteDataSources>False</OverwriteDataSources>
     <TargetServerVersion>SSRS2016</TargetServerVersion>
     <Platform>Win32</Platform>
-    <TargetReportFolder>Custom Reports</TargetReportFolder>
+    <TargetReportFolder>FHUSD</TargetReportFolder>
     <TargetDatasetFolder>Datasets</TargetDatasetFolder>
     <TargetDatasourceFolder>Data Sources</TargetDatasourceFolder>
     <TargetReportPartFolder>Report Parts</TargetReportPartFolder>
@@ -36,7 +36,7 @@
     <OverwriteDataSources>False</OverwriteDataSources>
     <TargetServerVersion>SSRS2016</TargetServerVersion>
     <Platform>Win32</Platform>
-    <TargetReportFolder>Custom Reports</TargetReportFolder>
+    <TargetReportFolder>FHUSD</TargetReportFolder>
     <TargetDatasetFolder>Datasets</TargetDatasetFolder>
     <TargetDatasourceFolder>Data Sources</TargetDatasourceFolder>
     <TargetReportPartFolder>Report Parts</TargetReportPartFolder>
@@ -49,63 +49,10 @@
     <Reports>@(Report)</Reports>
   </PropertyGroup>
   <ItemGroup>
-    <DataSource Include="campus.rds" />
+    <DataSource Include="FUHSD.rds" />
   </ItemGroup>
   <ItemGroup>
-    <Report Include="AbsencesDateRange.rdl" />
-    <Report Include="AllStudents.rdl" />
-    <Report Include="AnalyticChanges.rdl" />
-    <Report Include="AtoZ.rdl" />
-    <Report Include="AtoZ_Core.rdl" />
-    <Report Include="AttendanceFactor.rdl" />
-    <Report Include="AttendanceLetters-TheAcademy.rdl" />
-    <Report Include="AttendanceLetters.rdl" />
-    <Report Include="AttendanceThing.rdl" />
-    <Report Include="Certified.rdl" />
-    <Report Include="CI_AtoZ.rdl" />
-    <Report Include="ClassSizePenalties.rdl" />
-    <Report Include="CustomGPAAddendum.rdl" />
-    <Report Include="DistrictClassAverage.rdl" />
-    <Report Include="EmergencyCard.rdl" />
-    <Report Include="EnrollmentCount.rdl" />
-    <Report Include="EOY Attendance.rdl" />
-    <Report Include="EOY Behavior.rdl" />
-    <Report Include="Ethnic Survey.rdl" />
-    <Report Include="Flags.rdl" />
-    <Report Include="GATE.rdl" />
-    <Report Include="GPA Report.rdl" />
-    <Report Include="Home Primary Language.rdl" />
-    <Report Include="HonorsNight.rdl" />
-    <Report Include="HouseholdCheck.rdl" />
-    <Report Include="HouseholdCheck2.rdl" />
-    <Report Include="HPL Filtered.rdl" />
-    <Report Include="IC Analytic Compare.rdl" />
-    <Report Include="Intermediate Semester Grades.rdl" />
-    <Report Include="Intradistrict.rdl" />
-    <Report Include="IntraList.rdl" />
-    <Report Include="Language Survey.rdl" />
-    <Report Include="LEP Report.rdl" />
-    <Report Include="MKV.rdl" />
-    <Report Include="MonthlyAttendance.rdl" />
-    <Report Include="MonthlyBehavior.rdl" />
-    <Report Include="OLR.rdl" />
-    <Report Include="Parent Contact Information.rdl" />
-    <Report Include="Perfect Attendance Elementary.rdl" />
-    <Report Include="Perfect Attendance Intermediate.rdl" />
-    <Report Include="PKCheck.rdl" />
-    <Report Include="PortalAccounts.rdl" />
-    <Report Include="RolloverCheck.rdl" />
-    <Report Include="SARBDates.rdl" />
-    <Report Include="Schedule Groups.rdl" />
-    <Report Include="SeatCount.rdl" />
-    <Report Include="Section Attendance.rdl" />
-    <Report Include="Section GATE Report.rdl" />
-    <Report Include="Section IEP.rdl" />
-    <Report Include="Section LEP Report.rdl" />
-    <Report Include="StaffChanges.rdl" />
-    <Report Include="StudentDetails.rdl" />
-    <Report Include="StudentRaceEthnicity.rdl" />
-    <Report Include="SuspensionForm2.rdl" />
+    <Report Include="UnsavedAttendance.rdl" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Reporting Services\Microsoft.ReportingServices.MSBuilder.targets" />
 </Project>

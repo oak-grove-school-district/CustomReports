@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<RptDataSource xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Name="FUHSD">
+  <ConnectionProperties>
+    <Extension>SQL</Extension>
+    <ConnectString>Data Source=205.173.40.20;Initial Catalog=fremont</ConnectString>
+    <Prompt>Specify a user name and password for data source FUHSD:</Prompt>
+  </ConnectionProperties>
+  <DataSourceID>4f52fff5-e91c-4789-809f-070059da9ba0</DataSourceID>
+</RptDataSource>

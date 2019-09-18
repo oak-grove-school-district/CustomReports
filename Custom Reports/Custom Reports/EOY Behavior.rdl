@@ -97,6 +97,7 @@ from Person p
 		and (pp.eligibilityEndDate is null or pp.eligibilityEndDate &gt;= @enddate)
 		and pp.programID in ('53','85','105','96')
 	left join CampusDictionary cd on cd.code = bi.location
+		and cd.attributeID = 726
 	left join Person p2 on p2.personID = bi.referralPersonID
 	left join [Identity] i2 on i2.personID = p2.personID
 		and i2.identityID = p2.currentIdentityID
@@ -1207,7 +1208,6 @@ group by cal.startDate, cal.endDate, cal.endYear</CommandText>
                             <PaddingBottom>2pt</PaddingBottom>
                           </Style>
                         </Textbox>
-                        <rd:Selected>true</rd:Selected>
                       </CellContents>
                     </TablixCell>
                     <TablixCell>

@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<RptDataSource xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Name="campus">
+  <ConnectionProperties>
+    <Extension>SQL</Extension>
+    <ConnectString>Data Source=OAKGROVECA-DB;Initial Catalog=oakgrove</ConnectString>
+  </ConnectionProperties>
+  <DataSourceID>40a4b677-deb2-40f1-9908-fb02d9111f7f</DataSourceID>
+</RptDataSource>
