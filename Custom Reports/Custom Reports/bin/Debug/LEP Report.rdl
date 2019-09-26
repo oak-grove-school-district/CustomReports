@@ -90,7 +90,7 @@ from Person p
 		and i.identityID = p.currentIdentityID
 	join Enrollment e on e.personID = p.personID
 		and e.active = 1
-		and e.endDate is NULL
+		and (e.endDate is NULL or e.endDate &gt;= getdate())
 	join Calendar cal on cal.calendarID = e.calendarID
 		and cal.endYear = e.endYear
 	join SchoolYear sy on sy.endYear = cal.endYear
@@ -107,7 +107,7 @@ from Person p
 		and r.personID = p.personID
 		and r.endDate is null
 	join CampusDictionary cd on cd.code = i.homePrimaryLanguage
-		and cd.attributeID = 280
+		and cd.attributeID = 642
 	join Lep on lep.personID = p.personID
 		and lep.programStatus in ('LEP','Not LEP','Pending')
 	left join TestScore ts on ts.personID = p.personID

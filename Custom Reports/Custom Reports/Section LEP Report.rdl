@@ -168,6 +168,7 @@ group by sec.sectionID, c.name, sec.number</CommandText>
 	, max(case when ts.testID = 193 and ts.date between '08/20/18' and '06/30/19' then ts.result end) as [18-19 S]
 	, max(case when ts.testID = 194 and ts.date between '08/20/18' and '06/30/19' then ts.result end) as [18-19 R]
 	, max(case when ts.testID = 195 and ts.date between '08/20/18' and '06/30/19' then ts.result end) as [18-19 W]
+	, max(case when ts.testID = 210 then cast(ts.scaleScore as int) end) as [ELA-SS]
 	, max(case when ts.testID = 210 and ts.result = 0 then 'No Score'
 			when ts.testID = 210 and ts.result = 1 then 'Standard Not Met'
 			when ts.testID = 210 and ts.result = 2 then 'Standard Nearly Met'
@@ -180,6 +181,7 @@ from Person p
 	join Enrollment e on e.personID = p.personID
 		and e.active = 1
 		and e.endDate is NULL
+		and (e.endDate is NULL or e.endDate &gt;= getdate())
 	join Calendar cal on cal.calendarID = e.calendarID
 		and cal.endYear = e.endYear
 	join SchoolYear sy on sy.endYear = cal.endYear
@@ -196,7 +198,7 @@ from Person p
 		and r.personID = p.personID
 		and r.endDate is null
 	join CampusDictionary cd on cd.code = i.homePrimaryLanguage
-		and cd.attributeID = 280
+		and cd.attributeID = 642
 	join Lep on lep.personID = p.personID
 		and lep.programStatus in ('LEP','Not LEP','Pending')
 	left join TestScore ts on ts.personID = p.personID
@@ -282,6 +284,10 @@ order by sec.teacherDisplay, i.lastName, i.firstName</CommandText>
         <Field Name="ID18_19_W">
           <DataField>18-19 W</DataField>
           <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="ELA_SS">
+          <DataField>ELA-SS</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
         </Field>
         <Field Name="ELA_Res">
           <DataField>ELA-Res</DataField>
