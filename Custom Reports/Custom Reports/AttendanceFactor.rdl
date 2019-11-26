@@ -6464,7 +6464,7 @@ where (c.summerSchool = 0 or c.summerSchool is null) and convert(date,getdate())
       <DataType>String</DataType>
       <DefaultValue>
         <Values>
-          <Value>=2019</Value>
+          <Value>=2020</Value>
         </Values>
       </DefaultValue>
       <Prompt>End Year:</Prompt>
@@ -6537,7 +6537,7 @@ where (c.summerSchool = 0 or c.summerSchool is null) and convert(date,getdate())
       <DataType>String</DataType>
       <DefaultValue>
         <Values>
-          <Value>74.58</Value>
+          <Value>74.11</Value>
         </Values>
       </DefaultValue>
       <Prompt>ADA Per Day Amount:</Prompt>
