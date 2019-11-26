@@ -23,6 +23,9 @@
           <QueryParameter Name="@Class">
             <Value>=Parameters!Class.Value</Value>
           </QueryParameter>
+          <QueryParameter Name="@period">
+            <Value>=Parameters!period.Value</Value>
+          </QueryParameter>
         </QueryParameters>
         <CommandText>SELECT p.studentNumber
 	, p.stateID
@@ -64,9 +67,10 @@ FROM Person p
 		AND sg.calendarID = cal.calendarID
 WHERE cal.calendarID IN (@calendarID) 
 	AND ter.termID IN (@Term) 
-	AND e.grade in ('07','08')
+	AND e.grade in ('05','06','07','08')
 	AND (e.startDate &lt;= ter.startDate and (e.endDate &gt;= ter.endDate or e.endDate is null))
 	AND cs.name in (@Class)
+AND per.name = @period
 GROUP BY p.studentNumber, i.lastName, i.firstName, e.grade, cs.name, cs.number, sec.number, p.stateID, i.gender
 	, sec.teacherDisplay, per.name, i.birthdate
 	, cal.name, ter.name

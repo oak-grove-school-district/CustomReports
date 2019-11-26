@@ -1,0 +1,84 @@
+﻿<?xml version="1.0" encoding="utf-8"?><Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2010/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner"><AutoRefresh>0</AutoRefresh><DataSources><DataSource Name="DataSource"><DataSourceReference>campus</DataSourceReference><rd:SecurityType>None</rd:SecurityType><rd:DataSourceID>ce2b4ff9-72eb-41be-839d-02bb8341278b</rd:DataSourceID></DataSource></DataSources><DataSets><DataSet Name="userCalendar"><Query><DataSourceName>DataSource</DataSourceName><QueryParameters><QueryParameter Name="@userID"><Value>=Parameters!userID.Value</Value></QueryParameter></QueryParameters><CommandText>DECLARE @allCalendars bit
+SELECT @allCalendars = u.allCalendars FROM dbo.UserAccount u WHERE u.userID = @userID
+
+IF @allCalendars = 1
+BEGIN
+
+	SELECT c.districtID, c.schoolID, c.calendarID, c.name + ' - ' + s.name as Calendar, 1 as ModifyRights, 1 as ownerRights
+	FROM dbo.Calendar c
+	INNER JOIN school s on s.schoolID = c.schoolID
+	order by calendarID desc
+
+END
+
+ELSE
+BEGIN
+
+	SELECT c.districtID, c.schoolID, c.calendarID, c.name + ' - ' + s.name as calendar , mr.modifyRights, mr.ownerRights
+	FROM dbo.UserAccount ua
+	LEFT OUTER JOIN dbo.UserSchoolYearRights mr on mr.userID = ua.userID
+	INNER JOIN dbo.Calendar c on (mr.districtID = c.districtID)
+					AND ((c.endYear = mr.endYear AND c.schoolID = mr.schoolID AND mr.calendarID IS NULL)
+					OR (c.endYear = mr.endYear AND mr.schoolID IS NULL)
+					OR (c.schoolID = mr.schoolID AND mr.endYear IS NULL)
+					OR (c.calendarID = mr.calendarID)
+					OR (mr.endYear IS NULL AND mr.schoolID IS NULL))
+	INNER JOIN school s on s.schoolID = c.schoolID
+	WHERE ua.userID = @userID
+	UNION
+	SELECT c2.districtID, c2.schoolID, c2.calendarID, c2.name + ' - ' + s2.name as calendar, mr2.modifyRights, mr2.ownerRights
+	FROM dbo.UserGroupSchoolYearRights mr2
+	INNER JOIN dbo.Calendar c2 on mr2.districtID = c2.districtID
+					AND ((c2.endYear = mr2.endYear AND c2.schoolID = mr2.schoolID AND mr2.calendarID IS NULL)
+					OR (c2.endYear = mr2.endYear AND mr2.schoolID IS NULL)
+					OR (c2.schoolID = mr2.schoolID AND mr2.endYear IS NULL)
+					OR (c2.calendarID = mr2.calendarID)
+					OR (mr2.endYear IS NULL AND mr2.schoolID IS NULL))
+	INNER JOIN UserGroupMember gm2 on gm2.groupID = mr2.groupID
+	INNER JOIN school s2 on s2.schoolID = c2.schoolID
+	WHERE gm2.userID = @userID
+	ORDER BY calendarID DESC
+
+END</CommandText></Query><Fields><Field Name="districtID"><DataField>districtID</DataField><rd:TypeName>System.Int32</rd:TypeName></Field><Field Name="schoolID"><DataField>schoolID</DataField><rd:TypeName>System.Int32</rd:TypeName></Field><Field Name="calendarID"><DataField>calendarID</DataField><rd:TypeName>System.Int32</rd:TypeName></Field><Field Name="Calendar"><DataField>Calendar</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="ModifyRights"><DataField>ModifyRights</DataField><rd:TypeName>System.Int32</rd:TypeName></Field><Field Name="ownerRights"><DataField>ownerRights</DataField><rd:TypeName>System.Int32</rd:TypeName></Field></Fields></DataSet><DataSet Name="Attendance"><Query><DataSourceName>DataSource</DataSourceName><QueryParameters><QueryParameter Name="@calendarID"><Value>=Parameters!calendarID.Value</Value></QueryParameter><QueryParameter Name="@startdate"><Value>=Parameters!startdate.Value</Value></QueryParameter><QueryParameter Name="@enddate"><Value>=Parameters!enddate.Value</Value></QueryParameter></QueryParameters><CommandText>select x.name, x.Section, x.teacherDisplay
+	, SUM(x.Absences) as [Absences], SUM(x.Tardies) as [Tardies]
+
+from(
+SELECT p.studentNumber, i.lastName, i.firstName, e.grade, c.name
+	,sum(case when ae.code = 'CUT' or ae.code = 'ILL' or ae.code = 'UNV' 
+		or ae.code = 'AEX' or ae.code = 'IS1' 
+		or ae.code = 'SUS' or ae.code = 'SUS1' or ae.code = 'OTX' then 1 else 0 end) as [Absences]
+	,SUM(case when ae.code = 'TD30' or ae.code = 'TDE' or ae.code = 'TDU' then 1 else 0 end) as [Tardies]
+	
+	, cor.number + '-' + convert(varchar,sec.number) as [Section], sec.teacherDisplay
+FROM Person as p
+	JOIN [Identity] i ON i.identityID = p.currentIdentityID
+		AND i.personID = p.personID
+	JOIN Enrollment e ON e.personID = p.personID
+		AND e.active IN (1)
+	JOIN Calendar c ON c.calendarID = e.calendarID
+		and c.endYear = e.endYear
+	join SchoolYear sy on sy.endYear = c.endYear
+		and sy.active = 1
+	join Roster r on r.personID = p.personID
+		and r.endDate is null
+	join Section sec on sec.sectionID = r.sectionID
+	join Course cor on cor.courseID = sec.courseID
+		and cor.calendarID = e.calendarID
+	--join SectionPlacement sp on sp.sectionID = sec.sectionID
+	--join Trial tr on tr.trialID = sp.trialID
+	--	and tr.trialID = r.trialID
+	--	and tr.trialID = sec.trialID
+	--	and tr.active = 1
+	--join Period per on per.periodID = sp.periodID
+	--join Term ter on ter.termID = sp.termID
+	--	and ter.
+	left JOIN Attendance a ON a.personID = p.personID
+		and a.calendarID = e.calendarID
+		and a.date between @startdate and @enddate
+	LEFT JOIN AttendanceExcuse ae ON ae.excuseID = a.excuseID
+WHERE c.calendarID in (@calendarID)
+group by p.studentNumber, i.lastName, i.firstName, e.grade, c.name, cor.number, sec.number, sec.teacherDisplay
+--order by cor.number, sec.number
+) x
+group by x.name, x.Section, x.teacherDisplay
+order by x.Section</CommandText><rd:UseGenericDesigner>true</rd:UseGenericDesigner></Query><Fields><Field Name="name"><DataField>name</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="Section"><DataField>Section</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="teacherDisplay"><DataField>teacherDisplay</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="Absences"><DataField>Absences</DataField><rd:TypeName>System.Int32</rd:TypeName></Field><Field Name="Tardies"><DataField>Tardies</DataField><rd:TypeName>System.Int32</rd:TypeName></Field></Fields></DataSet></DataSets><ReportSections><ReportSection><Body><ReportItems><Tablix Name="Tablix1"><TablixBody><TablixColumns><TablixColumn><Width>2.03125in</Width></TablixColumn><TablixColumn><Width>1.32292in</Width></TablixColumn><TablixColumn><Width>1.60417in</Width></TablixColumn><TablixColumn><Width>0.94792in</Width></TablixColumn><TablixColumn><Width>0.97917in</Width></TablixColumn></TablixColumns><TablixRows><TablixRow><Height>0.25in</Height><TablixCells><TablixCell><CellContents><Textbox Name="Textbox1"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>name</Value><Style /></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox1</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox3"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Section</Value><Style /></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox3</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox2"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Teacher</Value><Style /></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox2</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox5"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Absences</Value><Style /></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox5</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox7"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Tardies</Value><Style /></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox7</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell></TablixCells></TablixRow><TablixRow><Height>0.25in</Height><TablixCells><TablixCell><CellContents><Textbox Name="name"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!name.Value</Value><Style /></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>name</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><BackgroundColor>=IIF(Fields!Absences.Value=0 and Fields!Tardies.Value = 0,"Goldenrod","Transparent")</BackgroundColor><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Section"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Section.Value</Value><Style /></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Section</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><BackgroundColor>=IIF(Fields!Absences.Value=0 and Fields!Tardies.Value = 0,"Goldenrod","Transparent")</BackgroundColor><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="teacherDisplay"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!teacherDisplay.Value</Value><Style /></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>teacherDisplay</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><BackgroundColor>=IIF(Fields!Absences.Value=0 and Fields!Tardies.Value = 0,"Goldenrod","Transparent")</BackgroundColor><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Absences"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Absences.Value</Value><Style /></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Absences</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><BackgroundColor>=IIF(Fields!Absences.Value=0 and Fields!Tardies.Value = 0,"Goldenrod","Transparent")</BackgroundColor><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Tardies"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Tardies.Value</Value><Style /></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Tardies</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><BackgroundColor>=IIF(Fields!Absences.Value=0 and Fields!Tardies.Value = 0,"Goldenrod","Transparent")</BackgroundColor><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell></TablixCells></TablixRow></TablixRows></TablixBody><TablixColumnHierarchy><TablixMembers><TablixMember /><TablixMember /><TablixMember /><TablixMember /><TablixMember /></TablixMembers></TablixColumnHierarchy><TablixRowHierarchy><TablixMembers><TablixMember><KeepWithGroup>After</KeepWithGroup></TablixMember><TablixMember><Group Name="Details" /></TablixMember></TablixMembers></TablixRowHierarchy><DataSetName>Attendance</DataSetName><Height>0.5in</Height><Width>6.88543in</Width><Style><Border><Style>None</Style></Border></Style></Tablix></ReportItems><Height>0.5in</Height><Style /></Body><Width>6.88543in</Width><Page><LeftMargin>1in</LeftMargin><RightMargin>1in</RightMargin><TopMargin>1in</TopMargin><BottomMargin>1in</BottomMargin><Style /></Page></ReportSection></ReportSections><ReportParameters><ReportParameter Name="nodeID"><DataType>String</DataType><DefaultValue><Values><Value>1</Value></Values></DefaultValue><Prompt>nodeID</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="personID"><DataType>String</DataType><DefaultValue><Values><Value>1</Value></Values></DefaultValue><Prompt>personID</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="userID"><DataType>String</DataType><DefaultValue><Values><Value>1</Value></Values></DefaultValue><Prompt>userID</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="username"><DataType>String</DataType><DefaultValue><Values><Value>1</Value></Values></DefaultValue><Prompt>username</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="calendarID"><DataType>String</DataType><DefaultValue><DataSetReference><DataSetName>userCalendar</DataSetName><ValueField>calendarID</ValueField></DataSetReference></DefaultValue><Prompt>School Year</Prompt><ValidValues><DataSetReference><DataSetName>userCalendar</DataSetName><ValueField>calendarID</ValueField><LabelField>Calendar</LabelField></DataSetReference></ValidValues></ReportParameter><ReportParameter Name="sectionID"><DataType>String</DataType><DefaultValue><Values><Value>1</Value></Values></DefaultValue><Prompt>sectionID</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="contextID"><DataType>String</DataType><DefaultValue><Values><Value>1</Value></Values></DefaultValue><Prompt>contextID</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="contextIDType"><DataType>String</DataType><DefaultValue><Values><Value>1</Value></Values></DefaultValue><Prompt>contextIDType</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="startdate"><DataType>DateTime</DataType><Prompt>Date Range Start</Prompt></ReportParameter><ReportParameter Name="enddate"><DataType>DateTime</DataType><DefaultValue><Values><Value>=Today()</Value></Values></DefaultValue><Prompt>enddate</Prompt></ReportParameter></ReportParameters><rd:ReportUnitType>Inch</rd:ReportUnitType><rd:ReportID>5d404401-c627-4d21-95be-d3c3417343af</rd:ReportID></Report>

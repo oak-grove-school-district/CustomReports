@@ -65,7 +65,9 @@
     <Report Include="CI_AtoZ.rdl" />
     <Report Include="ClassSizePenalties.rdl" />
     <Report Include="CustomGPAAddendum.rdl" />
+    <Report Include="DistrictClassAverage.rdl" />
     <Report Include="EmergencyCard.rdl" />
+    <Report Include="EnrolledBetween.rdl" />
     <Report Include="EnrollmentCount.rdl" />
     <Report Include="EOY Attendance.rdl" />
     <Report Include="EOY Behavior.rdl" />
@@ -104,6 +106,7 @@
     <Report Include="StaffChanges.rdl" />
     <Report Include="StudentDetails.rdl" />
     <Report Include="StudentRaceEthnicity.rdl" />
+    <Report Include="SuspensionForm2.rdl" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Reporting Services\Microsoft.ReportingServices.MSBuilder.targets" />
 </Project>

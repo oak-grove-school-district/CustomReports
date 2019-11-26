@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<RptDataSource xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Name="FUHSD">
+  <ConnectionProperties>
+    <Extension>SQL</Extension>
+    <ConnectString>Data Source=205.173.40.20;Initial Catalog=fremont</ConnectString>
+  </ConnectionProperties>
+  <DataSourceID>a59baaf2-8bfc-4c42-92ad-ee3e42bc4ff0</DataSourceID>
+</RptDataSource>

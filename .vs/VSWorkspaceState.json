@@ -1,6 +1,9 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\Custom Reports",
+    "\\Custom Reports\\Custom Reports"
   ],
+  "SelectedNode": "\\Custom Reports\\Custom Reports\\RolloverCheck.rdl",
   "PreviewInSolutionExplorer": false
 }
