@@ -94,6 +94,7 @@
     <Report Include="Perfect Attendance Intermediate.rdl" />
     <Report Include="PKCheck.rdl" />
     <Report Include="PortalAccounts.rdl" />
+    <Report Include="PreRolloverCheck.rdl" />
     <Report Include="RolloverCheck.rdl" />
     <Report Include="SARBDates.rdl" />
     <Report Include="Schedule Groups.rdl" />
