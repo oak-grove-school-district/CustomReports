@@ -67,6 +67,7 @@
     <Report Include="CustomGPAAddendum.rdl" />
     <Report Include="DistrictClassAverage.rdl" />
     <Report Include="EmergencyCard.rdl" />
+    <Report Include="EnrolledBetween.rdl" />
     <Report Include="EnrollmentCount.rdl" />
     <Report Include="EOY Attendance.rdl" />
     <Report Include="EOY Behavior.rdl" />

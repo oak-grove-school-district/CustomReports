@@ -28,8 +28,12 @@
           <QueryParameter Name="@group">
             <Value>=Parameters!group.Value</Value>
           </QueryParameter>
+          <QueryParameter Name="@courses">
+            <Value>=Parameters!courses.Value</Value>
+          </QueryParameter>
         </QueryParameters>
-        <CommandText>SELECT p.studentNumber, i.lastName, i.firstName, cal.name AS Calendar, cs.name AS [Course Name], cs.number + ' - ' + cast(sec.number AS varchar) AS [Course - Section], sec.teacherDisplay AS Teacher, per.name AS Period, gs.score AS Grade, gs.[percent] AS [Percent], ter.name AS Term, gt.name AS Task, sg.name AS Team
+        <CommandText>SELECT p.studentNumber, e.grade as [Grade], i.lastName, i.firstName, cal.name AS Calendar, cs.name AS [Course Name], cs.number + ' - ' + cast(sec.number AS varchar) AS [Course - Section], sec.teacherDisplay AS Teacher, per.name AS Period, gs.score AS [Letter Grade], gs.[percent] AS [Percent], ter.name AS Term, gt.name AS Task, sg.name AS Team
+, case when lep.programStatus = 'LEP' then 'X' else '' end as LEP
 FROM            Person p JOIN
                          [Identity] i ON i.personID = p.personID AND i.identityID = p.currentIdentityID JOIN
                          Enrollment e ON e.personID = p.personID AND e.active = 1 JOIN
@@ -47,15 +51,21 @@ FROM            Person p JOIN
                          GradingTask gt ON gt.taskID = gtc.taskID AND gt.taskID = @Task LEFT JOIN
                          GradingScore gs ON gs.taskID = gt.taskID AND gs.personID = p.personID AND gs.sectionID = sec.sectionID AND gs.termID = ter.termID AND gs.calendarID = cal.calendarID LEFT JOIN
                          SchedulingGroup sg ON sg.schedGroupID = sec.schedGroupID AND sg.calendarID = cal.calendarID
+	left join Lep on lep.personID = p.personID and lep.programStatus in ('LEP')
 WHERE        cal.calendarID IN (@calendarID) AND gs.score IS NOT NULL AND gs.score IN (@grade) AND ter.termID IN (@Term) AND isnull(sg.name,'') IN (@group)
 
-	AND (e.startDate &lt;= ter.startDate and (e.endDate &gt;= ter.endDate or e.endDate is null))
-GROUP BY p.studentNumber, i.lastName, i.firstName, cs.name, cs.number, sec.number, sec.teacherDisplay, per.name, gs.score, cal.name, ter.name, gt.name, gs.[percent], sg.name
+	AND (e.startDate &lt;= ter.startDate and (e.endDate &gt;= ter.endDate or e.endDate is null)) and cs.name in (@courses)
+GROUP BY p.studentNumber, i.lastName, i.firstName, cs.name, cs.number, sec.number, sec.teacherDisplay, per.name, gs.score, cal.name, ter.name, gt.name, gs.[percent], sg.name, lep.programStatus, e.grade
 ORDER BY i.lastName, i.firstName, per.name, ter.name</CommandText>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
       </Query>
       <Fields>
         <Field Name="studentNumber">
           <DataField>studentNumber</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Grade">
+          <DataField>Grade</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
         <Field Name="lastName">
@@ -86,8 +96,8 @@ ORDER BY i.lastName, i.firstName, per.name, ter.name</CommandText>
           <DataField>Period</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="Grade">
-          <DataField>Grade</DataField>
+        <Field Name="Letter_Grade">
+          <DataField>Letter Grade</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
         <Field Name="Percent">
@@ -104,6 +114,10 @@ ORDER BY i.lastName, i.firstName, per.name, ter.name</CommandText>
         </Field>
         <Field Name="Team">
           <DataField>Team</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="LEP">
+          <DataField>LEP</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
       </Fields>
@@ -292,6 +306,27 @@ GROUP BY sg.schedGroupID, sg.name</CommandText>
         </Field>
       </Fields>
     </DataSet>
+    <DataSet Name="Courses">
+      <Query>
+        <DataSourceName>DataSource</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@calendarID">
+            <Value>=Parameters!calendarID.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>select cs.name
+from Course cs
+	join Calendar cal on cal.calendarID = cs.calendarID
+where cal.calendarID in (@calendarID) and cs.active = 1
+order by cs.name</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="name">
+          <DataField>name</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+      </Fields>
+    </DataSet>
   </DataSets>
   <ReportSections>
     <ReportSection>
@@ -304,10 +339,10 @@ GROUP BY sg.schedGroupID, sg.name</CommandText>
                   <Width>1.73958in</Width>
                 </TablixColumn>
                 <TablixColumn>
-                  <Width>0.57292in</Width>
+                  <Width>0.92709in</Width>
                 </TablixColumn>
                 <TablixColumn>
-                  <Width>0.52083in</Width>
+                  <Width>0.875in</Width>
                 </TablixColumn>
                 <TablixColumn>
                   <Width>0.66667in</Width>
@@ -317,6 +352,9 @@ GROUP BY sg.schedGroupID, sg.name</CommandText>
                 </TablixColumn>
                 <TablixColumn>
                   <Width>1.14583in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>0.35417in</Width>
                 </TablixColumn>
               </TablixColumns>
               <TablixRows>
@@ -392,7 +430,7 @@ GROUP BY sg.schedGroupID, sg.name</CommandText>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>Grade</Value>
+                                  <Value>Letter Grade</Value>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
@@ -503,6 +541,38 @@ GROUP BY sg.schedGroupID, sg.name</CommandText>
                         </Textbox>
                       </CellContents>
                     </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox3">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>LEP</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox3</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
                   </TablixCells>
                 </TablixRow>
                 <TablixRow>
@@ -570,21 +640,21 @@ GROUP BY sg.schedGroupID, sg.name</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="Grade">
+                        <Textbox Name="Letter_Grade">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!Grade.Value</Value>
+                                  <Value>=Fields!Letter_Grade.Value</Value>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
                               <Style />
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>Grade</rd:DefaultName>
+                          <rd:DefaultName>Letter_Grade</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -688,12 +758,45 @@ GROUP BY sg.schedGroupID, sg.name</CommandText>
                         </Textbox>
                       </CellContents>
                     </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="LEP">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!LEP.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>LEP</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
                   </TablixCells>
                 </TablixRow>
               </TablixRows>
             </TablixBody>
             <TablixColumnHierarchy>
               <TablixMembers>
+                <TablixMember />
                 <TablixMember />
                 <TablixMember />
                 <TablixMember />
@@ -772,23 +875,23 @@ GROUP BY sg.schedGroupID, sg.name</CommandText>
                       <TablixMembers>
                         <TablixMember>
                           <TablixHeader>
-                            <Size>1.70833in</Size>
+                            <Size>0.51042in</Size>
                             <CellContents>
-                              <Textbox Name="Textbox23">
+                              <Textbox Name="Textbox5">
                                 <CanGrow>true</CanGrow>
                                 <KeepTogether>true</KeepTogether>
                                 <Paragraphs>
                                   <Paragraph>
                                     <TextRuns>
                                       <TextRun>
-                                        <Value>Student Name</Value>
+                                        <Value>Grade</Value>
                                         <Style />
                                       </TextRun>
                                     </TextRuns>
                                     <Style />
                                   </Paragraph>
                                 </Paragraphs>
-                                <rd:DefaultName>Textbox23</rd:DefaultName>
+                                <rd:DefaultName>Textbox5</rd:DefaultName>
                                 <Style>
                                   <Border>
                                     <Color>LightGrey</Color>
@@ -805,23 +908,23 @@ GROUP BY sg.schedGroupID, sg.name</CommandText>
                           <TablixMembers>
                             <TablixMember>
                               <TablixHeader>
-                                <Size>0.45833in</Size>
+                                <Size>1.70833in</Size>
                                 <CellContents>
-                                  <Textbox Name="Textbox34">
+                                  <Textbox Name="Textbox23">
                                     <CanGrow>true</CanGrow>
                                     <KeepTogether>true</KeepTogether>
                                     <Paragraphs>
                                       <Paragraph>
                                         <TextRuns>
                                           <TextRun>
-                                            <Value>Period</Value>
+                                            <Value>Student Name</Value>
                                             <Style />
                                           </TextRun>
                                         </TextRuns>
                                         <Style />
                                       </Paragraph>
                                     </Paragraphs>
-                                    <rd:DefaultName>Textbox34</rd:DefaultName>
+                                    <rd:DefaultName>Textbox23</rd:DefaultName>
                                     <Style>
                                       <Border>
                                         <Color>LightGrey</Color>
@@ -838,23 +941,23 @@ GROUP BY sg.schedGroupID, sg.name</CommandText>
                               <TablixMembers>
                                 <TablixMember>
                                   <TablixHeader>
-                                    <Size>1.88541in</Size>
+                                    <Size>0.45833in</Size>
                                     <CellContents>
-                                      <Textbox Name="Textbox28">
+                                      <Textbox Name="Textbox34">
                                         <CanGrow>true</CanGrow>
                                         <KeepTogether>true</KeepTogether>
                                         <Paragraphs>
                                           <Paragraph>
                                             <TextRuns>
                                               <TextRun>
-                                                <Value>Course Name</Value>
+                                                <Value>Period</Value>
                                                 <Style />
                                               </TextRun>
                                             </TextRuns>
                                             <Style />
                                           </Paragraph>
                                         </Paragraphs>
-                                        <rd:DefaultName>Textbox28</rd:DefaultName>
+                                        <rd:DefaultName>Textbox34</rd:DefaultName>
                                         <Style>
                                           <Border>
                                             <Color>LightGrey</Color>
@@ -871,23 +974,23 @@ GROUP BY sg.schedGroupID, sg.name</CommandText>
                                   <TablixMembers>
                                     <TablixMember>
                                       <TablixHeader>
-                                        <Size>1.17708in</Size>
+                                        <Size>1.88541in</Size>
                                         <CellContents>
-                                          <Textbox Name="Textbox30">
+                                          <Textbox Name="Textbox28">
                                             <CanGrow>true</CanGrow>
                                             <KeepTogether>true</KeepTogether>
                                             <Paragraphs>
                                               <Paragraph>
                                                 <TextRuns>
                                                   <TextRun>
-                                                    <Value>Course/Section</Value>
+                                                    <Value>Course Name</Value>
                                                     <Style />
                                                   </TextRun>
                                                 </TextRuns>
                                                 <Style />
                                               </Paragraph>
                                             </Paragraphs>
-                                            <rd:DefaultName>Textbox30</rd:DefaultName>
+                                            <rd:DefaultName>Textbox28</rd:DefaultName>
                                             <Style>
                                               <Border>
                                                 <Color>LightGrey</Color>
@@ -902,7 +1005,42 @@ GROUP BY sg.schedGroupID, sg.name</CommandText>
                                         </CellContents>
                                       </TablixHeader>
                                       <TablixMembers>
-                                        <TablixMember />
+                                        <TablixMember>
+                                          <TablixHeader>
+                                            <Size>1.17708in</Size>
+                                            <CellContents>
+                                              <Textbox Name="Textbox30">
+                                                <CanGrow>true</CanGrow>
+                                                <KeepTogether>true</KeepTogether>
+                                                <Paragraphs>
+                                                  <Paragraph>
+                                                    <TextRuns>
+                                                      <TextRun>
+                                                        <Value>Course/Section</Value>
+                                                        <Style />
+                                                      </TextRun>
+                                                    </TextRuns>
+                                                    <Style />
+                                                  </Paragraph>
+                                                </Paragraphs>
+                                                <rd:DefaultName>Textbox30</rd:DefaultName>
+                                                <Style>
+                                                  <Border>
+                                                    <Color>LightGrey</Color>
+                                                    <Style>Solid</Style>
+                                                  </Border>
+                                                  <PaddingLeft>2pt</PaddingLeft>
+                                                  <PaddingRight>2pt</PaddingRight>
+                                                  <PaddingTop>2pt</PaddingTop>
+                                                  <PaddingBottom>2pt</PaddingBottom>
+                                                </Style>
+                                              </Textbox>
+                                            </CellContents>
+                                          </TablixHeader>
+                                          <TablixMembers>
+                                            <TablixMember />
+                                          </TablixMembers>
+                                        </TablixMember>
                                       </TablixMembers>
                                     </TablixMember>
                                   </TablixMembers>
@@ -998,42 +1136,34 @@ GROUP BY sg.schedGroupID, sg.name</CommandText>
                       </TablixHeader>
                       <TablixMembers>
                         <TablixMember>
-                          <Group Name="lastName">
+                          <Group Name="Grade">
                             <GroupExpressions>
-                              <GroupExpression>=Fields!lastName.Value</GroupExpression>
+                              <GroupExpression>=Fields!Grade.Value</GroupExpression>
                             </GroupExpressions>
                           </Group>
                           <SortExpressions>
                             <SortExpression>
-                              <Value>=Fields!lastName.Value</Value>
+                              <Value>=Fields!Grade.Value</Value>
                             </SortExpression>
                           </SortExpressions>
                           <TablixHeader>
-                            <Size>1.70833in</Size>
+                            <Size>0.51042in</Size>
                             <CellContents>
-                              <Textbox Name="lastName">
+                              <Textbox Name="Grade1">
                                 <CanGrow>true</CanGrow>
                                 <KeepTogether>true</KeepTogether>
                                 <Paragraphs>
                                   <Paragraph>
                                     <TextRuns>
                                       <TextRun>
-                                        <Value>=Fields!lastName.Value</Value>
-                                        <Style />
-                                      </TextRun>
-                                      <TextRun>
-                                        <Value>, </Value>
-                                        <Style />
-                                      </TextRun>
-                                      <TextRun>
-                                        <Value>=Fields!firstName.Value</Value>
+                                        <Value>=Fields!Grade.Value</Value>
                                         <Style />
                                       </TextRun>
                                     </TextRuns>
                                     <Style />
                                   </Paragraph>
                                 </Paragraphs>
-                                <rd:DefaultName>lastName</rd:DefaultName>
+                                <rd:DefaultName>Grade1</rd:DefaultName>
                                 <Style>
                                   <Border>
                                     <Color>LightGrey</Color>
@@ -1049,34 +1179,42 @@ GROUP BY sg.schedGroupID, sg.name</CommandText>
                           </TablixHeader>
                           <TablixMembers>
                             <TablixMember>
-                              <Group Name="Period">
+                              <Group Name="lastName">
                                 <GroupExpressions>
-                                  <GroupExpression>=Fields!Period.Value</GroupExpression>
+                                  <GroupExpression>=Fields!lastName.Value</GroupExpression>
                                 </GroupExpressions>
                               </Group>
                               <SortExpressions>
                                 <SortExpression>
-                                  <Value>=Fields!Period.Value</Value>
+                                  <Value>=Fields!lastName.Value</Value>
                                 </SortExpression>
                               </SortExpressions>
                               <TablixHeader>
-                                <Size>0.45833in</Size>
+                                <Size>1.70833in</Size>
                                 <CellContents>
-                                  <Textbox Name="Period">
+                                  <Textbox Name="lastName">
                                     <CanGrow>true</CanGrow>
                                     <KeepTogether>true</KeepTogether>
                                     <Paragraphs>
                                       <Paragraph>
                                         <TextRuns>
                                           <TextRun>
-                                            <Value>=Fields!Period.Value</Value>
+                                            <Value>=Fields!lastName.Value</Value>
+                                            <Style />
+                                          </TextRun>
+                                          <TextRun>
+                                            <Value>, </Value>
+                                            <Style />
+                                          </TextRun>
+                                          <TextRun>
+                                            <Value>=Fields!firstName.Value</Value>
                                             <Style />
                                           </TextRun>
                                         </TextRuns>
                                         <Style />
                                       </Paragraph>
                                     </Paragraphs>
-                                    <rd:DefaultName>Period</rd:DefaultName>
+                                    <rd:DefaultName>lastName</rd:DefaultName>
                                     <Style>
                                       <Border>
                                         <Color>LightGrey</Color>
@@ -1092,34 +1230,34 @@ GROUP BY sg.schedGroupID, sg.name</CommandText>
                               </TablixHeader>
                               <TablixMembers>
                                 <TablixMember>
-                                  <Group Name="Course_Name">
+                                  <Group Name="Period">
                                     <GroupExpressions>
-                                      <GroupExpression>=Fields!Course_Name.Value</GroupExpression>
+                                      <GroupExpression>=Fields!Period.Value</GroupExpression>
                                     </GroupExpressions>
                                   </Group>
                                   <SortExpressions>
                                     <SortExpression>
-                                      <Value>=Fields!Course_Name.Value</Value>
+                                      <Value>=Fields!Period.Value</Value>
                                     </SortExpression>
                                   </SortExpressions>
                                   <TablixHeader>
-                                    <Size>1.88541in</Size>
+                                    <Size>0.45833in</Size>
                                     <CellContents>
-                                      <Textbox Name="Course_Name">
+                                      <Textbox Name="Period">
                                         <CanGrow>true</CanGrow>
                                         <KeepTogether>true</KeepTogether>
                                         <Paragraphs>
                                           <Paragraph>
                                             <TextRuns>
                                               <TextRun>
-                                                <Value>=Fields!Course_Name.Value</Value>
+                                                <Value>=Fields!Period.Value</Value>
                                                 <Style />
                                               </TextRun>
                                             </TextRuns>
                                             <Style />
                                           </Paragraph>
                                         </Paragraphs>
-                                        <rd:DefaultName>Course_Name</rd:DefaultName>
+                                        <rd:DefaultName>Period</rd:DefaultName>
                                         <Style>
                                           <Border>
                                             <Color>LightGrey</Color>
@@ -1135,34 +1273,34 @@ GROUP BY sg.schedGroupID, sg.name</CommandText>
                                   </TablixHeader>
                                   <TablixMembers>
                                     <TablixMember>
-                                      <Group Name="Course___Section">
+                                      <Group Name="Course_Name">
                                         <GroupExpressions>
-                                          <GroupExpression>=Fields!Course___Section.Value</GroupExpression>
+                                          <GroupExpression>=Fields!Course_Name.Value</GroupExpression>
                                         </GroupExpressions>
                                       </Group>
                                       <SortExpressions>
                                         <SortExpression>
-                                          <Value>=Fields!Course___Section.Value</Value>
+                                          <Value>=Fields!Course_Name.Value</Value>
                                         </SortExpression>
                                       </SortExpressions>
                                       <TablixHeader>
-                                        <Size>1.17708in</Size>
+                                        <Size>1.88541in</Size>
                                         <CellContents>
-                                          <Textbox Name="Course___Section">
+                                          <Textbox Name="Course_Name">
                                             <CanGrow>true</CanGrow>
                                             <KeepTogether>true</KeepTogether>
                                             <Paragraphs>
                                               <Paragraph>
                                                 <TextRuns>
                                                   <TextRun>
-                                                    <Value>=Fields!Course___Section.Value</Value>
+                                                    <Value>=Fields!Course_Name.Value</Value>
                                                     <Style />
                                                   </TextRun>
                                                 </TextRuns>
                                                 <Style />
                                               </Paragraph>
                                             </Paragraphs>
-                                            <rd:DefaultName>Course___Section</rd:DefaultName>
+                                            <rd:DefaultName>Course_Name</rd:DefaultName>
                                             <Style>
                                               <Border>
                                                 <Color>LightGrey</Color>
@@ -1178,7 +1316,52 @@ GROUP BY sg.schedGroupID, sg.name</CommandText>
                                       </TablixHeader>
                                       <TablixMembers>
                                         <TablixMember>
-                                          <Group Name="Details" />
+                                          <Group Name="Course___Section">
+                                            <GroupExpressions>
+                                              <GroupExpression>=Fields!Course___Section.Value</GroupExpression>
+                                            </GroupExpressions>
+                                          </Group>
+                                          <SortExpressions>
+                                            <SortExpression>
+                                              <Value>=Fields!Course___Section.Value</Value>
+                                            </SortExpression>
+                                          </SortExpressions>
+                                          <TablixHeader>
+                                            <Size>1.17708in</Size>
+                                            <CellContents>
+                                              <Textbox Name="Course___Section">
+                                                <CanGrow>true</CanGrow>
+                                                <KeepTogether>true</KeepTogether>
+                                                <Paragraphs>
+                                                  <Paragraph>
+                                                    <TextRuns>
+                                                      <TextRun>
+                                                        <Value>=Fields!Course___Section.Value</Value>
+                                                        <Style />
+                                                      </TextRun>
+                                                    </TextRuns>
+                                                    <Style />
+                                                  </Paragraph>
+                                                </Paragraphs>
+                                                <rd:DefaultName>Course___Section</rd:DefaultName>
+                                                <Style>
+                                                  <Border>
+                                                    <Color>LightGrey</Color>
+                                                    <Style>Solid</Style>
+                                                  </Border>
+                                                  <PaddingLeft>2pt</PaddingLeft>
+                                                  <PaddingRight>2pt</PaddingRight>
+                                                  <PaddingTop>2pt</PaddingTop>
+                                                  <PaddingBottom>2pt</PaddingBottom>
+                                                </Style>
+                                              </Textbox>
+                                            </CellContents>
+                                          </TablixHeader>
+                                          <TablixMembers>
+                                            <TablixMember>
+                                              <Group Name="Details" />
+                                            </TablixMember>
+                                          </TablixMembers>
                                         </TablixMember>
                                       </TablixMembers>
                                     </TablixMember>
@@ -1196,7 +1379,7 @@ GROUP BY sg.schedGroupID, sg.name</CommandText>
             </TablixRowHierarchy>
             <DataSetName>Grades</DataSetName>
             <Height>0.5in</Height>
-            <Width>12.78123in</Width>
+            <Width>14.35416in</Width>
             <Style>
               <Border>
                 <Style>None</Style>
@@ -1207,7 +1390,7 @@ GROUP BY sg.schedGroupID, sg.name</CommandText>
         <Height>0.5in</Height>
         <Style />
       </Body>
-      <Width>12.93748in</Width>
+      <Width>14.35416in</Width>
       <Page>
         <LeftMargin>1in</LeftMargin>
         <RightMargin>1in</RightMargin>
@@ -1366,6 +1549,18 @@ GROUP BY sg.schedGroupID, sg.name</CommandText>
       </ValidValues>
       <MultiValue>true</MultiValue>
     </ReportParameter>
+    <ReportParameter Name="courses">
+      <DataType>String</DataType>
+      <Prompt>Courses</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>Courses</DataSetName>
+          <ValueField>name</ValueField>
+          <LabelField>name</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+    </ReportParameter>
   </ReportParameters>
   <ReportParametersLayout>
     <GridLayoutDefinition>
@@ -1431,6 +1626,11 @@ GROUP BY sg.schedGroupID, sg.name</CommandText>
           <ColumnIndex>0</ColumnIndex>
           <RowIndex>3</RowIndex>
           <ParameterName>group</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>1</ColumnIndex>
+          <RowIndex>3</RowIndex>
+          <ParameterName>courses</ParameterName>
         </CellDefinition>
       </CellDefinitions>
     </GridLayoutDefinition>
