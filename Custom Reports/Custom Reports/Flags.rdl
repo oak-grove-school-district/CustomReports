@@ -23,17 +23,53 @@
           <QueryParameter Name="@programID">
             <Value>=Parameters!programID.Value</Value>
           </QueryParameter>
+          <QueryParameter Name="@period">
+            <Value>=Parameters!period.Value</Value>
+          </QueryParameter>
         </QueryParameters>
-        <CommandText>select p.studentNumber as [StudentNumber], i.lastName as [Last], i.firstName as [First], e.grade as [Grade], pr.name as [Flag]
-, pp.startDate as [Start Date], pp.eligibilityStartDate as [Elig Start Date], pp.eligibilityEndDate as [Elig End Date], pp.endDate as [End Date]
+        <CommandText>select p.studentNumber as [StudentNumber]
+	, i.lastName as [Last]
+	, i.firstName as [First]
+	, e.grade as [Grade]
+	, pr.name as [Flag]
+	, pp.startDate as [Start Date]
+	, pp.eligibilityStartDate as [Elig Start Date]
+	, pp.eligibilityEndDate as [Elig End Date]
+	, pp.endDate as [End Date]
+	, sec.teacherDisplay
+	, per.name as [Period]
 from Person p
-join [Identity] i on i.personID = p.personID and p.currentIdentityID = i.identityID
-join Enrollment e on e.personID = p.personID and (e.startDate &lt;= @date) and (e.endDate &gt;= @date or e.endDate is null) and e.calendarID in (@calendarID)
-join ProgramParticipation pp on pp.personid = p.personid
-and (pp.startDate &lt;= @date or pp.eligibilityStartDate &lt;= @date) and (pp.endDate &gt;= @date or pp.endDate is null) and (pp.eligibilityEndDate &gt;= @date  or pp.eligibilityEndDate is null)
-join Program pr on pr.programID = pp.programID
+	join [Identity] i on i.personID = p.personID 
+		and p.currentIdentityID = i.identityID
+	join Enrollment e on e.personID = p.personID 
+		and (e.startDate &lt;= @date) 
+		and (e.endDate &gt;= @date or e.endDate is null)
+	join Calendar cal on cal.calendarID = e.calendarID
+		and cal.calendarID in (@calendarID)
+	JOIN ScheduleStructure ss ON ss.calendarID = cal.calendarID 
+	JOIN Trial tr ON tr.structureID = ss.structureID 
+		AND tr.active = 1 
+	JOIN SectionPlacement sp ON sp.trialID = tr.trialID
+	JOIN Term ter ON ter.termID = sp.termID
+		and @date between ter.startDate and ter.endDate
+	JOIN Period per ON per.periodID = sp.periodID
+	JOIN Course cs ON cs.calendarID = cal.calendarID 
+		AND cs.active = 1 
+	JOIN Section sec ON sec.courseID = cs.courseID 
+		AND sec.trialID = tr.trialID 
+		AND sec.sectionID = sp.sectionID
+	JOIN Roster r ON r.sectionID = sec.sectionID 
+		AND r.trialID = tr.trialID 
+		AND r.personID = p.personID 
+		AND r.endDate IS NULL
+	join ProgramParticipation pp on pp.personid = p.personid
+		and (pp.startDate &lt;= @date or pp.eligibilityStartDate &lt;= @date) and (pp.endDate &gt;= @date or pp.endDate is null) 
+		and (pp.eligibilityEndDate &gt;= @date  or pp.eligibilityEndDate is null)
+	join Program pr on pr.programID = pp.programID
 where  pp.programID in (@programID)
-order by e.grade, i.lastName, i.firstName</CommandText>
+and per.name in (@period)
+group by p.studentNumber, i.lastName, i.firstName, e.grade, pr.name, pp.startDate, pp.eligibilityStartDate, pp.endDate, pp.eligibilityEndDate, per.name, sec.teacherDisplay
+order by e.grade, i.lastName, i.firstName, per.name</CommandText>
         <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
       </Query>
       <Fields>
@@ -72,6 +108,14 @@ order by e.grade, i.lastName, i.firstName</CommandText>
         <Field Name="End_Date">
           <DataField>End Date</DataField>
           <rd:TypeName>System.DateTime</rd:TypeName>
+        </Field>
+        <Field Name="teacherDisplay">
+          <DataField>teacherDisplay</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Period">
+          <DataField>Period</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
         </Field>
       </Fields>
     </DataSet>
@@ -173,6 +217,29 @@ ORDER BY pr.name</CommandText>
         </Field>
       </Fields>
     </DataSet>
+    <DataSet Name="period">
+      <Query>
+        <DataSourceName>campus</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@calendarID">
+            <Value>=Parameters!calendarID.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>select per.name
+from Calendar cal
+	join ScheduleStructure ss on ss.calendarID = cal.calendarID
+	join PeriodSchedule ps on ps.structureID = ss.structureID
+	join [Period] per on per.periodScheduleID = ps.periodScheduleID
+where cal.calendarID = @calendarID
+group by per.name</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="name">
+          <DataField>name</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+      </Fields>
+    </DataSet>
   </DataSets>
   <ReportSections>
     <ReportSection>
@@ -207,6 +274,12 @@ ORDER BY pr.name</CommandText>
                 </TablixColumn>
                 <TablixColumn>
                   <Width>0.6875in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>2in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>0.46875in</Width>
                 </TablixColumn>
               </TablixColumns>
               <TablixRows>
@@ -478,6 +551,68 @@ ORDER BY pr.name</CommandText>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox17</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>White</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox2">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Teacher</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox2</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>White</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox6">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Period</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox6</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -775,12 +910,74 @@ ORDER BY pr.name</CommandText>
                         </Textbox>
                       </CellContents>
                     </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="teacherDisplay">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!teacherDisplay.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>teacherDisplay</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Period">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!Period.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Period</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
                   </TablixCells>
                 </TablixRow>
               </TablixRows>
             </TablixBody>
             <TablixColumnHierarchy>
               <TablixMembers>
+                <TablixMember />
+                <TablixMember />
                 <TablixMember />
                 <TablixMember />
                 <TablixMember />
@@ -808,7 +1005,7 @@ ORDER BY pr.name</CommandText>
             <RepeatRowHeaders>true</RepeatRowHeaders>
             <DataSetName>AllStudents</DataSetName>
             <Height>0.5in</Height>
-            <Width>8.22916in</Width>
+            <Width>10.69791in</Width>
             <Style>
               <Border>
                 <Style>None</Style>
@@ -816,10 +1013,10 @@ ORDER BY pr.name</CommandText>
             </Style>
           </Tablix>
         </ReportItems>
-        <Height>1.10417in</Height>
+        <Height>0.5in</Height>
         <Style />
       </Body>
-      <Width>9.96875in</Width>
+      <Width>10.69791in</Width>
       <Page>
         <LeftMargin>1in</LeftMargin>
         <RightMargin>1in</RightMargin>
@@ -933,6 +1130,24 @@ ORDER BY pr.name</CommandText>
       </DefaultValue>
       <Prompt>As Of Date:</Prompt>
     </ReportParameter>
+    <ReportParameter Name="period">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>period</DataSetName>
+          <ValueField>name</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>Period</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>period</DataSetName>
+          <ValueField>name</ValueField>
+          <LabelField>name</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+    </ReportParameter>
     <ReportParameter Name="programID">
       <DataType>String</DataType>
       <AllowBlank>true</AllowBlank>
@@ -999,6 +1214,11 @@ ORDER BY pr.name</CommandText>
         </CellDefinition>
         <CellDefinition>
           <ColumnIndex>1</ColumnIndex>
+          <RowIndex>2</RowIndex>
+          <ParameterName>period</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>2</ColumnIndex>
           <RowIndex>2</RowIndex>
           <ParameterName>programID</ParameterName>
         </CellDefinition>
