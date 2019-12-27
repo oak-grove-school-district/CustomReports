@@ -91,6 +91,11 @@
     <Report Include="MonthlyBehavior.rdl" />
     <Report Include="OLR.rdl" />
     <Report Include="Parent Contact Information.rdl" />
+    <Report Include="PBIS_Avg.rdl" />
+    <Report Include="PBIS_Event.rdl" />
+    <Report Include="PBIS_Grade.rdl" />
+    <Report Include="PBIS_Location.rdl" />
+    <Report Include="PBIS_Time.rdl" />
     <Report Include="Perfect Attendance Elementary.rdl" />
     <Report Include="Perfect Attendance Intermediate.rdl" />
     <Report Include="PKCheck.rdl" />
