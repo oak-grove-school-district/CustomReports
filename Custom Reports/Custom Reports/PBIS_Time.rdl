@@ -311,15 +311,17 @@ order by x.[Time Seq]</CommandText>
                   <TablixCells>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="Textbox1">
+                        <Textbox Name="Textbox2">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>Time Period</Value>
-                                  <Style />
+                                  <Value />
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
                                 </TextRun>
                               </TextRuns>
                               <Style>
@@ -327,7 +329,7 @@ order by x.[Time Seq]</CommandText>
                               </Style>
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>Textbox1</rd:DefaultName>
+                          <rd:DefaultName>Textbox2</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -341,6 +343,7 @@ order by x.[Time Seq]</CommandText>
                             <PaddingBottom>2pt</PaddingBottom>
                           </Style>
                         </Textbox>
+                        <rd:Selected>true</rd:Selected>
                       </CellContents>
                     </TablixCell>
                     <TablixCell>
@@ -353,7 +356,9 @@ order by x.[Time Seq]</CommandText>
                               <TextRuns>
                                 <TextRun>
                                   <Value>Aug</Value>
-                                  <Style />
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
                                 </TextRun>
                               </TextRuns>
                               <Style>
@@ -387,7 +392,9 @@ order by x.[Time Seq]</CommandText>
                               <TextRuns>
                                 <TextRun>
                                   <Value>Sep</Value>
-                                  <Style />
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
                                 </TextRun>
                               </TextRuns>
                               <Style>
@@ -787,7 +794,9 @@ order by x.[Time Seq]</CommandText>
                               <TextRuns>
                                 <TextRun>
                                   <Value>=Fields!Time_Period.Value</Value>
-                                  <Style />
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
                                 </TextRun>
                               </TextRuns>
                               <Style>
@@ -821,7 +830,9 @@ order by x.[Time Seq]</CommandText>
                               <TextRuns>
                                 <TextRun>
                                   <Value>=Fields!August.Value</Value>
-                                  <Style />
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
                                 </TextRun>
                               </TextRuns>
                               <Style>
@@ -854,7 +865,9 @@ order by x.[Time Seq]</CommandText>
                               <TextRuns>
                                 <TextRun>
                                   <Value>=Fields!September.Value</Value>
-                                  <Style />
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
                                 </TextRun>
                               </TextRuns>
                               <Style>

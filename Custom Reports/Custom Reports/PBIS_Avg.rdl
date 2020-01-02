@@ -257,15 +257,17 @@ order by x.[Month Num]</CommandText>
                   <TablixCells>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="Textbox1">
+                        <Textbox Name="Textbox2">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>Month</Value>
-                                  <Style />
+                                  <Value />
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
                                 </TextRun>
                               </TextRuns>
                               <Style>
@@ -273,7 +275,7 @@ order by x.[Month Num]</CommandText>
                               </Style>
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>Textbox1</rd:DefaultName>
+                          <rd:DefaultName>Textbox2</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -287,6 +289,7 @@ order by x.[Month Num]</CommandText>
                             <PaddingBottom>2pt</PaddingBottom>
                           </Style>
                         </Textbox>
+                        <rd:Selected>true</rd:Selected>
                       </CellContents>
                     </TablixCell>
                     <TablixCell>
@@ -371,7 +374,9 @@ order by x.[Month Num]</CommandText>
                               <TextRuns>
                                 <TextRun>
                                   <Value># Major</Value>
-                                  <Style />
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
                                 </TextRun>
                               </TextRuns>
                               <Style>
@@ -405,7 +410,9 @@ order by x.[Month Num]</CommandText>
                               <TextRuns>
                                 <TextRun>
                                   <Value># Min</Value>
-                                  <Style />
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
                                 </TextRun>
                               </TextRuns>
                               <Style>
@@ -552,7 +559,9 @@ order by x.[Month Num]</CommandText>
                               <TextRuns>
                                 <TextRun>
                                   <Value>=Fields!Month.Value</Value>
-                                  <Style />
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
                                 </TextRun>
                               </TextRuns>
                               <Style>
@@ -585,9 +594,10 @@ order by x.[Month Num]</CommandText>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=formatnumber(Fields!ID__Major.Value/Fields!Number_of_Days.Value,2)</Value>
+                                  <Value>=Fields!ID__Major.Value/Fields!Number_of_Days.Value</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
+                                    <Format>0.00;(0.00)</Format>
                                   </Style>
                                 </TextRun>
                               </TextRuns>
@@ -620,9 +630,10 @@ order by x.[Month Num]</CommandText>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=formatnumber(Fields!ID__Min.Value/Fields!Number_of_Days.Value,2)</Value>
+                                  <Value>=Fields!ID__Min.Value/Fields!Number_of_Days.Value</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
+                                    <Format>0.00;(0.00)</Format>
                                   </Style>
                                 </TextRun>
                               </TextRuns>
@@ -656,7 +667,9 @@ order by x.[Month Num]</CommandText>
                               <TextRuns>
                                 <TextRun>
                                   <Value>=Fields!ID__Major.Value</Value>
-                                  <Style />
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
                                 </TextRun>
                               </TextRuns>
                               <Style>
@@ -689,7 +702,9 @@ order by x.[Month Num]</CommandText>
                               <TextRuns>
                                 <TextRun>
                                   <Value>=Fields!ID__Min.Value</Value>
-                                  <Style />
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
                                 </TextRun>
                               </TextRuns>
                               <Style>

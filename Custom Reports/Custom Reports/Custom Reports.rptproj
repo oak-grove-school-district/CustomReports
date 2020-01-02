@@ -92,7 +92,9 @@
     <Report Include="OLR.rdl" />
     <Report Include="Parent Contact Information.rdl" />
     <Report Include="PBIS_Avg.rdl" />
+    <Report Include="PBIS_Ethnicity.rdl" />
     <Report Include="PBIS_Event.rdl" />
+    <Report Include="PBIS_Gender.rdl" />
     <Report Include="PBIS_Grade.rdl" />
     <Report Include="PBIS_Location.rdl" />
     <Report Include="PBIS_Time.rdl" />

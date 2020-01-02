@@ -262,14 +262,14 @@ order by x.OnOff desc, x.Location asc</CommandText>
                   <TablixCells>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="Textbox53">
+                        <Textbox Name="Textbox2">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>Location</Value>
+                                  <Value />
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -278,7 +278,7 @@ order by x.OnOff desc, x.Location asc</CommandText>
                               <Style />
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>Textbox53</rd:DefaultName>
+                          <rd:DefaultName>Textbox2</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -336,7 +336,9 @@ order by x.OnOff desc, x.Location asc</CommandText>
                               <TextRuns>
                                 <TextRun>
                                   <Value>Aug</Value>
-                                  <Style />
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
                                 </TextRun>
                               </TextRuns>
                               <Style>
@@ -370,7 +372,9 @@ order by x.OnOff desc, x.Location asc</CommandText>
                               <TextRuns>
                                 <TextRun>
                                   <Value>Sep</Value>
-                                  <Style />
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
                                 </TextRun>
                               </TextRuns>
                               <Style>
@@ -804,7 +808,9 @@ order by x.OnOff desc, x.Location asc</CommandText>
                               <TextRuns>
                                 <TextRun>
                                   <Value>=Fields!Location.Value</Value>
-                                  <Style />
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
                                 </TextRun>
                               </TextRuns>
                               <Style />
@@ -836,7 +842,9 @@ order by x.OnOff desc, x.Location asc</CommandText>
                               <TextRuns>
                                 <TextRun>
                                   <Value>=Fields!August.Value</Value>
-                                  <Style />
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
                                 </TextRun>
                               </TextRuns>
                               <Style>
@@ -869,7 +877,9 @@ order by x.OnOff desc, x.Location asc</CommandText>
                               <TextRuns>
                                 <TextRun>
                                   <Value>=Fields!September.Value</Value>
-                                  <Style />
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
                                 </TextRun>
                               </TextRuns>
                               <Style>
