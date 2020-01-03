@@ -97,6 +97,7 @@
     <Report Include="PBIS_Gender.rdl" />
     <Report Include="PBIS_Grade.rdl" />
     <Report Include="PBIS_Location.rdl" />
+    <Report Include="PBIS_Tiered.rdl" />
     <Report Include="PBIS_Time.rdl" />
     <Report Include="Perfect Attendance Elementary.rdl" />
     <Report Include="Perfect Attendance Intermediate.rdl" />

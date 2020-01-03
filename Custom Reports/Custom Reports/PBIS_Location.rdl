@@ -2501,11 +2501,10 @@ order by x.OnOff desc, x.Location asc</CommandText>
                 <Caption>Location of Events (Cumulative Yearly Total)</Caption>
                 <Style>
                   <BackgroundGradientType>None</BackgroundGradientType>
-                  <FontSize>9pt</FontSize>
-                  <FontWeight>Normal</FontWeight>
+                  <FontSize>14pt</FontSize>
+                  <FontWeight>Bold</FontWeight>
                   <TextAlign>Left</TextAlign>
                   <VerticalAlign>Top</VerticalAlign>
-                  <Color>#a6a6a6</Color>
                 </Style>
                 <Position>TopLeft</Position>
               </ChartTitle>
@@ -2530,8 +2529,8 @@ order by x.OnOff desc, x.Location asc</CommandText>
             <DataSetName>location</DataSetName>
             <Top>1.13417in</Top>
             <Left>0.01042in</Left>
-            <Height>3.4375in</Height>
-            <Width>9.47917in</Width>
+            <Height>5.30208in</Height>
+            <Width>10.09375in</Width>
             <ZIndex>1</ZIndex>
             <Style>
               <Border>
@@ -2543,7 +2542,7 @@ order by x.OnOff desc, x.Location asc</CommandText>
             </Style>
           </Chart>
         </ReportItems>
-        <Height>4.57167in</Height>
+        <Height>6.43625in</Height>
         <Style />
       </Body>
       <Width>10.10417in</Width>

@@ -2918,7 +2918,7 @@ END</CommandText>
             </TablixRowHierarchy>
             <DataSetName>ethnicity</DataSetName>
             <Height>1in</Height>
-            <Width>12.02084in</Width>
+            <Width>12.02083in</Width>
             <Style>
               <Border>
                 <Style>None</Style>
@@ -3340,11 +3340,10 @@ END</CommandText>
                 <Caption>Behavior Referrals by Ethnicity (Cumulative Total for Year)</Caption>
                 <Style>
                   <BackgroundGradientType>None</BackgroundGradientType>
-                  <FontSize>9pt</FontSize>
-                  <FontWeight>Normal</FontWeight>
+                  <FontSize>14pt</FontSize>
+                  <FontWeight>Bold</FontWeight>
                   <TextAlign>Left</TextAlign>
                   <VerticalAlign>Top</VerticalAlign>
-                  <Color>#a6a6a6</Color>
                 </Style>
                 <Position>TopLeft</Position>
               </ChartTitle>
@@ -3368,7 +3367,7 @@ END</CommandText>
             </ChartNoDataMessage>
             <DataSetName>ethnicity</DataSetName>
             <Top>1.38417in</Top>
-            <Height>4.55208in</Height>
+            <Height>5.30208in</Height>
             <Width>12.15626in</Width>
             <ZIndex>1</ZIndex>
             <Style>
@@ -3381,7 +3380,7 @@ END</CommandText>
             </Style>
           </Chart>
         </ReportItems>
-        <Height>5.93625in</Height>
+        <Height>6.68625in</Height>
         <Style />
       </Body>
       <Width>12.15626in</Width>

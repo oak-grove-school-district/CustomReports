@@ -2394,11 +2394,10 @@ group by x.grade</CommandText>
                 <Caption>Referrals by Grade Level (Cumulative Yearly Total)</Caption>
                 <Style>
                   <BackgroundGradientType>None</BackgroundGradientType>
-                  <FontSize>9pt</FontSize>
-                  <FontWeight>Normal</FontWeight>
+                  <FontSize>14pt</FontSize>
+                  <FontWeight>Bold</FontWeight>
                   <TextAlign>Left</TextAlign>
                   <VerticalAlign>Top</VerticalAlign>
-                  <Color>#a6a6a6</Color>
                 </Style>
                 <Position>TopLeft</Position>
               </ChartTitle>
@@ -2422,7 +2421,7 @@ group by x.grade</CommandText>
             </ChartNoDataMessage>
             <DataSetName>DataSet1</DataSetName>
             <Top>1.11333in</Top>
-            <Height>3.98958in</Height>
+            <Height>5.125in</Height>
             <Width>7.08333in</Width>
             <ZIndex>1</ZIndex>
             <Style>
@@ -2435,7 +2434,7 @@ group by x.grade</CommandText>
             </Style>
           </Chart>
         </ReportItems>
-        <Height>5.10292in</Height>
+        <Height>6.23833in</Height>
         <Style />
       </Body>
       <Width>7.08334in</Width>
