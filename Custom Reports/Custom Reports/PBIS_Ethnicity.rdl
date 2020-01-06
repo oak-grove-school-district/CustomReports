@@ -3216,6 +3216,7 @@ END</CommandText>
                         <Color>#5c5c5c</Color>
                       </Style>
                     </ChartAxisTitle>
+                    <Interval>0.2</Interval>
                     <ChartMajorGridLines>
                       <Style>
                         <Border>
@@ -3249,7 +3250,7 @@ END</CommandText>
                     </ChartMinorTickMarks>
                     <CrossAt>NaN</CrossAt>
                     <Minimum>NaN</Minimum>
-                    <Maximum>NaN</Maximum>
+                    <Maximum>1</Maximum>
                     <ChartAxisScaleBreak>
                       <Style />
                     </ChartAxisScaleBreak>
@@ -3348,7 +3349,12 @@ END</CommandText>
                 <Position>TopLeft</Position>
               </ChartTitle>
             </ChartTitles>
-            <Palette>BrightPastel</Palette>
+            <Palette>Custom</Palette>
+            <ChartCustomPaletteColors>
+              <ChartCustomPaletteColor>#4173e8</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>#d20000</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>Orange</ChartCustomPaletteColor>
+            </ChartCustomPaletteColors>
             <ChartBorderSkin>
               <Style>
                 <BackgroundColor>Gray</BackgroundColor>

@@ -53,6 +53,7 @@
   </ItemGroup>
   <ItemGroup>
     <Report Include="AbsencesDateRange.rdl" />
+    <Report Include="AbsenceTardyByClass.rdl" />
     <Report Include="AllStudents.rdl" />
     <Report Include="AnalyticChanges.rdl" />
     <Report Include="AtoZ.rdl" />

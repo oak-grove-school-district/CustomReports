@@ -114,8 +114,12 @@ from (
 		select distinct p.studentNumber, i.lastName, i.firstName, i.gender, e.grade, c.name as [Cal]
 				,br.role
 				,bi.timestamp as [Event Time]
-				,case when cd.name is null then 'Undefined' else left(cd.name,charindex(':',cd.name)-1) end as [OnOff]
-				,case when cd.name is null then 'Undefined' else right(cd.name, len(cd.name) - CHARINDEX(':',cd.name)-1) end as [Location]
+				,case when cd.name is null then 'Undefined' 
+					  when cd.name like '%unspecified%' then 'Unspecified'
+							else left(cd.name,charindex(':',cd.name)-1) end as [OnOff]
+				,case when cd.name is null then 'Undefined' 
+					  when cd.name like '%unspecified%' then 'Unspecified'		
+							else right(cd.name, len(cd.name) - CHARINDEX(':',cd.name)-1) end as [Location]
 		from Person p
 			join [Identity] i on i.identityID = p.currentIdentityID
 				and i.personID = p.personID
@@ -2509,7 +2513,20 @@ order by x.OnOff desc, x.Location asc</CommandText>
                 <Position>TopLeft</Position>
               </ChartTitle>
             </ChartTitles>
-            <Palette>BrightPastel</Palette>
+            <Palette>Custom</Palette>
+            <ChartCustomPaletteColors>
+              <ChartCustomPaletteColor>#566ae0</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>#d60000</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>#ffa735</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>#33af21</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>DarkViolet</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>CornflowerBlue</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>HotPink</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>#53d134</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>Maroon</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>#4a5bbd</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>#bd00e8</ChartCustomPaletteColor>
+            </ChartCustomPaletteColors>
             <ChartBorderSkin>
               <Style>
                 <BackgroundColor>Gray</BackgroundColor>

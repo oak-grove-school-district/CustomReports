@@ -2404,7 +2404,20 @@ group by x.[Event Type]</CommandText>
                 <Position>TopLeft</Position>
               </ChartTitle>
             </ChartTitles>
-            <Palette>BrightPastel</Palette>
+            <Palette>Custom</Palette>
+            <ChartCustomPaletteColors>
+              <ChartCustomPaletteColor>#566ae0</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>#d60000</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>#ffa735</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>#33af21</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>DarkViolet</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>CornflowerBlue</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>HotPink</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>#53d134</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>Maroon</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>#4a5bbd</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>#bd00e8</ChartCustomPaletteColor>
+            </ChartCustomPaletteColors>
             <ChartBorderSkin>
               <Style>
                 <BackgroundColor>Gray</BackgroundColor>
@@ -2423,7 +2436,7 @@ group by x.[Event Type]</CommandText>
             </ChartNoDataMessage>
             <DataSetName>eventType</DataSetName>
             <Top>1.16542in</Top>
-            <Height>4.6875in</Height>
+            <Height>6.36458in</Height>
             <Width>8.66667in</Width>
             <ZIndex>1</ZIndex>
             <Style>
@@ -2743,6 +2756,7 @@ group by x.[Event Type]</CommandText>
                   <BackgroundGradientType>None</BackgroundGradientType>
                   <FontSize>8pt</FontSize>
                 </Style>
+                <Position>TopLeft</Position>
                 <Layout>WideTable</Layout>
                 <DockOutsideChartArea>true</DockOutsideChartArea>
                 <ChartLegendTitle>
@@ -2762,16 +2776,15 @@ group by x.[Event Type]</CommandText>
                 <Caption>Histogram of YEARLY TOTAL</Caption>
                 <Style>
                   <BackgroundGradientType>None</BackgroundGradientType>
-                  <FontSize>9pt</FontSize>
-                  <FontWeight>Normal</FontWeight>
+                  <FontSize>14pt</FontSize>
+                  <FontWeight>Bold</FontWeight>
                   <TextAlign>Left</TextAlign>
                   <VerticalAlign>Top</VerticalAlign>
-                  <Color>#a6a6a6</Color>
                 </Style>
                 <Position>TopLeft</Position>
               </ChartTitle>
             </ChartTitles>
-            <Palette>BrightPastel</Palette>
+            <Palette>EarthTones</Palette>
             <ChartBorderSkin>
               <Style>
                 <BackgroundColor>Gray</BackgroundColor>
@@ -2789,9 +2802,10 @@ group by x.[Event Type]</CommandText>
               </Style>
             </ChartNoDataMessage>
             <DataSetName>eventType</DataSetName>
-            <Top>6.24875in</Top>
-            <Height>4.65625in</Height>
-            <Width>8.66667in</Width>
+            <Top>1.16542in</Top>
+            <Left>8.66667in</Left>
+            <Height>6.36458in</Height>
+            <Width>5.40625in</Width>
             <ZIndex>2</ZIndex>
             <Style>
               <Border>
@@ -2803,10 +2817,10 @@ group by x.[Event Type]</CommandText>
             </Style>
           </Chart>
         </ReportItems>
-        <Height>10.905in</Height>
+        <Height>7.53in</Height>
         <Style />
       </Body>
-      <Width>8.66667in</Width>
+      <Width>14.07292in</Width>
       <Page>
         <LeftMargin>1in</LeftMargin>
         <RightMargin>1in</RightMargin>

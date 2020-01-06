@@ -2463,7 +2463,20 @@ order by x.[Time Seq]</CommandText>
                 <Position>TopLeft</Position>
               </ChartTitle>
             </ChartTitles>
-            <Palette>BrightPastel</Palette>
+            <Palette>Custom</Palette>
+            <ChartCustomPaletteColors>
+              <ChartCustomPaletteColor>#566ae0</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>#d60000</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>#ffa735</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>#33af21</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>DarkViolet</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>CornflowerBlue</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>HotPink</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>#53d134</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>Maroon</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>#4a5bbd</ChartCustomPaletteColor>
+              <ChartCustomPaletteColor>#bd00e8</ChartCustomPaletteColor>
+            </ChartCustomPaletteColors>
             <ChartBorderSkin>
               <Style>
                 <BackgroundColor>Gray</BackgroundColor>
@@ -2482,7 +2495,7 @@ order by x.[Time Seq]</CommandText>
             </ChartNoDataMessage>
             <DataSetName>DataSet1</DataSetName>
             <Top>1.26958in</Top>
-            <Height>4.60417in</Height>
+            <Height>6.21875in</Height>
             <Width>8.44792in</Width>
             <ZIndex>1</ZIndex>
             <Style>
@@ -2495,7 +2508,7 @@ order by x.[Time Seq]</CommandText>
             </Style>
           </Chart>
         </ReportItems>
-        <Height>5.87375in</Height>
+        <Height>7.48833in</Height>
         <Style />
       </Body>
       <Width>8.44792in</Width>
