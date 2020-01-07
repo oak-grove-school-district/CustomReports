@@ -94,7 +94,8 @@ from (
 					group by c.calendarID, day.date
 				) np on np.calendarID = c.calendarID and np.date = at.date
 				where at.date between @mStartDate and @mEndDate
-				and (at.status = 'A' or (ae.status = 'A' and ae.excuse in ('U','E')))
+				and ((at.status = 'A' or (ae.status = 'A' and ae.excuse in ('U','E'))) or ae.code = 'SS')
+				--and (at.status = 'A' or (ae.status = 'A' and ae.excuse in ('U','E')))
 				group by c.calendarID, at.personID, at.date, np.tPeriods
 				having count(at.periodID) = np.tPeriods
 			) ab on ab.personID = e.personID and ab.calendarID = e.calendarID

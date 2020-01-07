@@ -67,7 +67,7 @@ from (
 			join [Identity] i on i.identityID = p.currentIdentityID
 				and i.personID = p.personID
 			join Enrollment e on e.personID = p.personID
-				and e.active in (0,1)
+				and e.active in (1)
 			join Calendar c on c.calendarID = e.calendarID
 			join BehaviorRole br on br.personID = p.personID
 				and br.calendarID = e.calendarID

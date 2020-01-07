@@ -88,7 +88,7 @@ END</CommandText>
         </Field>
       </Fields>
     </DataSet>
-    <DataSet Name="DataSet1">
+    <DataSet Name="grade">
       <Query>
         <DataSourceName>DataSource1</DataSourceName>
         <QueryParameters>
@@ -1695,7 +1695,7 @@ group by x.grade</CommandText>
                 </TablixMember>
               </TablixMembers>
             </TablixRowHierarchy>
-            <DataSetName>DataSet1</DataSetName>
+            <DataSetName>grade</DataSetName>
             <Height>0.75in</Height>
             <Width>7.08334in</Width>
             <Style>
@@ -2432,7 +2432,7 @@ group by x.grade</CommandText>
                 <VerticalAlign>Top</VerticalAlign>
               </Style>
             </ChartNoDataMessage>
-            <DataSetName>DataSet1</DataSetName>
+            <DataSetName>grade</DataSetName>
             <Top>1.11333in</Top>
             <Height>6.48958in</Height>
             <Width>7.08333in</Width>
