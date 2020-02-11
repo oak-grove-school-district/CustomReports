@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner">
+<Report MustUnderstand="df" xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:df="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition/defaultfontfamily">
+  <df:DefaultFontFamily>Segoe UI</df:DefaultFontFamily>
   <AutoRefresh>0</AutoRefresh>
   <DataSources>
     <DataSource Name="campus">
-      <Transaction>true</Transaction>
       <DataSourceReference>campus</DataSourceReference>
       <rd:SecurityType>None</rd:SecurityType>
-      <rd:DataSourceID>b061808a-ebb6-4ff0-b551-7379e3e2e831</rd:DataSourceID>
+      <rd:DataSourceID>5c6899aa-c776-4c7b-b4f3-fe79ae7833be</rd:DataSourceID>
     </DataSource>
   </DataSources>
   <DataSets>
@@ -14,215 +14,119 @@
       <Query>
         <DataSourceName>campus</DataSourceName>
         <QueryParameters>
-          <QueryParameter Name="@choices">
-            <Value>=Parameters!choices.Value</Value>
+          <QueryParameter Name="@calendarID">
+            <Value>=Parameters!calendarID.Value</Value>
           </QueryParameter>
-          <QueryParameter Name="@AppYear">
-            <Value>=Parameters!AppYear.Value</Value>
+          <QueryParameter Name="@cGrade">
+            <Value>=Parameters!cGrade.Value</Value>
           </QueryParameter>
-          <QueryParameter Name="@cSchoolYear">
-            <Value>=Parameters!cSchoolYear.Value</Value>
-          </QueryParameter>
-          <QueryParameter Name="@appCalendarID">
-            <Value>=Parameters!appCalendarID.Value</Value>
-          </QueryParameter>
-          <QueryParameter Name="@nSchoolYear">
-            <Value>=Parameters!nSchoolYear.Value</Value>
-          </QueryParameter>
-          <QueryParameter Name="@ApplicationStatus">
-            <Value>=Parameters!ApplicationStatus.Value</Value>
-          </QueryParameter>
-          <QueryParameter Name="@checkName">
-            <Value>=Parameters!checkName.Value</Value>
+          <QueryParameter Name="@CAPC">
+            <Value>=Parameters!CAPC.Value</Value>
           </QueryParameter>
         </QueryParameters>
-        <CommandText>if @choices = 'true'
-BEGIN
+        <CommandText>select * from (
+select p.studentNumber
+, i.lastName
+, i.firstName
+, isnull(es.cGrade,'') as [CGrade]
+, max(case when pp.programID = 53 then '*' else '' end) as [I]
+, isnull(es.cAPC,'') as [CAPC]
+, coalesce(max(case when hs.bn = 1 and hs.schID &lt;= 16 then sc.name end),'') + coalesce(', ' + max(case when hs.bn = 2 and hs.schID &lt;= 16 then sc.name end),'') as [Home Elementary]
+, coalesce(max(case when ((hs.bn = 2 and hs.schID &gt;= 17) or (hs.bn = 3 and hs.schID &gt;= 17)) then sc.name end),'') + coalesce(', ' + max(case when hs.bn = 4 and hs.schID &gt;= 17 then sc.name else null end),'') as [Home Jr. High]
+, max(ad.number + ' ' + ISNULL(ad.dir + ' ','') + ad.street + ' ' + ISNULL(ad.tag + ' ','') + ISNULL('#' + ad.apt, '')) as [Line 1]
+, max(ad.city + ', ' + ad.state + ' ' + ad.zip) as [Line 2]
+, isnull(es.cEndDate,'') as [CEndDate]
+, isnull(es.cEndComments,'') as [CEndStatus]
+, isnull(case when es.cEndCode like 'E155' or es.cEndCode like '480' or es.cEndCode is null then '' else es.cEndCode end,'') as [CEndCode]
+, isnull(es.cSchool,'') as [CSchool]
+, isnull(es.nSchool,'') as [NSchool]
+, isnull(es.nGrade,'') as [NGrade]
+, isnull(es.nAPC,'') as [NAPC]
+from Person p 
+join [Identity] i on i.personID = p.personID and i.identityID = p.currentIdentityID
+join (
 select *
 from (
-		select p.studentNumber as [Student#]
-		, i.lastName as [Last]
-		, i.firstName as [First]
-		, max(case when ad.postOfficeBox = 1 then 'PO Box ' + ad.number else ad.number + ' ' + ISNULL(ad.dir + ' ','') + ad.street + ' ' + ISNULL(ad.tag + ' ','') + ISNULL('#' + ad.apt, '') end) as [Line 1]
-		, max(ad.city + ', ' + ad.state + ' ' + ad.zip) as [Line 2]
-		, isnull(di.name,'') as [District]
-		, coalesce(max(case when hs.bn = 1 and hs.schID &lt;= 16 then sc.name end),'') + coalesce(', ' + max(case when hs.bn = 2 and hs.schID &lt;= 16 then sc.name end),'') as [Home Elementary]
-		, coalesce(max(case when ((hs.bn = 2 and hs.schID &gt;= 17) or (hs.bn = 3 and hs.schID &gt;= 17)) then sc.name end),'') + coalesce(', ' + max(case when hs.bn = 4 and hs.schID &gt;= 17 then sc.name else null end),'') as [Home Jr. High]
-		, isnull(cc.name,'') as [CSchool]
-		, ec.grade as [CGrade]
-		, rc.name as [RSchool]
-		, sca.gradeLevel as [RGrade]
-		, cn.name as [NSchool]
-		, isnull(max(case when ar.rn = 1 then ar.name end),'') + isnull(max(case when ar.rn = 2 then ', ' + ar.name end),'') as [IntraType]
-		, isnull(cd2.name,'') as [ApplicationStatus]
-		, convert(varchar(10),sca.applicationDate, 101) as [ApplicationDate]
-		, convert(varchar(10),sca.processedDate, 101) as [ProcessedDate]
-		, convert(varchar(10),sca.acceptanceDate, 101) as [AcceptanceDate]
-		, cd1.name as [AcceptanceStatus]
-		, sca.comments as [Comments]
-		, sca.priority as [Choice #]
-		from Person p
-		join [Identity] i on i.personID = p.personID and i.identityID = p.currentIdentityID
-		join SchoolChoiceApplication sca on sca.personID = p.personID
---subquery to get IntraTypes
-		left join (
-				select sca.personID, sca.applicationID, sca.calendarID, case when sca.gradeLevel = 'TK' then 'Transitional Kinder' else isnull(scr.name,'4: Choice') end as [name], ROW_NUMBER() over(PARTITION by sca.personID order by scar.ruleID) as rn
-				from SchoolChoiceApplication sca
-				left join SchoolChoiceApplicationRule scar on scar.applicationID = sca.applicationID and (scar.ruleID between 4 and 17 or scar.ruleID in (27,28))
-				left join SchoolChoiceRule scr on scr.ruleID = scar.ruleID
-				where sca.calendarID = @appCalendarID
-		) ar on ar.personID = sca.personID and ar.applicationID = sca.applicationID
-		join Calendar rc on rc.calendarID = sca.calendarID and rc.calendarID = @appCalendarID
-		left join CampusDictionary cd1 on cd1.code = sca.acceptanceStatus and cd1.attributeID = 304
-		left join CampusDictionary cd2 on cd2.code = sca.approvalStatus and cd2.attributeID = 305
-		left join (
-				select e.personID, MAX(e.startDate) as maxStartDate
-				from Enrollment e
-				where e.endYear = @cSchoolYear
-				group by e.personID
-				) me on me.personID = p.personID
-		left join Enrollment ec on ec.personID = me.personID
-		--and ec.startDate = me.maxStartDate
-		and ec.endYear = @cSchoolYear
-		left join Calendar cc on cc.calendarID = ec.calendarID and (cc.summerSchool = 0 or cc.summerSchool is null) and cc.endYear = @cSchoolYear
-		left join (
-					select p.personID, hl.addressID, sb.schoolID as schID, ROW_NUMBER() over(PARTITION by p.personID order by sb.schoolID) as bn
-					from Person p
-					join HouseholdMember hm on hm.personID = p.personID and hm.secondary = 0 and hm.endDate is null
-					join HouseholdLocation hl on hl.householdID = hm.householdID and hl.secondary = 0 and hl.endDate is null
-					left join SchoolBoundary sb on sb.addressID = hl.addressID
-					where sb.startDate = '03/08/2018'
-					) hs on hs.personID = p.personID
-		left join School sc on sc.schoolID = hs.schID
-		left join [Address] ad on ad.addressID = hs.addressID
-		left join District di on di.districtID = ad.districtID
-		left join Enrollment en on en.personID = p.personID and en.endDate is null and (en.endYear = @nSchoolYear)
-		left join Calendar cn on cn.calendarID = en.calendarID and (cn.endYear = @nSchoolYear)
-	where isnull(cd2.name,'') in (@ApplicationStatus)
-	group by p.studentNumber, i.lastName, i.firstName
-		, di.name
-		, cc.name, ec.grade
-		, rc.name
-		, sca.gradeLevel
-		, sca.applicationDate
-		, sca.processedDate
-		, cd1.name
-		, sca.acceptanceDate
-		, cd2.name
-		, sca.comments
-		, cn.name
-		, sca.priority
-	) x
-order by 
-x.ApplicationStatus, x.[CGrade], x.[RGrade], x.[CSchool],
-x.last, x.first
-END
-
-IF @choices = 'false'
-BEGIN
-select *
-from (
-	select p.studentNumber as [Student#]
-	, i.lastName as [Last]
-	, i.firstName as [First]
-	, max(ad.number + ' ' + ISNULL(ad.dir + ' ','') + ad.street + ' ' + ISNULL(ad.tag + ' ','') + ISNULL('#' + ad.apt, '')) as [Line 1]
-	, max(ad.city + ', ' + ad.state + ' ' + ad.zip) as [Line 2]
-	, isnull(di.name,'') as [District]
-	, coalesce(max(case when hs.bn = 1 and hs.schID &lt;= 16 then sc.name end),'') + coalesce(', ' + max(case when hs.bn = 2 and hs.schID &lt;= 16 then sc.name end),'') as [Home Elementary]
-	, coalesce(max(case when ((hs.bn = 2 and hs.schID &gt;= 17) or (hs.bn = 3 and hs.schID &gt;= 17)) then sc.name end),'') + coalesce(', ' + max(case when hs.bn = 4 and hs.schID &gt;= 17 then sc.name else null end),'') as [Home Jr. High]
-	, isnull(cc.name,'') as [CSchool]
-	, ec.grade as [CGrade]
-	, rc.name as [RSchool]
-	, sca.gradeLevel as [RGrade]
-	, cn.name as [NSchool]
-	, isnull(max(case when ar.rn = 1 then ar.name end),'') + isnull(max(case when ar.rn = 2 then ', ' + ar.name end),'') as [IntraType]
-	, isnull(cd2.name,'') as [ApplicationStatus]
-	, convert(varchar(10),sca.applicationDate, 101) as [ApplicationDate]
-	, convert(varchar(10),sca.processedDate, 101) as [ProcessedDate]
-	, convert(varchar(10),sca.acceptanceDate, 101) as [AcceptanceDate]
-	, cd1.name as [AcceptanceStatus]
-	, sca.comments as [Comments]
-	, sca.priority as [Choice #]
-	from Person p
-	join [Identity] i on i.personID = p.personID and i.identityID = p.currentIdentityID
-	join SchoolChoiceApplication sca on sca.personID = p.personID
-	--subquery to get IntraTypes
-	left join (
-			select sca.personID, sca.applicationID, sca.calendarID, case when sca.gradeLevel = 'TK' then 'Transitional Kinder' else isnull(scr.name,'4: Choice') end as [name], ROW_NUMBER() over(PARTITION by sca.personID order by scar.ruleID) as rn
-			from SchoolChoiceApplication sca
-			left join SchoolChoiceApplicationRule scar on scar.applicationID = sca.applicationID and scar.ruleID between 4 and 17
-			left join SchoolChoiceRule scr on scr.ruleID = scar.ruleID
-			where sca.calendarID = @appCalendarID
-	) ar on ar.personID = sca.personID and ar.applicationID = sca.applicationID
-	join Calendar rc on rc.calendarID = sca.calendarID and rc.endYear = @AppYear
-	left join CampusDictionary cd1 on cd1.code = sca.acceptanceStatus and cd1.attributeID = 304
-	left join CampusDictionary cd2 on cd2.code = sca.approvalStatus and cd2.attributeID = 305
-	left join (
-			select e.personID, MAX(e.startDate) as maxStartDate
-			from Enrollment e
-			where e.endYear = @cSchoolYear
-			group by e.personID
-	) me on me.personID = p.personID
-	left join Enrollment ec on ec.personID = me.personID and ec.startDate = me.maxStartDate and ec.endYear = @cSchoolYear
-	left join Calendar cc on cc.calendarID = ec.calendarID and (cc.summerSchool = 0 or cc.summerSchool is null) and cc.endYear = @cSchoolYear
-	left join (
-			select p.personID, hl.addressID, sb.schoolID as schID, ROW_NUMBER() over(PARTITION by p.personID order by sb.schoolID) as bn
-			from Person p
-			join HouseholdMember hm on hm.personID = p.personID and hm.secondary = 0 and hm.endDate is null
-			join HouseholdLocation hl on hl.householdID = hm.householdID and hl.secondary = 0 and hl.endDate is null
-			left join SchoolBoundary sb on sb.addressID = hl.addressID
-			where sb.startDate = '03/08/2018'
-	) hs on hs.personID = p.personID
-	left join School sc on sc.schoolID = hs.schID
-	left join [Address] ad on ad.addressID = hs.addressID
-	left join District di on di.districtID = ad.districtID
-	left join Enrollment en on en.personID = p.personID and en.endDate is null and en.endYear = @nSchoolYear
-	left join Calendar cn on cn.calendarID = en.calendarID and cn.endYear = @nSchoolYear
-	where (rc.name not like '%' + @checkName + '%') and
-	isnull(cd2.name,'') in (@ApplicationStatus)
-	group by p.studentNumber, i.lastName, i.firstName, di.name, cc.name, ec.grade
-		, rc.name
-		, sca.gradeLevel
-		, sca.applicationDate
-		, sca.processedDate
-		, cd1.name
-		, sca.acceptanceDate
-		, cd2.name
-		, sca.comments
-		, cn.name
-		, sca.priority
-	) x
-where (x.[Home Elementary] like '%' + @checkName + '%' and x.CSchool like '') or ((x.RGrade = '07' or x.RGrade = '08') and x.[Home Jr. High] like '%' + @checkName + '%')
-or (x.CSchool like '%' + @checkName + '%')
-order by 
-x.ApplicationStatus, x.[CSchool], x.[RGrade], 
-x.last, x.first
-END</CommandText>
+--subquery to pull enrollments for current year and next year
+select e.personID
+, max(case when e.endYear = sy.endYear then e.enrollmentID end) as [cEnrollmentID]
+, isnull(max(case when e.endYear = sy.endYear then cast(e.calendarID as varchar(4)) end),'') as [cCalendarID]
+, max(case when c.endYear = sy.endYear then c.name end) as [cSchool]
+, max(case when e.endYear = sy.endYear then e.grade end) as [cGrade]
+, max(case when e.endYear = sy.endYear then cast(e.startDate as varchar(20)) end) as [cStartDate]
+, max(case when e.endYear = sy.endYear then cast(e.endDate as varchar(20)) end) as [cEndDate]
+, max(case when e.endYear = sy.endYear then e.endStatus end) as [cEndCode]
+, max(case when e.endYear = sy.endYear then e.endComments end) as [cEndComments]
+, max(case when e.endYear = sy.endYear then cs.value end) as [cAPC]
+, max(case when e.endYear = sy.endYear + 1 then e.enrollmentID end) as [nEnrollmentID]
+, max(case when e.endYear = sy.endYear + 1 then e.calendarID end) as [nCalendarID]
+, max(case when c.endYear = sy.endYear + 1 then c.name end) as [nSchool]
+, max(case when e.endYear = sy.endYear + 1 then e.grade end) as [nGrade]
+, max(case when e.endYear = sy.endYear + 1 then e.startDate end) as [NStartDate]
+, max(case when e.endYear = sy.endYear + 1 then e.endDate end) as [nEndDate]
+, max(case when e.endYear = sy.endYear + 1 then cs.value end) as [nAPC]
+from Person p
+join [Identity] i on i.personID = p.personID and i.identityID = p.currentIdentityID
+join Enrollment e on e.personID = p.personID
+join (
+--subquery to get max start date
+select e.personID, e.endYear, max(e.startDate) as [mStartDate]
+from Enrollment e
+join Calendar cal on cal.calendarID = e.calendarID
+and (cal.summerSchool = 0 or cal.summerSchool is null)
+--join SchoolYear sy on (sy.endYear = e.endYear and sy.active = 1) or (sy.active = 1 and sy.endYear + 1 = e.endYear) or (sy.active = 1 and sy.endYear - 1 = e.endYear)
+group by e.personID, e.endYear
+) me on me.personID = e.personID and me.endYear = e.endYear and me.mStartDate = e.startDate
+left join Calendar c on c.calendarID = e.calendarID
+and (c.summerSchool = 0 or c.summerSchool is null)
+join SchoolYear sy on (sy.endYear = e.endYear and sy.active = 1) or (sy.active = 1 and sy.endYear + 1 = e.endYear)
+left join CustomStudent cs on cs.personID = p.personID and cs.enrollmentID = e.enrollmentID and cs.attributeID = 470
+where p.studentNumber is not null and e.active = 1
+group by e.personID
+) x
+where x.cCalendarID in (@calendarID)
+) es on es.personID = p.personID
+left join (
+select p.studentNumber as stuNum, hl.addressID, sb.schoolID as schID, ROW_NUMBER() over(PARTITION by p.studentNumber order by sb.schoolID) as bn
+from person p
+left join HouseholdMember hm on hm.personID = p.personID and hm.secondary = 0 and hm.endDate is null
+left join HouseholdLocation hl on hl.householdID = hm.householdID and hl.secondary = 0 and hl.endDate is null
+left join SchoolBoundary sb on sb.addressID = hl.addressID and sb.startDate = '03/08/2018'
+where p.studentNumber is not null
+) hs on hs.stuNum = p.studentNumber
+left join School sc on sc.schoolID = hs.schID
+left join ProgramParticipation pp on pp.personID = p.personID and pp.programID = 53 and (pp.endDate is null or pp.eligibilityEndDate is null)
+left join [Address] ad on ad.addressID = hs.addressID
+where isnull(es.cGrade,'') in (@cGrade) and isnull(es.cAPC,'') in (@CAPC)
+group by p.studentNumber, i.lastName, i.firstName, es.cGrade, es.cEndDate, es.cEndComments, es.cEndCode, es.cAPC, es.cSchool, es.nGrade, es.nSchool, es.nAPC
+) x
+--where isnull(x.[NSchool],'') in (@nextSchool)
+order by x.NSchool, x.CEndDate, x.lastName, x.firstName</CommandText>
         <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
       </Query>
       <Fields>
-        <Field Name="Student_">
-          <DataField>Student#</DataField>
+        <Field Name="studentNumber">
+          <DataField>studentNumber</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="Last">
-          <DataField>Last</DataField>
+        <Field Name="lastName">
+          <DataField>lastName</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="First">
-          <DataField>First</DataField>
+        <Field Name="firstName">
+          <DataField>firstName</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="Line_1">
-          <DataField>Line 1</DataField>
+        <Field Name="CGrade">
+          <DataField>CGrade</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="Line_2">
-          <DataField>Line 2</DataField>
+        <Field Name="I">
+          <DataField>I</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="District">
-          <DataField>District</DataField>
+        <Field Name="CAPC">
+          <DataField>CAPC</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
         <Field Name="Home_Elementary">
@@ -233,279 +137,169 @@ END</CommandText>
           <DataField>Home Jr. High</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
+        <Field Name="Line_1">
+          <DataField>Line 1</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Line_2">
+          <DataField>Line 2</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="CEndDate">
+          <DataField>CEndDate</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="CEndStatus">
+          <DataField>CEndStatus</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="CEndCode">
+          <DataField>CEndCode</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
         <Field Name="CSchool">
           <DataField>CSchool</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="CGrade">
-          <DataField>CGrade</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="RSchool">
-          <DataField>RSchool</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="RGrade">
-          <DataField>RGrade</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
         <Field Name="NSchool">
           <DataField>NSchool</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="IntraType">
-          <DataField>IntraType</DataField>
+        <Field Name="NGrade">
+          <DataField>NGrade</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="ApplicationStatus">
-          <DataField>ApplicationStatus</DataField>
+        <Field Name="NAPC">
+          <DataField>NAPC</DataField>
           <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="ApplicationDate">
-          <DataField>ApplicationDate</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="ProcessedDate">
-          <DataField>ProcessedDate</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="AcceptanceDate">
-          <DataField>AcceptanceDate</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="AcceptanceStatus">
-          <DataField>AcceptanceStatus</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="Comments">
-          <DataField>Comments</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="Choice__">
-          <DataField>Choice #</DataField>
-          <rd:TypeName>System.Byte</rd:TypeName>
         </Field>
       </Fields>
     </DataSet>
-    <DataSet Name="AppYear">
+    <DataSet Name="CurrentSchools">
       <Query>
         <DataSourceName>campus</DataSourceName>
-        <CommandText>select sy.endYear, sy.label
+        <CommandText>select x.calendarID, x.name, sy.endYear
 from SchoolYear sy
-order by sy.endYear desc</CommandText>
+join (select cal.calendarID, cal.name, cal.endYear from Calendar cal join Enrollment e on e.calendarID = cal.calendarID and (cal.summerSchool is null or cal.summerSchool = 0))
+		x on x.endYear = sy.endYear or x.endYear = sy.endYear - 1
+where sy.active = 1
+group by x.calendarID, x.name, sy.endYear</CommandText>
         <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
       </Query>
       <Fields>
+        <Field Name="calendarID">
+          <DataField>calendarID</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="name">
+          <DataField>name</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
         <Field Name="endYear">
           <DataField>endYear</DataField>
           <rd:TypeName>System.Int16</rd:TypeName>
         </Field>
-        <Field Name="label">
-          <DataField>label</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
       </Fields>
     </DataSet>
-    <DataSet Name="cSchoolYear">
-      <Query>
-        <DataSourceName>campus</DataSourceName>
-        <CommandText>SELECT        endYear, label
-FROM            SchoolYear AS sy
-ORDER BY endYear DESC</CommandText>
-        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
-      </Query>
-      <Fields>
-        <Field Name="endYear">
-          <DataField>endYear</DataField>
-          <rd:TypeName>System.Int16</rd:TypeName>
-        </Field>
-        <Field Name="label">
-          <DataField>label</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-      </Fields>
-    </DataSet>
-    <DataSet Name="calName">
+    <DataSet Name="NextSchools">
       <Query>
         <DataSourceName>campus</DataSourceName>
         <QueryParameters>
           <QueryParameter Name="@calendarID">
             <Value>=Parameters!calendarID.Value</Value>
           </QueryParameter>
-          <QueryParameter Name="@AppYear">
-            <Value>=Parameters!AppYear.Value</Value>
-          </QueryParameter>
-          <QueryParameter Name="@cSchoolYear">
-            <Value>=Parameters!cSchoolYear.Value</Value>
-          </QueryParameter>
-          <QueryParameter Name="@nSchoolYear">
-            <Value>=Parameters!nSchoolYear.Value</Value>
-          </QueryParameter>
         </QueryParameters>
-        <CommandText>select x.schoolName, ac.calendarID as appCalendarID, cc.calendarID as cCalendarID, cn.calendarID as nCalendarID
-from (
-select REPLACE(c.name, sy.label + ' ', '') AS schoolName, sy.label
-from Calendar c
-join SchoolYear sy on sy.endYear = c.endYear
-where c.calendarID = @calendarID
-) x
-join SchoolYear sya on sya.endYear = @AppYear
-join Calendar ac on ac.name = (sya.label + ' ' + x.SchoolName) and ac.endYear = @AppYear
-join SchoolYear syc on syc.endYear = @cSchoolYear
-join Calendar cc on cc.name = (syc.label + ' ' + x.SchoolName) and cc.endYear = @cSchoolYear
-join SchoolYear syn on syn.endYear = @nSchoolYear
-join Calendar cn on cn.name = (syn.label + ' ' + x.SchoolName) and cn.endYear = @nSchoolYear</CommandText>
+        <CommandText>select isnull(cal2.calendarID,'') as nSchoolID, isnull(cal2.name,'') as nSchool
+from Person p
+	join [Identity] i on i.personID = p.personID
+		and i.identityID = p.currentIdentityID
+	join Enrollment e on e.personID = p.personID
+		and e.active = 1
+	join Calendar cal on cal.calendarID = e.calendarID
+		and cal.endYear = e.endYear
+		and (cal.summerSchool = 0 or cal.summerSchool is null)
+		and cal.calendarID in (@calendarID)
+	left join Enrollment e2 on e2.personID = p.personID
+		and e2.active = 1
+		and e2.endYear = cal.endYear + 1
+	left join Calendar cal2 on cal2.calendarID = e2.calendarID
+group by cal2.name, cal2.calendarID</CommandText>
         <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
       </Query>
       <Fields>
-        <Field Name="schoolName">
-          <DataField>schoolName</DataField>
+        <Field Name="nSchoolID">
+          <DataField>nSchoolID</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="nSchool">
+          <DataField>nSchool</DataField>
           <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="appCalendarID">
-          <DataField>appCalendarID</DataField>
-          <rd:TypeName>System.Int32</rd:TypeName>
-        </Field>
-        <Field Name="cCalendarID">
-          <DataField>cCalendarID</DataField>
-          <rd:TypeName>System.Int32</rd:TypeName>
-        </Field>
-        <Field Name="nCalendarID">
-          <DataField>nCalendarID</DataField>
-          <rd:TypeName>System.Int32</rd:TypeName>
         </Field>
       </Fields>
     </DataSet>
-    <DataSet Name="ApplicationStatus">
+    <DataSet Name="CurrentGrades">
       <Query>
         <DataSourceName>campus</DataSourceName>
         <QueryParameters>
-          <QueryParameter Name="@choices">
-            <Value>=Parameters!choices.Value</Value>
+          <QueryParameter Name="@calendarID">
+            <Value>=Parameters!calendarID.Value</Value>
           </QueryParameter>
-          <QueryParameter Name="@appCalendarID">
-            <Value>=Parameters!appCalendarID.Value</Value>
-          </QueryParameter>
-          <QueryParameter Name="@cSchoolYear">
-            <Value>=Parameters!cSchoolYear.Value</Value>
-          </QueryParameter>
-          <QueryParameter Name="@checkName">
-            <Value>=Parameters!checkName.Value</Value>
-          </QueryParameter>
-          <QueryParameter Name="@AppYear">
-            <Value>=Parameters!AppYear.Value</Value>
+          <QueryParameter Name="@nextSchool">
+            <Value>=Parameters!nextSchool.Value</Value>
           </QueryParameter>
         </QueryParameters>
-        <CommandText>IF @choices = 'true' 
-BEGIN 
-SELECT isnull(x.ApplicationStatus, '') AS [ApplicationStatus]
-FROM (
-SELECT p.personID, isnull(cd2.name, '') AS [ApplicationStatus]
-FROM Person p
-JOIN [Identity] i ON i.personID = p.personID AND i.identityID = p.currentIdentityID
-JOIN SchoolChoiceApplication sca ON sca.personID = p.personID and sca.calendarID = @appCalendarID
---subquery to get IntraTypes
-left join (
-select sca.personID, sca.applicationID, sca.calendarID, scr.name, ROW_NUMBER() over(PARTITION by sca.personID order by scar.ruleID) as rn
-from SchoolChoiceApplication sca
-left join SchoolChoiceApplicationRule scar on scar.applicationID = sca.applicationID and scar.ruleID between 4 and 17
-left join SchoolChoiceRule scr on scr.ruleID = scar.ruleID
-where sca.calendarID = @appCalendarID
-) ar on ar.personID = sca.personID and ar.applicationID = sca.applicationID
-JOIN Calendar rc ON rc.calendarID = sca.calendarID and rc.calendarID = @appCalendarID
-LEFT JOIN CampusDictionary cd2 ON cd2.code = sca.approvalStatus AND cd2.attributeID = 305
-LEFT JOIN (
-SELECT e.personID, MAX(e.startDate) AS maxStartDate
-FROM Enrollment e
-WHERE e.endYear = @cSchoolYear
-GROUP BY e.personID
-) me ON me.personID = p.personID
-LEFT JOIN Enrollment ec ON ec.personID = me.personID AND ec.startDate = me.maxStartDate AND ec.endYear = @cSchoolYear
-LEFT JOIN Calendar cc ON cc.calendarID = ec.calendarID AND cc.summerSchool = 0 AND cc.endYear = @cSchoolYear
-LEFT JOIN Enrollment en ON en.personID = p.personID AND en.endDate IS NULL AND (en.endYear = (@cSchoolYear + 1))
-LEFT JOIN Calendar cn ON cn.calendarID = en.calendarID AND (cn.endYear = (@cSchoolYear + 1))
-GROUP BY p.personID, cd2.name
-) x
-GROUP BY x.ApplicationStatus
-ORDER BY x.ApplicationStatus
-END
-
-IF @choices = 'false'
-BEGIN
-SELECT isnull(x.ApplicationStatus, '') AS [ApplicationStatus]
-FROM (
-SELECT p.personID, isnull(cd2.name, '') AS [ApplicationStatus]
-FROM Person p
-JOIN [Identity] i ON i.personID = p.personID AND i.identityID = p.currentIdentityID
-JOIN SchoolChoiceApplication sca ON sca.personID = p.personID
---subquery to get IntraTypes
-left join (
-select sca.personID, sca.applicationID, sca.calendarID, scr.name, ROW_NUMBER() over(PARTITION by sca.personID order by scar.ruleID) as rn
-from SchoolChoiceApplication sca
-left join SchoolChoiceApplicationRule scar on scar.applicationID = sca.applicationID and scar.ruleID between 4 and 17
-left join SchoolChoiceRule scr on scr.ruleID = scar.ruleID
-where sca.calendarID = @appCalendarID
-) ar on ar.personID = sca.personID and ar.applicationID = sca.applicationID
-JOIN Calendar rc ON rc.calendarID = sca.calendarID and rc.endYear = @AppYear
-LEFT JOIN CampusDictionary cd2 ON cd2.code = sca.approvalStatus AND cd2.attributeID = 305
-LEFT JOIN (
-SELECT e.personID, MAX(e.startDate) AS maxStartDate
-FROM Enrollment e
-WHERE e.endYear = @cSchoolYear
-GROUP BY e.personID
-) me ON me.personID = p.personID
-LEFT JOIN Enrollment ec ON ec.personID = me.personID AND ec.startDate = me.maxStartDate AND ec.endYear = @cSchoolYear
-LEFT JOIN Calendar cc ON cc.calendarID = ec.calendarID AND cc.summerSchool = 0 AND cc.endYear = @cSchoolYear
-LEFT JOIN Enrollment en ON en.personID = p.personID AND en.endDate IS NULL AND (en.endYear = (@cSchoolYear + 1))
-LEFT JOIN Calendar cn ON cn.calendarID = en.calendarID AND (cn.endYear = (@cSchoolYear + 1))
-WHERE rc.name NOT LIKE '%' + @checkName + '%'
-GROUP BY p.personID, cd2.name
-) x
-GROUP BY x.ApplicationStatus
-ORDER BY x.ApplicationStatus
-END</CommandText>
+        <CommandText>select e2.grade as [cGrade]
+from Person p
+	join Enrollment e on e.personID = p.personID
+		and e.active = 1
+	join Calendar cal on cal.calendarID = e.calendarID
+		and cal.calendarID in (@calendarID)
+	join Enrollment e2 on e2.personID = p.personID
+		and e2.active = 1
+	join Calendar cal2 on cal2.calendarID = e2.calendarID
+		and cal2.calendarID in (@nextSchool)
+group by e2.grade
+order by e2.grade</CommandText>
         <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
       </Query>
       <Fields>
-        <Field Name="ApplicationStatus">
-          <DataField>ApplicationStatus</DataField>
+        <Field Name="cGrade">
+          <DataField>cGrade</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
       </Fields>
     </DataSet>
-    <DataSet Name="nSchoolYear">
+    <DataSet Name="CAPC">
       <Query>
         <DataSourceName>campus</DataSourceName>
-        <CommandText>select sy.endYear, sy.label
-from SchoolYear sy
-order by sy.endYear desc</CommandText>
+        <QueryParameters>
+          <QueryParameter Name="@calendarID">
+            <Value>=Parameters!calendarID.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@nextSchool">
+            <Value>=Parameters!nextSchool.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>select isnull(cs.value,'') as [CAPC]
+	, isnull(cs.value + ': ' + cd.name,'') as [Label]
+from Person p
+	join Enrollment e on e.personID = p.personID and e.active = 1
+	join Calendar cal on cal.calendarID = e.calendarID and cal.calendarID in (@calendarID)
+	join Enrollment e2 on e2.personID = p.personID and e2.active = 1
+	join Calendar cal2 on cal2.calendarID = e2.calendarID and cal2.calendarID in (@nextSchool)
+	left join CustomStudent cs on cs.personID = p.personID and cs.enrollmentID = e.enrollmentID and cs.attributeID = 470
+	left join CampusDictionary cd on cd.attributeID = cs.attributeID and cd.code = cs.value and cd.attributeID = 470
+group by cs.value, cd.name</CommandText>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
       </Query>
       <Fields>
-        <Field Name="endYear">
-          <DataField>endYear</DataField>
-          <rd:TypeName>System.Int16</rd:TypeName>
-        </Field>
-        <Field Name="label">
-          <DataField>label</DataField>
+        <Field Name="CAPC">
+          <DataField>CAPC</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-      </Fields>
-    </DataSet>
-    <DataSet Name="ActiveYear">
-      <Query>
-        <DataSourceName>campus</DataSourceName>
-        <CommandText>select  sy.endYear, sy.endYear + 1 as nYear
-from SchoolYear sy
-where sy.active = 1</CommandText>
-      </Query>
-      <Fields>
-        <Field Name="endYear">
-          <DataField>endYear</DataField>
-          <rd:TypeName>System.Int16</rd:TypeName>
-        </Field>
-        <Field Name="nYear">
-          <DataField>nYear</DataField>
-          <rd:TypeName>System.Int32</rd:TypeName>
+        <Field Name="Label">
+          <DataField>Label</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
         </Field>
       </Fields>
     </DataSet>
@@ -518,61 +312,55 @@ where sy.active = 1</CommandText>
             <TablixBody>
               <TablixColumns>
                 <TablixColumn>
-                  <Width>0.59376in</Width>
+                  <Width>0.69792in</Width>
                 </TablixColumn>
                 <TablixColumn>
-                  <Width>0.83333in</Width>
+                  <Width>1.42708in</Width>
                 </TablixColumn>
                 <TablixColumn>
-                  <Width>0.875in</Width>
+                  <Width>1.29167in</Width>
                 </TablixColumn>
                 <TablixColumn>
-                  <Width>1.3125in</Width>
+                  <Width>0.3125in</Width>
                 </TablixColumn>
                 <TablixColumn>
-                  <Width>0.91667in</Width>
+                  <Width>1.4375in</Width>
                 </TablixColumn>
                 <TablixColumn>
-                  <Width>1.20833in</Width>
+                  <Width>1.73958in</Width>
                 </TablixColumn>
                 <TablixColumn>
-                  <Width>1.48959in</Width>
+                  <Width>0.3125in</Width>
                 </TablixColumn>
                 <TablixColumn>
-                  <Width>1.64583in</Width>
+                  <Width>0.39583in</Width>
                 </TablixColumn>
                 <TablixColumn>
-                  <Width>1.14583in</Width>
+                  <Width>0.55208in</Width>
                 </TablixColumn>
                 <TablixColumn>
-                  <Width>0.40625in</Width>
+                  <Width>1.75in</Width>
                 </TablixColumn>
                 <TablixColumn>
-                  <Width>1.19792in</Width>
+                  <Width>1.88542in</Width>
                 </TablixColumn>
                 <TablixColumn>
-                  <Width>0.375in</Width>
+                  <Width>0.5625in</Width>
                 </TablixColumn>
                 <TablixColumn>
-                  <Width>1.11458in</Width>
+                  <Width>0.42708in</Width>
                 </TablixColumn>
                 <TablixColumn>
-                  <Width>1.35417in</Width>
-                </TablixColumn>
-                <TablixColumn>
-                  <Width>1in</Width>
-                </TablixColumn>
-                <TablixColumn>
-                  <Width>0.44792in</Width>
+                  <Width>2.51042in</Width>
                 </TablixColumn>
               </TablixColumns>
               <TablixRows>
                 <TablixRow>
-                  <Height>0.16667in</Height>
+                  <Height>0.25in</Height>
                   <TablixCells>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="Textbox26">
+                        <Textbox Name="Textbox10">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
@@ -580,15 +368,13 @@ where sy.active = 1</CommandText>
                               <TextRuns>
                                 <TextRun>
                                   <Value>="Total Records: " &amp; CountRows("AllStudents")</Value>
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
+                                  <Style />
                                 </TextRun>
                               </TextRuns>
                               <Style />
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>Textbox26</rd:DefaultName>
+                          <rd:DefaultName>Textbox10</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -601,7 +387,7 @@ where sy.active = 1</CommandText>
                             <PaddingBottom>2pt</PaddingBottom>
                           </Style>
                         </Textbox>
-                        <ColSpan>15</ColSpan>
+                        <ColSpan>14</ColSpan>
                       </CellContents>
                     </TablixCell>
                     <TablixCell />
@@ -617,51 +403,17 @@ where sy.active = 1</CommandText>
                     <TablixCell />
                     <TablixCell />
                     <TablixCell />
-                    <TablixCell />
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Textbox7">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value />
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style />
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>Textbox7</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <BackgroundColor>White</BackgroundColor>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
                   </TablixCells>
                 </TablixRow>
                 <TablixRow>
-                  <Height>0.16667in</Height>
+                  <Height>0.25in</Height>
                   <TablixCells>
                     <TablixCell>
                       <CellContents>
                         <Textbox Name="Hide1">
                           <CanGrow>true</CanGrow>
                           <UserSort>
-                            <SortExpression>=Fields!Student_.Value</SortExpression>
+                            <SortExpression>=Fields!studentNumber.Value</SortExpression>
                           </UserSort>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
@@ -669,9 +421,7 @@ where sy.active = 1</CommandText>
                               <TextRuns>
                                 <TextRun>
                                   <Value />
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
+                                  <Style />
                                 </TextRun>
                               </TextRuns>
                               <Style />
@@ -696,7 +446,7 @@ where sy.active = 1</CommandText>
                         <Textbox Name="Hide2">
                           <CanGrow>true</CanGrow>
                           <UserSort>
-                            <SortExpression>=Fields!Last.Value</SortExpression>
+                            <SortExpression>=Fields!lastName.Value</SortExpression>
                           </UserSort>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
@@ -704,9 +454,7 @@ where sy.active = 1</CommandText>
                               <TextRuns>
                                 <TextRun>
                                   <Value />
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
+                                  <Style />
                                 </TextRun>
                               </TextRuns>
                               <Style />
@@ -731,7 +479,7 @@ where sy.active = 1</CommandText>
                         <Textbox Name="Hide3">
                           <CanGrow>true</CanGrow>
                           <UserSort>
-                            <SortExpression>=Fields!First.Value</SortExpression>
+                            <SortExpression>=Fields!firstName.Value</SortExpression>
                           </UserSort>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
@@ -739,9 +487,7 @@ where sy.active = 1</CommandText>
                               <TextRuns>
                                 <TextRun>
                                   <Value />
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
+                                  <Style />
                                 </TextRun>
                               </TextRuns>
                               <Style />
@@ -765,15 +511,16 @@ where sy.active = 1</CommandText>
                       <CellContents>
                         <Textbox Name="Hide4">
                           <CanGrow>true</CanGrow>
+                          <UserSort>
+                            <SortExpression>=Fields!I.Value</SortExpression>
+                          </UserSort>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
                                   <Value />
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
+                                  <Style />
                                 </TextRun>
                               </TextRuns>
                               <Style />
@@ -798,7 +545,7 @@ where sy.active = 1</CommandText>
                         <Textbox Name="Hide5">
                           <CanGrow>true</CanGrow>
                           <UserSort>
-                            <SortExpression>=Fields!Line_2.Value</SortExpression>
+                            <SortExpression>=Fields!Home_Elementary.Value</SortExpression>
                           </UserSort>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
@@ -806,9 +553,7 @@ where sy.active = 1</CommandText>
                               <TextRuns>
                                 <TextRun>
                                   <Value />
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
+                                  <Style />
                                 </TextRun>
                               </TextRuns>
                               <Style />
@@ -833,7 +578,7 @@ where sy.active = 1</CommandText>
                         <Textbox Name="Hide6">
                           <CanGrow>true</CanGrow>
                           <UserSort>
-                            <SortExpression>=Fields!District.Value</SortExpression>
+                            <SortExpression>=Fields!Home_Jr__High.Value</SortExpression>
                           </UserSort>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
@@ -841,9 +586,7 @@ where sy.active = 1</CommandText>
                               <TextRuns>
                                 <TextRun>
                                   <Value />
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
+                                  <Style />
                                 </TextRun>
                               </TextRuns>
                               <Style />
@@ -865,10 +608,41 @@ where sy.active = 1</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
+                        <Textbox Name="Textbox2">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value />
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox2</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>White</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
                         <Textbox Name="Hide7">
                           <CanGrow>true</CanGrow>
                           <UserSort>
-                            <SortExpression>=Fields!District.Value</SortExpression>
+                            <SortExpression>=Fields!CAPC.Value</SortExpression>
                           </UserSort>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
@@ -876,9 +650,7 @@ where sy.active = 1</CommandText>
                               <TextRuns>
                                 <TextRun>
                                   <Value />
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
+                                  <Style />
                                 </TextRun>
                               </TextRuns>
                               <Style />
@@ -903,7 +675,7 @@ where sy.active = 1</CommandText>
                         <Textbox Name="Hide8">
                           <CanGrow>true</CanGrow>
                           <UserSort>
-                            <SortExpression>=Fields!Home_Jr__High.Value</SortExpression>
+                            <SortExpression>=Fields!CGrade.Value</SortExpression>
                           </UserSort>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
@@ -911,9 +683,7 @@ where sy.active = 1</CommandText>
                               <TextRuns>
                                 <TextRun>
                                   <Value />
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
+                                  <Style />
                                 </TextRun>
                               </TextRuns>
                               <Style />
@@ -946,9 +716,7 @@ where sy.active = 1</CommandText>
                               <TextRuns>
                                 <TextRun>
                                   <Value />
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
+                                  <Style />
                                 </TextRun>
                               </TextRuns>
                               <Style />
@@ -973,7 +741,7 @@ where sy.active = 1</CommandText>
                         <Textbox Name="Hide10">
                           <CanGrow>true</CanGrow>
                           <UserSort>
-                            <SortExpression>=Fields!CGrade.Value</SortExpression>
+                            <SortExpression>=Fields!NSchool.Value</SortExpression>
                           </UserSort>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
@@ -981,9 +749,7 @@ where sy.active = 1</CommandText>
                               <TextRuns>
                                 <TextRun>
                                   <Value />
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
+                                  <Style />
                                 </TextRun>
                               </TextRuns>
                               <Style />
@@ -1008,7 +774,7 @@ where sy.active = 1</CommandText>
                         <Textbox Name="Hide11">
                           <CanGrow>true</CanGrow>
                           <UserSort>
-                            <SortExpression>=Fields!RSchool.Value</SortExpression>
+                            <SortExpression>=Fields!NGrade.Value</SortExpression>
                           </UserSort>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
@@ -1016,9 +782,7 @@ where sy.active = 1</CommandText>
                               <TextRuns>
                                 <TextRun>
                                   <Value />
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
+                                  <Style />
                                 </TextRun>
                               </TextRuns>
                               <Style />
@@ -1043,7 +807,7 @@ where sy.active = 1</CommandText>
                         <Textbox Name="Hide12">
                           <CanGrow>true</CanGrow>
                           <UserSort>
-                            <SortExpression>=Fields!RGrade.Value</SortExpression>
+                            <SortExpression>=Fields!NAPC.Value</SortExpression>
                           </UserSort>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
@@ -1051,9 +815,7 @@ where sy.active = 1</CommandText>
                               <TextRuns>
                                 <TextRun>
                                   <Value />
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
+                                  <Style />
                                 </TextRun>
                               </TextRuns>
                               <Style />
@@ -1078,7 +840,7 @@ where sy.active = 1</CommandText>
                         <Textbox Name="Hide13">
                           <CanGrow>true</CanGrow>
                           <UserSort>
-                            <SortExpression>=Fields!NSchool.Value</SortExpression>
+                            <SortExpression>=Fields!CEndStatus.Value</SortExpression>
                           </UserSort>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
@@ -1086,114 +848,7 @@ where sy.active = 1</CommandText>
                               <TextRuns>
                                 <TextRun>
                                   <Value />
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style />
-                            </Paragraph>
-                          </Paragraphs>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <BackgroundColor>White</BackgroundColor>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Hide14">
-                          <CanGrow>true</CanGrow>
-                          <UserSort>
-                            <SortExpression>=Fields!IntraType.Value</SortExpression>
-                          </UserSort>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value />
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style />
-                            </Paragraph>
-                          </Paragraphs>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <BackgroundColor>White</BackgroundColor>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Hide15">
-                          <CanGrow>true</CanGrow>
-                          <UserSort>
-                            <SortExpression>=Fields!ApplicationStatus.Value</SortExpression>
-                          </UserSort>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value />
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style />
-                            </Paragraph>
-                          </Paragraphs>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <BackgroundColor>White</BackgroundColor>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Hide16">
-                          <CanGrow>true</CanGrow>
-                          <UserSort>
-                            <SortExpression>=Fields!Choice__.Value</SortExpression>
-                          </UserSort>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value />
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
+                                  <Style />
                                 </TextRun>
                               </TextRuns>
                               <Style />
@@ -1216,27 +871,25 @@ where sy.active = 1</CommandText>
                   </TablixCells>
                 </TablixRow>
                 <TablixRow>
-                  <Height>0.16667in</Height>
+                  <Height>0.25in</Height>
                   <TablixCells>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="Textbox28">
+                        <Textbox Name="Textbox1">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>Student  #</Value>
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
+                                  <Value>Student #</Value>
+                                  <Style />
                                 </TextRun>
                               </TextRuns>
                               <Style />
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>Textbox28</rd:DefaultName>
+                          <rd:DefaultName>Textbox1</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -1253,287 +906,21 @@ where sy.active = 1</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="Textbox14">
+                        <Textbox Name="Textbox3">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>Last</Value>
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
+                                  <Value>Last Name</Value>
+                                  <Style />
                                 </TextRun>
                               </TextRuns>
                               <Style />
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>Textbox14</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <BackgroundColor>White</BackgroundColor>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Textbox18">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value>First</Value>
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style />
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>Textbox18</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <BackgroundColor>White</BackgroundColor>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Textbox22">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value>Line 1</Value>
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style />
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>Textbox22</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <BackgroundColor>White</BackgroundColor>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Textbox32">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value>Line 2</Value>
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style />
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>Textbox32</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <BackgroundColor>White</BackgroundColor>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Textbox6">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value>District</Value>
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style />
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>Textbox6</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <BackgroundColor>White</BackgroundColor>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Textbox36">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value>Home Elementary</Value>
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style />
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>Textbox36</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <BackgroundColor>White</BackgroundColor>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Textbox40">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value>Home Jr High</Value>
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style />
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>Textbox40</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <BackgroundColor>White</BackgroundColor>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Textbox44">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value>CSchool</Value>
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style />
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>Textbox44</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <BackgroundColor>White</BackgroundColor>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Textbox48">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value>CGrade</Value>
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style />
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>Textbox48</rd:DefaultName>
+                          <rd:DefaultName>Textbox3</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -1557,10 +944,8 @@ where sy.active = 1</CommandText>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>RSchool</Value>
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
+                                  <Value>First Name</Value>
+                                  <Style />
                                 </TextRun>
                               </TextRuns>
                               <Style />
@@ -1583,23 +968,21 @@ where sy.active = 1</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="Textbox102">
+                        <Textbox Name="Textbox15">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>RGrade</Value>
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
+                                  <Value>I</Value>
+                                  <Style />
                                 </TextRun>
                               </TextRuns>
                               <Style />
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>Textbox102</rd:DefaultName>
+                          <rd:DefaultName>Textbox15</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -1616,7 +999,193 @@ where sy.active = 1</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="Textbox10">
+                        <Textbox Name="Textbox19">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Home Elementary</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox19</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>White</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox23">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Home Jr High</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox23</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>White</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox4">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>I</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox4</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>White</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox27">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>CAPC</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox27</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>White</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox31">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>CGrade</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox31</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>White</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox35">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>CSchool</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox35</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>White</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox39">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
@@ -1624,15 +1193,13 @@ where sy.active = 1</CommandText>
                               <TextRuns>
                                 <TextRun>
                                   <Value>NSchool</Value>
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
+                                  <Style />
                                 </TextRun>
                               </TextRuns>
                               <Style />
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>Textbox10</rd:DefaultName>
+                          <rd:DefaultName>Textbox39</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -1649,23 +1216,21 @@ where sy.active = 1</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="Textbox13">
+                        <Textbox Name="Textbox43">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>Intra Type</Value>
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
+                                  <Value>NGrade</Value>
+                                  <Style />
                                 </TextRun>
                               </TextRuns>
                               <Style />
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>Textbox13</rd:DefaultName>
+                          <rd:DefaultName>Textbox43</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -1682,23 +1247,21 @@ where sy.active = 1</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="Textbox17">
+                        <Textbox Name="Textbox47">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>Application Status</Value>
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
+                                  <Value>NAPC</Value>
+                                  <Style />
                                 </TextRun>
                               </TextRuns>
                               <Style />
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>Textbox17</rd:DefaultName>
+                          <rd:DefaultName>Textbox47</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -1715,23 +1278,21 @@ where sy.active = 1</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="Textbox9">
+                        <Textbox Name="Textbox51">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>Choice #</Value>
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
+                                  <Value>CEnd Status</Value>
+                                  <Style />
                                 </TextRun>
                               </TextRuns>
                               <Style />
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>Textbox9</rd:DefaultName>
+                          <rd:DefaultName>Textbox51</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -1749,27 +1310,27 @@ where sy.active = 1</CommandText>
                   </TablixCells>
                 </TablixRow>
                 <TablixRow>
-                  <Height>0.16667in</Height>
+                  <Height>0.25in</Height>
                   <TablixCells>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="Student_">
+                        <Textbox Name="studentNumber">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!Student_.Value</Value>
+                                  <Value>=Fields!studentNumber.Value</Value>
                                   <Style>
-                                    <FontSize>6pt</FontSize>
+                                    <Color>=IIF(Fields!CEndCode.Value = "E155" OR Fields!CEndCode.Value = "480" OR Fields!CEndCode.Value = "","Black","Red")</Color>
                                   </Style>
                                 </TextRun>
                               </TextRuns>
                               <Style />
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>Student_</rd:DefaultName>
+                          <rd:DefaultName>studentNumber</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -1785,23 +1346,23 @@ where sy.active = 1</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="Last">
+                        <Textbox Name="lastName">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!Last.Value</Value>
+                                  <Value>=Fields!lastName.Value</Value>
                                   <Style>
-                                    <FontSize>6pt</FontSize>
+                                    <Color>=IIF(Fields!CEndCode.Value = "E155" OR Fields!CEndCode.Value = "480" OR Fields!CEndCode.Value = "","Black","Red")</Color>
                                   </Style>
                                 </TextRun>
                               </TextRuns>
                               <Style />
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>Last</rd:DefaultName>
+                          <rd:DefaultName>lastName</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -1817,23 +1378,23 @@ where sy.active = 1</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="First">
+                        <Textbox Name="firstName">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!First.Value</Value>
+                                  <Value>=Fields!firstName.Value</Value>
                                   <Style>
-                                    <FontSize>6pt</FontSize>
+                                    <Color>=IIF(Fields!CEndCode.Value = "E155" OR Fields!CEndCode.Value = "480" OR Fields!CEndCode.Value = "","Black","Red")</Color>
                                   </Style>
                                 </TextRun>
                               </TextRuns>
                               <Style />
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>First</rd:DefaultName>
+                          <rd:DefaultName>firstName</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -1849,87 +1410,23 @@ where sy.active = 1</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="Line_1">
+                        <Textbox Name="I">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!Line_1.Value</Value>
+                                  <Value>=Fields!I.Value</Value>
                                   <Style>
-                                    <FontSize>6pt</FontSize>
+                                    <Color>=IIF(Fields!CEndCode.Value = "E155" OR Fields!CEndCode.Value = "480" OR Fields!CEndCode.Value = "","Black","Red")</Color>
                                   </Style>
                                 </TextRun>
                               </TextRuns>
                               <Style />
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>Line_1</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Line_2">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value>=Fields!Line_2.Value</Value>
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style />
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>Line_2</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="District">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value>=Fields!District.Value</Value>
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style />
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>District</rd:DefaultName>
+                          <rd:DefaultName>I</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -1954,7 +1451,7 @@ where sy.active = 1</CommandText>
                                 <TextRun>
                                   <Value>=Fields!Home_Elementary.Value</Value>
                                   <Style>
-                                    <FontSize>6pt</FontSize>
+                                    <Color>=IIF(Fields!CEndCode.Value = "E155" OR Fields!CEndCode.Value = "480" OR Fields!CEndCode.Value = "","Black","Red")</Color>
                                   </Style>
                                 </TextRun>
                               </TextRuns>
@@ -1967,7 +1464,7 @@ where sy.active = 1</CommandText>
                               <Color>LightGrey</Color>
                               <Style>Solid</Style>
                             </Border>
-                            <BackgroundColor>=IIF((Fields!IntraType.Value &lt;&gt; "8: Out Of District" AND Fields!IntraType.Value &lt;&gt; "8: Out Of District, AdVENTURE") AND Fields!Home_Elementary.Value = "", "Orange", "White")</BackgroundColor>
+                            <BackgroundColor>=IIF((Fields!CAPC.Value &lt;&gt; "8" AND Fields!CAPC.Value &lt;&gt; "6") AND Fields!Home_Elementary.Value = "", "Orange", "White")</BackgroundColor>
                             <PaddingLeft>2pt</PaddingLeft>
                             <PaddingRight>2pt</PaddingRight>
                             <PaddingTop>2pt</PaddingTop>
@@ -1987,7 +1484,7 @@ where sy.active = 1</CommandText>
                                 <TextRun>
                                   <Value>=Fields!Home_Jr__High.Value</Value>
                                   <Style>
-                                    <FontSize>6pt</FontSize>
+                                    <Color>=IIF(Fields!CEndCode.Value = "E155" OR Fields!CEndCode.Value = "480" OR Fields!CEndCode.Value = "","Black","Red")</Color>
                                   </Style>
                                 </TextRun>
                               </TextRuns>
@@ -2000,7 +1497,7 @@ where sy.active = 1</CommandText>
                               <Color>LightGrey</Color>
                               <Style>Solid</Style>
                             </Border>
-                            <BackgroundColor>=IIF((Fields!IntraType.Value &lt;&gt; "8: Out Of District" AND Fields!IntraType.Value &lt;&gt; "8: Out Of District, AdVENTURE") AND Fields!Home_Jr__High.Value = "", "Orange", "White")</BackgroundColor>
+                            <BackgroundColor>=IIF(Fields!CAPC.Value &lt;&gt; "8" AND Fields!CAPC.Value &lt;&gt; "6" AND Fields!Home_Jr__High.Value = "", "Orange", "White")</BackgroundColor>
                             <PaddingLeft>2pt</PaddingLeft>
                             <PaddingRight>2pt</PaddingRight>
                             <PaddingTop>2pt</PaddingTop>
@@ -2011,23 +1508,56 @@ where sy.active = 1</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="CSchool">
+                        <Textbox Name="I1">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!CSchool.Value</Value>
+                                  <Value>=Fields!I.Value</Value>
                                   <Style>
-                                    <FontSize>6pt</FontSize>
+                                    <Color>=IIF(Fields!CEndCode.Value = "E155" OR Fields!CEndCode.Value = "480" OR Fields!CEndCode.Value = "","Black","Red")</Color>
                                   </Style>
                                 </TextRun>
                               </TextRuns>
                               <Style />
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>CSchool</rd:DefaultName>
+                          <rd:DefaultName>I1</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>=IIF(Fields!CAPC.Value &lt;&gt; "8" AND Fields!CAPC.Value &lt;&gt; "6" AND Fields!Home_Jr__High.Value = "", "Orange", "White")</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="CAPC">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!CAPC.Value</Value>
+                                  <Style>
+                                    <Color>=IIF(Fields!CEndCode.Value = "E155" OR Fields!CEndCode.Value = "480" OR Fields!CEndCode.Value = "","Black","Red")</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>CAPC</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -2052,7 +1582,7 @@ where sy.active = 1</CommandText>
                                 <TextRun>
                                   <Value>=Fields!CGrade.Value</Value>
                                   <Style>
-                                    <FontSize>6pt</FontSize>
+                                    <Color>=IIF(Fields!CEndCode.Value = "E155" OR Fields!CEndCode.Value = "480" OR Fields!CEndCode.Value = "","Black","Red")</Color>
                                   </Style>
                                 </TextRun>
                               </TextRuns>
@@ -2075,55 +1605,23 @@ where sy.active = 1</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="RSchool">
+                        <Textbox Name="CSchool">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!RSchool.Value</Value>
+                                  <Value>=Fields!CSchool.Value</Value>
                                   <Style>
-                                    <FontSize>6pt</FontSize>
+                                    <Color>=IIF(Fields!CEndCode.Value = "E155" OR Fields!CEndCode.Value = "480" OR Fields!CEndCode.Value = "","Black","Red")</Color>
                                   </Style>
                                 </TextRun>
                               </TextRuns>
                               <Style />
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>RSchool</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="RGrade">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value>=Fields!RGrade.Value</Value>
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style />
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>RGrade</rd:DefaultName>
+                          <rd:DefaultName>CSchool</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -2148,7 +1646,7 @@ where sy.active = 1</CommandText>
                                 <TextRun>
                                   <Value>=Fields!NSchool.Value</Value>
                                   <Style>
-                                    <FontSize>6pt</FontSize>
+                                    <Color>=IIF(Fields!CEndCode.Value = "E155" OR Fields!CEndCode.Value = "480" OR Fields!CEndCode.Value = "","Black","Red")</Color>
                                   </Style>
                                 </TextRun>
                               </TextRuns>
@@ -2161,7 +1659,7 @@ where sy.active = 1</CommandText>
                               <Color>LightGrey</Color>
                               <Style>Solid</Style>
                             </Border>
-                            <BackgroundColor>=IIF(Fields!ApplicationStatus.Value = "Approved", IIF(Fields!RSchool.Value &lt;&gt; Fields!NSchool.Value, "Orange", "White"), "White")</BackgroundColor>
+                            <BackgroundColor>=IIF(Fields!NSchool.Value = "","Orange","White")</BackgroundColor>
                             <PaddingLeft>2pt</PaddingLeft>
                             <PaddingRight>2pt</PaddingRight>
                             <PaddingTop>2pt</PaddingTop>
@@ -2172,23 +1670,23 @@ where sy.active = 1</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="IntraType">
+                        <Textbox Name="NGrade">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!IntraType.Value</Value>
+                                  <Value>=Fields!NGrade.Value</Value>
                                   <Style>
-                                    <FontSize>6pt</FontSize>
+                                    <Color>=IIF(Fields!CEndCode.Value = "E155" OR Fields!CEndCode.Value = "480" OR Fields!CEndCode.Value = "","Black","Red")</Color>
                                   </Style>
                                 </TextRun>
                               </TextRuns>
                               <Style />
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>IntraType</rd:DefaultName>
+                          <rd:DefaultName>NGrade</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -2204,23 +1702,23 @@ where sy.active = 1</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="ApplicationStatus">
+                        <Textbox Name="NAPC">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!ApplicationStatus.Value</Value>
+                                  <Value>=Fields!NAPC.Value</Value>
                                   <Style>
-                                    <FontSize>6pt</FontSize>
+                                    <Color>=IIF(Fields!CEndCode.Value = "E155" OR Fields!CEndCode.Value = "480" OR Fields!CEndCode.Value = "","Black","Red")</Color>
                                   </Style>
                                 </TextRun>
                               </TextRuns>
                               <Style />
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>ApplicationStatus</rd:DefaultName>
+                          <rd:DefaultName>NAPC</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -2236,23 +1734,23 @@ where sy.active = 1</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="Choice__">
+                        <Textbox Name="CEndStatus">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!Choice__.Value</Value>
+                                  <Value>=Fields!CEndStatus.Value</Value>
                                   <Style>
-                                    <FontSize>6pt</FontSize>
+                                    <Color>=IIF(Fields!CEndCode.Value = "E155" OR Fields!CEndCode.Value = "480" OR Fields!CEndCode.Value = "","Black","Red")</Color>
                                   </Style>
                                 </TextRun>
                               </TextRuns>
                               <Style />
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>Choice__</rd:DefaultName>
+                          <rd:DefaultName>CEndStatus</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -2302,6 +1800,7 @@ where sy.active = 1</CommandText>
                     <ToggleItem>Hide6</ToggleItem>
                   </Visibility>
                 </TablixMember>
+                <TablixMember />
                 <TablixMember>
                   <Visibility>
                     <ToggleItem>Hide7</ToggleItem>
@@ -2337,21 +1836,6 @@ where sy.active = 1</CommandText>
                     <ToggleItem>Hide13</ToggleItem>
                   </Visibility>
                 </TablixMember>
-                <TablixMember>
-                  <Visibility>
-                    <ToggleItem>Hide14</ToggleItem>
-                  </Visibility>
-                </TablixMember>
-                <TablixMember>
-                  <Visibility>
-                    <ToggleItem>Hide15</ToggleItem>
-                  </Visibility>
-                </TablixMember>
-                <TablixMember>
-                  <Visibility>
-                    <ToggleItem>Hide16</ToggleItem>
-                  </Visibility>
-                </TablixMember>
               </TablixMembers>
             </TablixColumnHierarchy>
             <TablixRowHierarchy>
@@ -2377,8 +1861,31 @@ where sy.active = 1</CommandText>
               </TablixMembers>
             </TablixRowHierarchy>
             <DataSetName>AllStudents</DataSetName>
-            <Height>0.66668in</Height>
-            <Width>15.91668in</Width>
+            <SortExpressions>
+              <SortExpression>
+                <Value>=Fields!NSchool.Value</Value>
+              </SortExpression>
+              <SortExpression>
+                <Value>=Fields!CSchool.Value</Value>
+              </SortExpression>
+              <SortExpression>
+                <Value>=Fields!CEndCode.Value</Value>
+              </SortExpression>
+              <SortExpression>
+                <Value>=Fields!CAPC.Value</Value>
+              </SortExpression>
+              <SortExpression>
+                <Value>=Fields!CGrade.Value</Value>
+              </SortExpression>
+              <SortExpression>
+                <Value>=Fields!lastName.Value</Value>
+              </SortExpression>
+              <SortExpression>
+                <Value>=Fields!firstName.Value</Value>
+              </SortExpression>
+            </SortExpressions>
+            <Height>1in</Height>
+            <Width>15.30208in</Width>
             <Style>
               <Border>
                 <Style>None</Style>
@@ -2386,10 +1893,10 @@ where sy.active = 1</CommandText>
             </Style>
           </Tablix>
         </ReportItems>
-        <Height>2in</Height>
+        <Height>1.22917in</Height>
         <Style />
       </Body>
-      <Width>20.28127in</Width>
+      <Width>15.98958in</Width>
       <Page>
         <LeftMargin>1in</LeftMargin>
         <RightMargin>1in</RightMargin>
@@ -2418,7 +1925,6 @@ where sy.active = 1</CommandText>
           <Value>1</Value>
         </Values>
       </DefaultValue>
-      <AllowBlank>true</AllowBlank>
       <Prompt>personID</Prompt>
       <Hidden>true</Hidden>
     </ReportParameter>
@@ -2439,22 +1945,25 @@ where sy.active = 1</CommandText>
           <Value>A</Value>
         </Values>
       </DefaultValue>
-      <AllowBlank>true</AllowBlank>
       <Prompt>username</Prompt>
       <Hidden>true</Hidden>
     </ReportParameter>
     <ReportParameter Name="calendarID">
       <DataType>String</DataType>
-      <DefaultValue>
-        <Values>
-          <Value>554</Value>
-        </Values>
-      </DefaultValue>
-      <Prompt>calendarID</Prompt>
-      <Hidden>true</Hidden>
+      <AllowBlank>true</AllowBlank>
+      <Prompt>Current School: </Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>CurrentSchools</DataSetName>
+          <ValueField>calendarID</ValueField>
+          <LabelField>name</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
     </ReportParameter>
     <ReportParameter Name="sectionID">
       <DataType>String</DataType>
+      <Nullable>true</Nullable>
       <DefaultValue>
         <Values>
           <Value>1</Value>
@@ -2471,7 +1980,6 @@ where sy.active = 1</CommandText>
           <Value>1</Value>
         </Values>
       </DefaultValue>
-      <AllowBlank>true</AllowBlank>
       <Prompt>contextID</Prompt>
       <Hidden>true</Hidden>
     </ReportParameter>
@@ -2479,158 +1987,86 @@ where sy.active = 1</CommandText>
       <DataType>String</DataType>
       <DefaultValue>
         <Values>
-          <Value>A</Value>
+          <Value>1</Value>
         </Values>
       </DefaultValue>
       <AllowBlank>true</AllowBlank>
       <Prompt>contextIDType</Prompt>
       <Hidden>true</Hidden>
     </ReportParameter>
-    <ReportParameter Name="AppYear">
+    <ReportParameter Name="endYear">
       <DataType>String</DataType>
       <DefaultValue>
         <DataSetReference>
-          <DataSetName>ActiveYear</DataSetName>
-          <ValueField>nYear</ValueField>
-        </DataSetReference>
-      </DefaultValue>
-      <Prompt>Application Year: </Prompt>
-      <ValidValues>
-        <DataSetReference>
-          <DataSetName>AppYear</DataSetName>
-          <ValueField>endYear</ValueField>
-          <LabelField>label</LabelField>
-        </DataSetReference>
-      </ValidValues>
-    </ReportParameter>
-    <ReportParameter Name="cSchoolYear">
-      <DataType>String</DataType>
-      <DefaultValue>
-        <DataSetReference>
-          <DataSetName>ActiveYear</DataSetName>
+          <DataSetName>CurrentSchools</DataSetName>
           <ValueField>endYear</ValueField>
         </DataSetReference>
       </DefaultValue>
-      <AllowBlank>true</AllowBlank>
-      <Prompt>Current School Year:</Prompt>
-      <ValidValues>
-        <DataSetReference>
-          <DataSetName>cSchoolYear</DataSetName>
-          <ValueField>endYear</ValueField>
-          <LabelField>label</LabelField>
-        </DataSetReference>
-      </ValidValues>
-    </ReportParameter>
-    <ReportParameter Name="nSchoolYear">
-      <DataType>String</DataType>
-      <DefaultValue>
-        <DataSetReference>
-          <DataSetName>ActiveYear</DataSetName>
-          <ValueField>nYear</ValueField>
-        </DataSetReference>
-      </DefaultValue>
-      <AllowBlank>true</AllowBlank>
-      <Prompt>(Next) School Year</Prompt>
-      <ValidValues>
-        <DataSetReference>
-          <DataSetName>nSchoolYear</DataSetName>
-          <ValueField>endYear</ValueField>
-          <LabelField>label</LabelField>
-        </DataSetReference>
-      </ValidValues>
-    </ReportParameter>
-    <ReportParameter Name="appCalendarID">
-      <DataType>String</DataType>
-      <DefaultValue>
-        <DataSetReference>
-          <DataSetName>calName</DataSetName>
-          <ValueField>appCalendarID</ValueField>
-        </DataSetReference>
-      </DefaultValue>
-      <Prompt>appCalendarID</Prompt>
+      <Prompt>endYear</Prompt>
       <Hidden>true</Hidden>
     </ReportParameter>
-    <ReportParameter Name="cCalendarID">
+    <ReportParameter Name="nextSchool">
       <DataType>String</DataType>
       <DefaultValue>
         <DataSetReference>
-          <DataSetName>calName</DataSetName>
-          <ValueField>cCalendarID</ValueField>
+          <DataSetName>NextSchools</DataSetName>
+          <ValueField>nSchool</ValueField>
         </DataSetReference>
       </DefaultValue>
       <AllowBlank>true</AllowBlank>
-      <Prompt>cCalendarID</Prompt>
-      <Hidden>true</Hidden>
-    </ReportParameter>
-    <ReportParameter Name="choices">
-      <DataType>Boolean</DataType>
-      <DefaultValue>
-        <Values>
-          <Value>=true</Value>
-        </Values>
-      </DefaultValue>
-      <Prompt>Select:</Prompt>
-      <ValidValues>
-        <ParameterValues>
-          <ParameterValue>
-            <Value>true</Value>
-            <Label>Students Requesting Your School</Label>
-          </ParameterValue>
-          <ParameterValue>
-            <Value>false</Value>
-            <Label>Students Requesting To Leave Your School</Label>
-          </ParameterValue>
-        </ParameterValues>
-      </ValidValues>
-      <UsedInQuery>True</UsedInQuery>
-    </ReportParameter>
-    <ReportParameter Name="nCalendarID">
-      <DataType>String</DataType>
-      <DefaultValue>
-        <DataSetReference>
-          <DataSetName>calName</DataSetName>
-          <ValueField>nCalendarID</ValueField>
-        </DataSetReference>
-      </DefaultValue>
-      <Prompt>nCalendarID</Prompt>
-      <Hidden>true</Hidden>
-    </ReportParameter>
-    <ReportParameter Name="checkName">
-      <DataType>String</DataType>
-      <DefaultValue>
-        <DataSetReference>
-          <DataSetName>calName</DataSetName>
-          <ValueField>schoolName</ValueField>
-        </DataSetReference>
-      </DefaultValue>
-      <AllowBlank>true</AllowBlank>
-      <Prompt>checkName</Prompt>
-      <Hidden>true</Hidden>
-    </ReportParameter>
-    <ReportParameter Name="ApplicationStatus">
-      <DataType>String</DataType>
-      <DefaultValue>
-        <Values>
-          <Value>="Approved"</Value>
-        </Values>
-      </DefaultValue>
-      <AllowBlank>true</AllowBlank>
-      <Prompt>Application Status: </Prompt>
+      <Prompt>Next School:</Prompt>
       <ValidValues>
         <DataSetReference>
-          <DataSetName>ApplicationStatus</DataSetName>
-          <ValueField>ApplicationStatus</ValueField>
-          <LabelField>ApplicationStatus</LabelField>
+          <DataSetName>NextSchools</DataSetName>
+          <ValueField>nSchoolID</ValueField>
+          <LabelField>nSchool</LabelField>
         </DataSetReference>
       </ValidValues>
       <MultiValue>true</MultiValue>
-      <UsedInQuery>True</UsedInQuery>
+    </ReportParameter>
+    <ReportParameter Name="cGrade">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>CurrentGrades</DataSetName>
+          <ValueField>cGrade</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <AllowBlank>true</AllowBlank>
+      <Prompt>Current Grade: </Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>CurrentGrades</DataSetName>
+          <ValueField>cGrade</ValueField>
+          <LabelField>cGrade</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+    </ReportParameter>
+    <ReportParameter Name="CAPC">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>CAPC</DataSetName>
+          <ValueField>CAPC</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <AllowBlank>true</AllowBlank>
+      <Prompt>Attendance Permit Code: </Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>CAPC</DataSetName>
+          <ValueField>CAPC</ValueField>
+          <LabelField>Label</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
     </ReportParameter>
   </ReportParameters>
   <ReportParametersLayout>
     <GridLayoutDefinition>
-      <NumberOfColumns>8</NumberOfColumns>
-      <NumberOfRows>9</NumberOfRows>
+      <NumberOfColumns>4</NumberOfColumns>
+      <NumberOfRows>4</NumberOfRows>
       <CellDefinitions>
         <CellDefinition>
           <ColumnIndex>0</ColumnIndex>
@@ -2653,73 +2089,48 @@ where sy.active = 1</CommandText>
           <ParameterName>username</ParameterName>
         </CellDefinition>
         <CellDefinition>
-          <ColumnIndex>4</ColumnIndex>
-          <RowIndex>0</RowIndex>
+          <ColumnIndex>0</ColumnIndex>
+          <RowIndex>1</RowIndex>
           <ParameterName>calendarID</ParameterName>
         </CellDefinition>
         <CellDefinition>
-          <ColumnIndex>5</ColumnIndex>
-          <RowIndex>0</RowIndex>
+          <ColumnIndex>1</ColumnIndex>
+          <RowIndex>1</RowIndex>
           <ParameterName>sectionID</ParameterName>
         </CellDefinition>
         <CellDefinition>
-          <ColumnIndex>6</ColumnIndex>
-          <RowIndex>0</RowIndex>
+          <ColumnIndex>2</ColumnIndex>
+          <RowIndex>1</RowIndex>
           <ParameterName>contextID</ParameterName>
         </CellDefinition>
         <CellDefinition>
-          <ColumnIndex>7</ColumnIndex>
-          <RowIndex>0</RowIndex>
+          <ColumnIndex>3</ColumnIndex>
+          <RowIndex>1</RowIndex>
           <ParameterName>contextIDType</ParameterName>
         </CellDefinition>
         <CellDefinition>
-          <ColumnIndex>1</ColumnIndex>
-          <RowIndex>2</RowIndex>
-          <ParameterName>AppYear</ParameterName>
-        </CellDefinition>
-        <CellDefinition>
-          <ColumnIndex>0</ColumnIndex>
-          <RowIndex>7</RowIndex>
-          <ParameterName>cSchoolYear</ParameterName>
-        </CellDefinition>
-        <CellDefinition>
           <ColumnIndex>2</ColumnIndex>
-          <RowIndex>7</RowIndex>
-          <ParameterName>nSchoolYear</ParameterName>
+          <RowIndex>2</RowIndex>
+          <ParameterName>endYear</ParameterName>
         </CellDefinition>
         <CellDefinition>
           <ColumnIndex>3</ColumnIndex>
-          <RowIndex>7</RowIndex>
-          <ParameterName>appCalendarID</ParameterName>
-        </CellDefinition>
-        <CellDefinition>
-          <ColumnIndex>4</ColumnIndex>
-          <RowIndex>7</RowIndex>
-          <ParameterName>cCalendarID</ParameterName>
-        </CellDefinition>
-        <CellDefinition>
-          <ColumnIndex>5</ColumnIndex>
-          <RowIndex>7</RowIndex>
-          <ParameterName>choices</ParameterName>
-        </CellDefinition>
-        <CellDefinition>
-          <ColumnIndex>6</ColumnIndex>
-          <RowIndex>7</RowIndex>
-          <ParameterName>nCalendarID</ParameterName>
-        </CellDefinition>
-        <CellDefinition>
-          <ColumnIndex>7</ColumnIndex>
-          <RowIndex>7</RowIndex>
-          <ParameterName>checkName</ParameterName>
+          <RowIndex>2</RowIndex>
+          <ParameterName>nextSchool</ParameterName>
         </CellDefinition>
         <CellDefinition>
           <ColumnIndex>0</ColumnIndex>
-          <RowIndex>8</RowIndex>
-          <ParameterName>ApplicationStatus</ParameterName>
+          <RowIndex>3</RowIndex>
+          <ParameterName>cGrade</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>1</ColumnIndex>
+          <RowIndex>3</RowIndex>
+          <ParameterName>CAPC</ParameterName>
         </CellDefinition>
       </CellDefinitions>
     </GridLayoutDefinition>
   </ReportParametersLayout>
   <rd:ReportUnitType>Inch</rd:ReportUnitType>
-  <rd:ReportID>6a4d9a57-a9bb-4507-8f12-3d9d89f4b3ed</rd:ReportID>
+  <rd:ReportID>6e1da4ef-e0e4-4cdb-8ea8-0d794cabaa4e</rd:ReportID>
 </Report>

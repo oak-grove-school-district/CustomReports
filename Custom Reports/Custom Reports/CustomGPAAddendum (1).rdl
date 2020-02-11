@@ -180,10 +180,7 @@ END</CommandText>
                   <Width>0.79167in</Width>
                 </TablixColumn>
                 <TablixColumn>
-                  <Width>1.72916in</Width>
-                </TablixColumn>
-                <TablixColumn>
-                  <Width>1.94792in</Width>
+                  <Width>2.67708in</Width>
                 </TablixColumn>
                 <TablixColumn>
                   <Width>0.44792in</Width>
@@ -246,7 +243,7 @@ END</CommandText>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>First Name</Value>
+                                  <Value>Student Name</Value>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
@@ -254,36 +251,6 @@ END</CommandText>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox7</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Textbox1">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value>last Name</Value>
-                                  <Style />
-                                </TextRun>
-                              </TextRuns>
-                              <Style />
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>Textbox1</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -514,32 +481,10 @@ END</CommandText>
                                   <Value>=Fields!firstName.Value</Value>
                                   <Style />
                                 </TextRun>
-                              </TextRuns>
-                              <Style />
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>firstName</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="lastName">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
+                                <TextRun>
+                                  <Value xml:space="preserve"> </Value>
+                                  <Style />
+                                </TextRun>
                                 <TextRun>
                                   <Value>=Fields!lastName.Value</Value>
                                   <Style />
@@ -548,7 +493,7 @@ END</CommandText>
                               <Style />
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>lastName</rd:DefaultName>
+                          <rd:DefaultName>firstName</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -743,7 +688,6 @@ END</CommandText>
                 <TablixMember />
                 <TablixMember />
                 <TablixMember />
-                <TablixMember />
               </TablixMembers>
             </TablixColumnHierarchy>
             <TablixRowHierarchy>
@@ -758,7 +702,7 @@ END</CommandText>
             </TablixRowHierarchy>
             <DataSetName>GPA</DataSetName>
             <Height>0.5in</Height>
-            <Width>11.45834in</Width>
+            <Width>10.45833in</Width>
             <Style>
               <Border>
                 <Style>None</Style>
@@ -769,7 +713,7 @@ END</CommandText>
         <Height>0.5in</Height>
         <Style />
       </Body>
-      <Width>11.45834in</Width>
+      <Width>10.45833in</Width>
       <Page>
         <LeftMargin>1in</LeftMargin>
         <RightMargin>1in</RightMargin>

@@ -12,26 +12,6 @@
     <DataSet Name="AllStudents">
       <Query>
         <DataSourceName>campus</DataSourceName>
-        <QueryParameters>
-          <QueryParameter Name="@appYear">
-            <Value>=Parameters!appYear.Value</Value>
-          </QueryParameter>
-          <QueryParameter Name="@rCalendarID">
-            <Value>=Parameters!rCalendarID.Value</Value>
-          </QueryParameter>
-          <QueryParameter Name="@yearStart">
-            <Value>=Parameters!yearStart.Value</Value>
-          </QueryParameter>
-          <QueryParameter Name="@currentEndYear">
-            <Value>=Parameters!currentEndYear.Value</Value>
-          </QueryParameter>
-          <QueryParameter Name="@yearEnd">
-            <Value>=Parameters!yearEnd.Value</Value>
-          </QueryParameter>
-          <QueryParameter Name="@ApplicationStatus">
-            <Value>=Parameters!applicationStatus.Value</Value>
-          </QueryParameter>
-        </QueryParameters>
         <CommandText>select *
 from (
 select p.studentNumber as [Student#]
@@ -67,7 +47,6 @@ select p.studentNumber as [Student#]
 , max(case when scar2.ruleID = 23 then '*' end) as [Bilingual]
 , max(case when scar2.ruleID = 24 then '*' end) as [Adapted PE]
 , max(case when scar2.ruleID = 25 then '*' end) as [GATE]
-, max(case when scar2.ruleID = 28 then '*' end) as [Dual Boundary Choice]
 from Person p
 join [Identity] i on i.personID = p.personID and i.identityID = p.currentIdentityID
 join SchoolChoiceApplication sca on sca.personID = p.personID
@@ -77,15 +56,13 @@ join calendar rc on rc.calendarID = sca.calendarID
 and rc.endYear in (@appYear)
 --subquery to get IntraTypes
 join (
-select sca.personID, sca.applicationID, sca.calendarID
-,  case when sca.gradeLevel = 'TK' then 'Transitional Kinder' else isnull(scr.name,'4: Choice') end as [name], ROW_NUMBER() over(PARTITION by sca.personID, sca.applicationID order by scar.ruleID) as rn
+select sca.personID, sca.applicationID, sca.calendarID, scr.name, ROW_NUMBER() over(PARTITION by sca.personID, sca.applicationID order by scar.ruleID) as rn
 from SchoolChoiceApplication sca
-left join SchoolChoiceApplicationRule scar on scar.applicationID = sca.applicationID and (scar.ruleID between 4 and 17 or scar.ruleID in (27,28))
-left join SchoolChoiceRule scr on scr.ruleID = scar.ruleID
+join SchoolChoiceApplicationRule scar on scar.applicationID = sca.applicationID and scar.ruleID between 4 and 17
+join SchoolChoiceRule scr on scr.ruleID = scar.ruleID
 where sca.calendarID in (@rCalendarID)
-	and sca.applicationDate between @yearStart and @yearEnd
 ) ar on ar.personID = sca.personID and ar.applicationID = sca.applicationID and sca.calendarID = rc.calendarID
-left join SchoolChoiceApplicationRule scar2 on scar2.applicationID = sca.applicationID and scar2.ruleID in (1,2,3,18,19,20,21,22,23,24,25,27,28)
+left join SchoolChoiceApplicationRule scar2 on scar2.applicationID = sca.applicationID and (scar2.ruleID &lt; 4 or scar2.ruleID &gt; 17)
 left join CampusDictionary cd1 on cd1.code = sca.acceptanceStatus and cd1.attributeID = 304
 left join CampusDictionary cd2 on cd2.code = sca.approvalStatus and cd2.attributeID = 305
 left join (
@@ -135,154 +112,14 @@ group by p.studentNumber, i.lastName, i.firstName, di.name, cu.name
 --and (isnull(x.[Home Jr. High],'') in (@homeJr))
 --and isnull(x.[IntraType],'') in (@IntraType)
 where x.ApplicationStatus in (@ApplicationStatus)
-order by
---x.[CGrade], x.[RGrade], x.[CSchool], 
-x.last, x.first, x.[Choice#]</CommandText>
+order by x.[CGrade], x.[RGrade], x.[CSchool], x.last, x.first, x.[Choice#]</CommandText>
         <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
       </Query>
-      <Fields>
-        <Field Name="Student_">
-          <DataField>Student#</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="Last">
-          <DataField>Last</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="First">
-          <DataField>First</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="Line_1">
-          <DataField>Line 1</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="Line_2">
-          <DataField>Line 2</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="District">
-          <DataField>District</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="Home_Elementary">
-          <DataField>Home Elementary</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="Home_Jr__High">
-          <DataField>Home Jr. High</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="CSchool">
-          <DataField>CSchool</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="CGrade">
-          <DataField>CGrade</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="RSchool">
-          <DataField>RSchool</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="RGrade">
-          <DataField>RGrade</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="NSchool">
-          <DataField>NSchool</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="IntraType">
-          <DataField>IntraType</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="Choice_">
-          <DataField>Choice#</DataField>
-          <rd:TypeName>System.Byte</rd:TypeName>
-        </Field>
-        <Field Name="ApplicationStatus">
-          <DataField>ApplicationStatus</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="ApplicationDate">
-          <DataField>ApplicationDate</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="ProcessedDate">
-          <DataField>ProcessedDate</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="AcceptanceDate">
-          <DataField>AcceptanceDate</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="AcceptanceStatus">
-          <DataField>AcceptanceStatus</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="Comments">
-          <DataField>Comments</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="ParentEmployee">
-          <DataField>ParentEmployee</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="Sibling">
-          <DataField>Sibling</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="Gender">
-          <DataField>Gender</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="Race_Ethnicity">
-          <DataField>Race/Ethnicity</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="HPL">
-          <DataField>HPL</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="Speech">
-          <DataField>Speech</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="SDC">
-          <DataField>SDC</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="RSP">
-          <DataField>RSP</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="ELD">
-          <DataField>ELD</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="Bilingual">
-          <DataField>Bilingual</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="Adapted_PE">
-          <DataField>Adapted PE</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="GATE">
-          <DataField>GATE</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="Dual_Boundary_Choice">
-          <DataField>Dual Boundary Choice</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-      </Fields>
     </DataSet>
     <DataSet Name="SchoolYear">
       <Query>
         <DataSourceName>campus</DataSourceName>
-        <CommandText>select sy.endYear, sy.endYear + 1 as appYear
+        <CommandText>select sy.endYear
 from SchoolYear sy
 where sy.active = 1</CommandText>
         <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
@@ -291,10 +128,6 @@ where sy.active = 1</CommandText>
         <Field Name="endYear">
           <DataField>endYear</DataField>
           <rd:TypeName>System.Int16</rd:TypeName>
-        </Field>
-        <Field Name="appYear">
-          <DataField>appYear</DataField>
-          <rd:TypeName>System.Int32</rd:TypeName>
         </Field>
       </Fields>
     </DataSet>
@@ -356,9 +189,8 @@ GROUP BY rc.calendarID, rc.name</CommandText>
         </QueryParameters>
         <CommandText>select cd.code, cd.name
 from SchoolChoiceApplication sca
-join SchoolChoiceApplicationRule scar on scar.applicationID = sca.applicationID
--- and scar.ruleID between 4 and 17
-left join SchoolChoiceRule scr on scr.ruleID = scar.ruleID
+join SchoolChoiceApplicationRule scar on scar.applicationID = sca.applicationID and scar.ruleID between 4 and 17
+join SchoolChoiceRule scr on scr.ruleID = scar.ruleID
 left join CampusDictionary cd on cd.code = sca.approvalStatus and cd.attributeID = 305
 where sca.calendarID in (@rCalendarID)
 group by cd.code, cd.name</CommandText>
@@ -371,29 +203,6 @@ group by cd.code, cd.name</CommandText>
         <Field Name="name">
           <DataField>name</DataField>
           <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-      </Fields>
-    </DataSet>
-    <DataSet Name="DateRange">
-      <Query>
-        <DataSourceName>campus</DataSourceName>
-        <QueryParameters>
-          <QueryParameter Name="@appYear">
-            <Value>=Parameters!appYear.Value</Value>
-          </QueryParameter>
-        </QueryParameters>
-        <CommandText>select DATEADD(m,-7,sy.startDate) as startDate, sy.endDate
-from SchoolYear sy
-where sy.endYear = @appYear</CommandText>
-      </Query>
-      <Fields>
-        <Field Name="startDate">
-          <DataField>startDate</DataField>
-          <rd:TypeName>System.DateTime</rd:TypeName>
-        </Field>
-        <Field Name="endDate">
-          <DataField>endDate</DataField>
-          <rd:TypeName>System.DateTime</rd:TypeName>
         </Field>
       </Fields>
     </DataSet>
@@ -445,7 +254,7 @@ where sy.endYear = @appYear</CommandText>
                   <Width>1.04167in</Width>
                 </TablixColumn>
                 <TablixColumn>
-                  <Width>1.4375in</Width>
+                  <Width>0.89583in</Width>
                 </TablixColumn>
                 <TablixColumn>
                   <Width>0.76042in</Width>
@@ -506,9 +315,6 @@ where sy.endYear = @appYear</CommandText>
                 </TablixColumn>
                 <TablixColumn>
                   <Width>0.29167in</Width>
-                </TablixColumn>
-                <TablixColumn>
-                  <Width>1in</Width>
                 </TablixColumn>
               </TablixColumns>
               <TablixRows>
@@ -1143,39 +949,6 @@ where sy.endYear = @appYear</CommandText>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox155</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <BackgroundColor>White</BackgroundColor>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Textbox1">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value />
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style />
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>Textbox1</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -2414,43 +2187,6 @@ where sy.endYear = @appYear</CommandText>
                         </Textbox>
                       </CellContents>
                     </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Textbox2">
-                          <CanGrow>true</CanGrow>
-                          <UserSort>
-                            <SortExpression>=Fields!Dual_Boundary_Choice.Value</SortExpression>
-                            <SortTarget>AllStudents</SortTarget>
-                          </UserSort>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value />
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style />
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>Textbox2</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <BackgroundColor>White</BackgroundColor>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
                   </TablixCells>
                 </TablixRow>
                 <TablixRow>
@@ -3578,39 +3314,6 @@ where sy.endYear = @appYear</CommandText>
                         </Textbox>
                       </CellContents>
                     </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Textbox3">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value>Dual Boundary Choice</Value>
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style />
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>Textbox3</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <BackgroundColor>White</BackgroundColor>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
                   </TablixCells>
                 </TablixRow>
                 <TablixRow>
@@ -4703,38 +4406,6 @@ where sy.endYear = @appYear</CommandText>
                         </Textbox>
                       </CellContents>
                     </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Dual_Boundary_Choice">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value>=Fields!Dual_Boundary_Choice.Value</Value>
-                                  <Style>
-                                    <FontSize>6pt</FontSize>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style />
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>Dual_Boundary_Choice</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
                   </TablixCells>
                 </TablixRow>
               </TablixRows>
@@ -4928,12 +4599,6 @@ where sy.endYear = @appYear</CommandText>
                     <ToggleItem>Hide17</ToggleItem>
                   </Visibility>
                 </TablixMember>
-                <TablixMember>
-                  <Visibility>
-                    <Hidden>true</Hidden>
-                    <ToggleItem>Hide17</ToggleItem>
-                  </Visibility>
-                </TablixMember>
               </TablixMembers>
             </TablixColumnHierarchy>
             <TablixRowHierarchy>
@@ -4960,7 +4625,7 @@ where sy.endYear = @appYear</CommandText>
             </TablixRowHierarchy>
             <DataSetName>AllStudents</DataSetName>
             <Height>0.66668in</Height>
-            <Width>26.71879in</Width>
+            <Width>25.17712in</Width>
             <Style>
               <Border>
                 <Style>None</Style>
@@ -4971,7 +4636,7 @@ where sy.endYear = @appYear</CommandText>
         <Height>2in</Height>
         <Style />
       </Body>
-      <Width>26.71879in</Width>
+      <Width>25.92711in</Width>
       <Page>
         <LeftMargin>1in</LeftMargin>
         <RightMargin>1in</RightMargin>
@@ -5071,10 +4736,9 @@ where sy.endYear = @appYear</CommandText>
     <ReportParameter Name="appYear">
       <DataType>String</DataType>
       <DefaultValue>
-        <DataSetReference>
-          <DataSetName>SchoolYear</DataSetName>
-          <ValueField>appYear</ValueField>
-        </DataSetReference>
+        <Values>
+          <Value>2019</Value>
+        </Values>
       </DefaultValue>
       <Prompt>Application Year: </Prompt>
       <ValidValues>
@@ -5106,10 +4770,9 @@ where sy.endYear = @appYear</CommandText>
     <ReportParameter Name="currentEndYear">
       <DataType>String</DataType>
       <DefaultValue>
-        <DataSetReference>
-          <DataSetName>SchoolYear</DataSetName>
-          <ValueField>endYear</ValueField>
-        </DataSetReference>
+        <Values>
+          <Value>=2018</Value>
+        </Values>
       </DefaultValue>
       <Prompt>currentEndYear</Prompt>
       <Hidden>true</Hidden>
@@ -5131,26 +4794,6 @@ where sy.endYear = @appYear</CommandText>
         </DataSetReference>
       </ValidValues>
       <MultiValue>true</MultiValue>
-    </ReportParameter>
-    <ReportParameter Name="yearStart">
-      <DataType>DateTime</DataType>
-      <DefaultValue>
-        <DataSetReference>
-          <DataSetName>DateRange</DataSetName>
-          <ValueField>startDate</ValueField>
-        </DataSetReference>
-      </DefaultValue>
-      <Prompt>Range Start</Prompt>
-    </ReportParameter>
-    <ReportParameter Name="yearEnd">
-      <DataType>DateTime</DataType>
-      <DefaultValue>
-        <DataSetReference>
-          <DataSetName>DateRange</DataSetName>
-          <ValueField>endDate</ValueField>
-        </DataSetReference>
-      </DefaultValue>
-      <Prompt>Date Range End</Prompt>
     </ReportParameter>
   </ReportParameters>
   <ReportParametersLayout>
@@ -5217,16 +4860,6 @@ where sy.endYear = @appYear</CommandText>
           <ColumnIndex>3</ColumnIndex>
           <RowIndex>1</RowIndex>
           <ParameterName>applicationStatus</ParameterName>
-        </CellDefinition>
-        <CellDefinition>
-          <ColumnIndex>4</ColumnIndex>
-          <RowIndex>1</RowIndex>
-          <ParameterName>yearStart</ParameterName>
-        </CellDefinition>
-        <CellDefinition>
-          <ColumnIndex>5</ColumnIndex>
-          <RowIndex>1</RowIndex>
-          <ParameterName>yearEnd</ParameterName>
         </CellDefinition>
       </CellDefinitions>
     </GridLayoutDefinition>

@@ -128,6 +128,9 @@ group by sec.sectionID, c.name, sec.number</CommandText>
           <QueryParameter Name="@sectionID">
             <Value>=Parameters!sectionID.Value</Value>
           </QueryParameter>
+          <QueryParameter Name="@status">
+            <Value>=Parameters!status.Value</Value>
+          </QueryParameter>
         </QueryParameters>
         <CommandText>select case when cal.name like '%Anderson%' then 'AND'
 			when cal.name like '%Baldwin%' then 'BAL'
@@ -156,6 +159,7 @@ group by sec.sectionID, c.name, sec.number</CommandText>
 	, e.grade
 	, i.lastName
 	, i.firstName
+	, p.stateID
 	, p.studentNumber
 	, CONVERT(varchar(10), cast(i.birthdate as date),101) as birthdate
 	, cd.name as homePrimaryLanguage
@@ -208,6 +212,7 @@ from Person p
 	left join TestScore ts on ts.personID = p.personID
 		and ts.testID in (210,191,192,193,194,195,189,323,324,325)
 where sec.sectionID in (@sectionID)
+	and lep.programStatus in (@status)
 group by cal.name
 	, sec.teacherDisplay
 	, e.grade
@@ -217,6 +222,7 @@ group by cal.name
 	, i.birthdate
 	, cd.name
 	, lep.identifiedDate
+	, p.stateID
 order by sec.teacherDisplay, i.lastName, i.firstName</CommandText>
         <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
       </Query>
@@ -239,6 +245,10 @@ order by sec.teacherDisplay, i.lastName, i.firstName</CommandText>
         </Field>
         <Field Name="firstName">
           <DataField>firstName</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="stateID">
+          <DataField>stateID</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
         <Field Name="studentNumber">
@@ -337,6 +347,9 @@ order by sec.teacherDisplay, i.lastName, i.firstName</CommandText>
                 </TablixColumn>
                 <TablixColumn>
                   <Width>1.19792in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>1in</Width>
                 </TablixColumn>
                 <TablixColumn>
                   <Width>0.875in</Width>
@@ -443,9 +456,10 @@ order by sec.teacherDisplay, i.lastName, i.firstName</CommandText>
                             <PaddingBottom>2pt</PaddingBottom>
                           </Style>
                         </Textbox>
-                        <ColSpan>10</ColSpan>
+                        <ColSpan>11</ColSpan>
                       </CellContents>
                     </TablixCell>
+                    <TablixCell />
                     <TablixCell />
                     <TablixCell />
                     <TablixCell />
@@ -828,6 +842,54 @@ order by sec.teacherDisplay, i.lastName, i.firstName</CommandText>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox18</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Style>Solid</Style>
+                            </Border>
+                            <TopBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                            </TopBorder>
+                            <BottomBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                            </BottomBorder>
+                            <LeftBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                            </LeftBorder>
+                            <RightBorder>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                            </RightBorder>
+                            <BackgroundColor>LightGrey</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox8">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>SSID</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox8</rd:DefaultName>
                           <Style>
                             <Border>
                               <Style>Solid</Style>
@@ -1888,6 +1950,38 @@ order by sec.teacherDisplay, i.lastName, i.firstName</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
+                        <Textbox Name="stateID">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!stateID.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>stateID</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
                         <Textbox Name="studentNumber">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
@@ -2491,6 +2585,7 @@ order by sec.teacherDisplay, i.lastName, i.firstName</CommandText>
                 <TablixMember />
                 <TablixMember />
                 <TablixMember />
+                <TablixMember />
               </TablixMembers>
             </TablixColumnHierarchy>
             <TablixRowHierarchy>
@@ -2508,7 +2603,7 @@ order by sec.teacherDisplay, i.lastName, i.firstName</CommandText>
             </TablixRowHierarchy>
             <DataSetName>DataSet1</DataSetName>
             <Height>0.75in</Height>
-            <Width>20.08334in</Width>
+            <Width>21.08335in</Width>
             <Style>
               <Border>
                 <Style>None</Style>
@@ -2618,11 +2713,33 @@ order by sec.teacherDisplay, i.lastName, i.firstName</CommandText>
       <Prompt>contextIDType</Prompt>
       <Hidden>true</Hidden>
     </ReportParameter>
+    <ReportParameter Name="status">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <Values>
+          <Value>LEP</Value>
+        </Values>
+      </DefaultValue>
+      <Prompt>EL Status</Prompt>
+      <ValidValues>
+        <ParameterValues>
+          <ParameterValue>
+            <Value>LEP</Value>
+            <Label>LEP</Label>
+          </ParameterValue>
+          <ParameterValue>
+            <Value>Not LEP</Value>
+            <Label>IFEP</Label>
+          </ParameterValue>
+        </ParameterValues>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+    </ReportParameter>
   </ReportParameters>
   <ReportParametersLayout>
     <GridLayoutDefinition>
       <NumberOfColumns>4</NumberOfColumns>
-      <NumberOfRows>2</NumberOfRows>
+      <NumberOfRows>3</NumberOfRows>
       <CellDefinitions>
         <CellDefinition>
           <ColumnIndex>0</ColumnIndex>
@@ -2663,6 +2780,11 @@ order by sec.teacherDisplay, i.lastName, i.firstName</CommandText>
           <ColumnIndex>3</ColumnIndex>
           <RowIndex>1</RowIndex>
           <ParameterName>contextIDType</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>0</ColumnIndex>
+          <RowIndex>2</RowIndex>
+          <ParameterName>status</ParameterName>
         </CellDefinition>
       </CellDefinitions>
     </GridLayoutDefinition>
