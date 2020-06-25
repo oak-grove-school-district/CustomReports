@@ -28,6 +28,7 @@
           </QueryParameter>
         </QueryParameters>
         <CommandText>select p.studentNumber as [StudentNumber]
+, p.stateID as [SSID]
 	, i.lastName as [Last]
 	, i.firstName as [First]
 	, e.grade as [Grade]
@@ -68,13 +69,17 @@ from Person p
 	join Program pr on pr.programID = pp.programID
 where  pp.programID in (@programID)
 and per.name in (@period)
-group by p.studentNumber, i.lastName, i.firstName, e.grade, pr.name, pp.startDate, pp.eligibilityStartDate, pp.endDate, pp.eligibilityEndDate, per.name, sec.teacherDisplay
+group by p.studentNumber, i.lastName, i.firstName, e.grade, pr.name, pp.startDate, pp.eligibilityStartDate, pp.endDate, pp.eligibilityEndDate, per.name, sec.teacherDisplay, p.stateID
 order by e.grade, i.lastName, i.firstName, per.name</CommandText>
         <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
       </Query>
       <Fields>
         <Field Name="StudentNumber">
           <DataField>StudentNumber</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="SSID">
+          <DataField>SSID</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
         <Field Name="Last">
@@ -252,6 +257,9 @@ group by per.name</CommandText>
                   <Width>0.71875in</Width>
                 </TablixColumn>
                 <TablixColumn>
+                  <Width>1in</Width>
+                </TablixColumn>
+                <TablixColumn>
                   <Width>1.25in</Width>
                 </TablixColumn>
                 <TablixColumn>
@@ -303,6 +311,37 @@ group by per.name</CommandText>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox1</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>White</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox4">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>SSID</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox4</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -664,6 +703,36 @@ group by per.name</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
+                        <Textbox Name="SSID">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!SSID.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>SSID</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
                         <Textbox Name="Last">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
@@ -987,6 +1056,7 @@ group by per.name</CommandText>
                 <TablixMember />
                 <TablixMember />
                 <TablixMember />
+                <TablixMember />
               </TablixMembers>
             </TablixColumnHierarchy>
             <TablixRowHierarchy>
@@ -1005,7 +1075,7 @@ group by per.name</CommandText>
             <RepeatRowHeaders>true</RepeatRowHeaders>
             <DataSetName>AllStudents</DataSetName>
             <Height>0.5in</Height>
-            <Width>10.69791in</Width>
+            <Width>11.69791in</Width>
             <Style>
               <Border>
                 <Style>None</Style>
@@ -1016,7 +1086,7 @@ group by per.name</CommandText>
         <Height>0.5in</Height>
         <Style />
       </Body>
-      <Width>10.69791in</Width>
+      <Width>11.69791in</Width>
       <Page>
         <LeftMargin>1in</LeftMargin>
         <RightMargin>1in</RightMargin>

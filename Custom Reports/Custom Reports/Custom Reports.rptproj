@@ -61,6 +61,7 @@
     <Report Include="AttendanceFactor.rdl" />
     <Report Include="AttendanceLetters-TheAcademy.rdl" />
     <Report Include="AttendanceLetters.rdl" />
+    <Report Include="AttendancePercentageByDay.rdl" />
     <Report Include="AttendanceThing.rdl" />
     <Report Include="AttendanceTrends.rdl" />
     <Report Include="Certified.rdl" />
@@ -119,6 +120,7 @@
     <Report Include="StudentDetails.rdl" />
     <Report Include="StudentRaceEthnicity.rdl" />
     <Report Include="SuspensionForm2.rdl" />
+    <Report Include="WeeklyAttByGrade.rdl" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Reporting Services\Microsoft.ReportingServices.MSBuilder.targets" />
 </Project>

@@ -212,7 +212,6 @@ WHERE        p.studentNumber IS NOT NULL) sib ON sib.personID = p.personID LEFT 
                                 Section sec ON sec.courseID = cs.courseID AND sec.trialID = tr.trialID JOIN
                                 Roster ros ON ros.personID = p.personID AND ros.sectionID = sec.sectionID AND ros.endDate IS NULL AND ros.trialID = tr.trialID
       GROUP BY p.personID, cal.name, sec.teacherDisplay) teach ON teach.personID = p.personID
-where p.personid = 18784
 GROUP BY p.personID, i.lastName, i.firstName, cal.name, i.birthdate, i.gender, e.grade, cd.name, a.number, a.prefix, a.street, a.tag, a.dir, a.apt, a.city, a.state, a.zip, hh.phone, ro.[Restraining Order], 
                          teach.teacherDisplay
 ORDER BY cal.name, i.lastName</CommandText>

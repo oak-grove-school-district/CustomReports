@@ -21,6 +21,7 @@
         <CommandText>select cal.calendarID, cal.name
 from Calendar cal
 where cal.endYear = @endYear
+and cal.name not like '%private%' and cal.name not like '%evaluation%'
 order by cal.name</CommandText>
       </Query>
       <Fields>

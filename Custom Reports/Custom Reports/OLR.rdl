@@ -142,6 +142,7 @@ left join (
 select [or].*, row_number() over(partition by [or].olr_applicationID, [op].personTypeValue order by [or].seq) as [rn]
 from olr_relationship [or]
 left join olr_person op on op.olr_personID = [or].olr_personID2
+where [or].olr_personID1 = @studentOLRpersonID
 ) [or] on [or].olr_applicationID = ap.olr_applicationID and [or].olr_personID2 = op2.olr_personID
 left join olr_contact oc on oc.olr_applicationID = ap.olr_applicationID and oc.olr_personID = [or].olr_personID2
 left join olr_customParentSave cps on cps.olr_personID = op2.olr_personID
@@ -3634,11 +3635,6 @@ where op.olr_applicationID = @ApplicationNumber and op.personTypeValue = 'studen
     </ReportParameter>
     <ReportParameter Name="ApplicationNumber">
       <DataType>String</DataType>
-      <DefaultValue>
-        <Values>
-          <Value>166</Value>
-        </Values>
-      </DefaultValue>
       <Prompt>Application Number:</Prompt>
     </ReportParameter>
     <ReportParameter Name="studentOLRpersonID">
