@@ -1157,6 +1157,7 @@ group by per.name</CommandText>
           <LabelField>Calendar</LabelField>
         </DataSetReference>
       </ValidValues>
+      <MultiValue>true</MultiValue>
     </ReportParameter>
     <ReportParameter Name="sectionID">
       <DataType>String</DataType>

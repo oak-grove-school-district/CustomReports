@@ -28,11 +28,8 @@
           <QueryParameter Name="@group">
             <Value>=Parameters!group.Value</Value>
           </QueryParameter>
-          <QueryParameter Name="@courses">
-            <Value>=Parameters!courses.Value</Value>
-          </QueryParameter>
         </QueryParameters>
-        <CommandText>SELECT p.studentNumber, e.grade as [Grade], i.lastName, i.firstName, cal.name AS Calendar, cs.name AS [Course Name], cs.number + ' - ' + cast(sec.number AS varchar) AS [Course - Section], sec.teacherDisplay AS Teacher, per.name AS Period, gs.score AS [Letter Grade], gs.[percent] AS [Percent], ter.name AS Term, gt.name AS Task, sg.name AS Team
+        <CommandText>SELECT p.studentNumber, e.grade as [Grade], i.lastName, i.firstName, cal.name AS Calendar, cs.name AS [Course Name], cs.number + ' - ' + cast(sec.number AS varchar) AS [Course - Section], sec.teacherDisplay AS Teacher, per.name AS Period, isnull(gs.score,isnull(gs.progressScore,NULL)) AS [Letter Grade], isnull(gs.[percent],isnull(gs.progressPercent,NULL)) AS [Percent], ter.name AS Term, gt.name AS Task, sg.name AS Team
 , case when lep.programStatus = 'LEP' then 'X' else '' end as LEP
 FROM            Person p JOIN
                          [Identity] i ON i.personID = p.personID AND i.identityID = p.currentIdentityID JOIN
@@ -52,10 +49,11 @@ FROM            Person p JOIN
                          GradingScore gs ON gs.taskID = gt.taskID AND gs.personID = p.personID AND gs.sectionID = sec.sectionID AND gs.termID = ter.termID AND gs.calendarID = cal.calendarID LEFT JOIN
                          SchedulingGroup sg ON sg.schedGroupID = sec.schedGroupID AND sg.calendarID = cal.calendarID
 	left join Lep on lep.personID = p.personID and lep.programStatus in ('LEP')
-WHERE        cal.calendarID IN (@calendarID) AND gs.score IS NOT NULL AND gs.score IN (@grade) AND ter.termID IN (@Term) AND isnull(sg.name,'') IN (@group)
+WHERE        cal.calendarID IN (@calendarID) AND (gs.score IS NOT NULL or gs.progressScore is not null)  AND gs.score IN (@grade) AND ter.termID IN (@Term) AND isnull(sg.name,'') IN (@group)
 
-	AND (e.startDate &lt;= ter.startDate and (e.endDate &gt;= ter.endDate or e.endDate is null)) and cs.name in (@courses)
-GROUP BY p.studentNumber, i.lastName, i.firstName, cs.name, cs.number, sec.number, sec.teacherDisplay, per.name, gs.score, cal.name, ter.name, gt.name, gs.[percent], sg.name, lep.programStatus, e.grade
+	AND (e.startDate &lt;= ter.startDate and (e.endDate &gt;= ter.endDate or e.endDate is null)) 
+--and cs.name in (@courses)
+GROUP BY p.studentNumber, i.lastName, i.firstName, cs.name, cs.number, sec.number, sec.teacherDisplay, per.name, gs.score, cal.name, ter.name, gt.name, gs.[percent], sg.name, lep.programStatus, e.grade, gs.progressScore, gs.progressPercent
 ORDER BY i.lastName, i.firstName, per.name, ter.name</CommandText>
         <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
       </Query>
@@ -212,12 +210,13 @@ END</CommandText>
             <Value>=Parameters!Task.Value</Value>
           </QueryParameter>
         </QueryParameters>
-        <CommandText>select gs.score
+        <CommandText>select isnull(gs.score,gs.progressScore) as score
 from GradingScore gs
-where gs.calendarID in (@calendarID) and gs.score is not null
+where gs.calendarID in (@calendarID)
 and gs.taskID in (@Task)
-group by gs.score
-order by gs.score</CommandText>
+--and gs.score is not null
+group by gs.score, gs.progressScore
+order by gs.score, gs.progressScore</CommandText>
         <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
       </Query>
       <Fields>
@@ -1551,7 +1550,9 @@ order by cs.name</CommandText>
     </ReportParameter>
     <ReportParameter Name="courses">
       <DataType>String</DataType>
+      <AllowBlank>true</AllowBlank>
       <Prompt>Courses</Prompt>
+      <Hidden>true</Hidden>
       <ValidValues>
         <DataSetReference>
           <DataSetName>Courses</DataSetName>
@@ -1618,17 +1619,17 @@ order by cs.name</CommandText>
           <ParameterName>Task</ParameterName>
         </CellDefinition>
         <CellDefinition>
-          <ColumnIndex>6</ColumnIndex>
-          <RowIndex>2</RowIndex>
+          <ColumnIndex>0</ColumnIndex>
+          <RowIndex>3</RowIndex>
           <ParameterName>grade</ParameterName>
         </CellDefinition>
         <CellDefinition>
-          <ColumnIndex>0</ColumnIndex>
+          <ColumnIndex>1</ColumnIndex>
           <RowIndex>3</RowIndex>
           <ParameterName>group</ParameterName>
         </CellDefinition>
         <CellDefinition>
-          <ColumnIndex>1</ColumnIndex>
+          <ColumnIndex>2</ColumnIndex>
           <RowIndex>3</RowIndex>
           <ParameterName>courses</ParameterName>
         </CellDefinition>
