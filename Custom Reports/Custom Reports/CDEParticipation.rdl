@@ -158,26 +158,31 @@ group by sec.sectionID, c.name, sec.number</CommandText>
 	, cs.name as [Class Title]
 	, i2.firstName as [Cert Employee FN]
 	, i2.lastName as [Cert Employee LN]
-	, max(case when da.Monday is null or da.Monday in ('T','TDE','TDU','TD30','VP') then 'PS'
-			   when da.Monday in ('PA','IS2') then 'PA'
-			   when da.Monday in ('ILL','OTX','AEX','IS1') then 'VA'
-			   when da.Monday in ('A','UNV') then 'UA' end) as [Monday]
-	, max(case when da.Tuesday is null or da.Tuesday in ('T','TDE','TDU','TD30','VP') then 'PS'
-			   when da.Tuesday in ('PA','IS2') then 'PA'
-			   when da.Tuesday in ('ILL','OTX','AEX','IS1') then 'VA'
-			   when da.Tuesday in ('A','UNV') then 'UA' end) as [Tuesday]
-	, max(case when da.Wednesday is null or da.Wednesday in ('T','TDE','TDU','TD30','VP') then 'PS'
-			   when da.Wednesday in ('PA','IS2') then 'PA'
-			   when da.Wednesday in ('ILL','OTX','AEX','IS1') then 'VA'
-			   when da.Wednesday in ('A','UNV') then 'UA' end) as [Wednesday]
-	, max(case when da.Thursday is null or da.Thursday in ('T','TDE','TDU','TD30','VP') then 'PS'
-			   when da.Thursday in ('PA','IS2') then 'PA'
-			   when da.Thursday in ('ILL','OTX','AEX','IS1') then 'VA'
-			   when da.Thursday in ('A','UNV') then 'UA' end) as [Thursday]
-	, max(case when da.Friday is null or da.Friday in ('T','TDE','TDU','TD30','VP') then 'PS'
-			   when da.Friday in ('PA','IS2') then 'PA'
-			   when da.Friday in ('ILL','OTX','AEX','IS1') then 'VA'
-			   when da.Friday in ('A','UNV') then 'UA' end) as [Friday]
+	, max(case when att.[Day of Week] = 'Monday' and dow.attendance = 1 then 
+			case when att.[Att Code] in ('T','TDE','TDU','TD30','VP','ECO','P') then 'PS' 
+				 when att.[Att Code] in ('PA','IS2') then 'PA'
+				 when att.[Att Code] in ('ILL','OTX','AEX','IS1') then 'VA'
+				 when att.[Att Code] in ('A','UNV') then 'UA' end else '' end) as [Monday]
+	, max(case when att.[Day of Week] = 'Tuesday' and dow.attendance = 1 then 
+			case when att.[Att Code] in ('T','TDE','TDU','TD30','VP','ECO','P') then 'PS' 
+				 when att.[Att Code] in ('PA','IS2') then 'PA'
+				 when att.[Att Code] in ('ILL','OTX','AEX','IS1') then 'VA'
+				 when att.[Att Code] in ('A','UNV') then 'UA' end else '' end) as [Tuesday]
+	, max(case when att.[Day of Week] = 'Wednesday' and dow.attendance = 1 then 
+			case when att.[Att Code] in ('T','TDE','TDU','TD30','VP','ECO','P') then 'PS' 
+				 when att.[Att Code] in ('PA','IS2') then 'PA'
+				 when att.[Att Code] in ('ILL','OTX','AEX','IS1') then 'VA'
+				 when att.[Att Code] in ('A','UNV') then 'UA' end else '' end) as [Wednesday]
+	, max(case when att.[Day of Week] = 'Thursday' and dow.attendance = 1 then 
+			case when att.[Att Code] in ('T','TDE','TDU','TD30','VP','ECO','P') then 'PS' 
+				 when att.[Att Code] in ('PA','IS2') then 'PA'
+				 when att.[Att Code] in ('ILL','OTX','AEX','IS1') then 'VA'
+				 when att.[Att Code] in ('A','UNV') then 'UA' end else '' end) as [Thursday]
+	, max(case when att.[Day of Week] = 'Friday' and dow.attendance = 1 then 
+			case when att.[Att Code] in ('T','TDE','TDU','TD30','VP','ECO','P') then 'PS' 
+				 when att.[Att Code] in ('PA','IS2') then 'PA'
+				 when att.[Att Code] in ('ILL','OTX','AEX','IS1') then 'VA'
+				 when att.[Att Code] in ('A','UNV') then 'UA' end else '' end) as [Friday]
 from Person p
 	join [Identity] i on i.personID = p.personID
 		and i.identityID = p.currentIdentityID
@@ -194,8 +199,10 @@ from Person p
 	JOIN SectionPlacement AS sp ON sp.trialID = tr.trialID
 	JOIN Term AS ter ON ter.termID = sp.termID 
 		AND ter.startDate &lt;= @startDate 
-		and ter.endDate &gt;= @endDate 
+		and ter.endDate &gt;= @endDate
+	join PeriodSchedule ps on ps.structureID = ss.structureID
 	INNER JOIN Period AS per ON per.periodID = sp.periodID
+		and per.periodScheduleID = ps.periodScheduleID
 	join Course cs on cs.calendarID = cal.calendarID
 	join Section sec on sec.courseID = cs.courseID
 		and sec.trialID = tr.trialID
@@ -203,6 +210,8 @@ from Person p
 	join Roster ros on ros.personID = p.personID
 		and ros.sectionID = sec.sectionID
 		and ros.trialID = tr.trialID
+      and (ros.startDate is NULL or ros.startDate &lt;= @startDate)
+      and (ros.endDate is null or ros.endDate &gt;= @endDate)
 	join SectionStaffHistory ssh on ssh.sectionID = sec.sectionID
 		and (ssh.accessStartDate is null or ssh.accessStartDate &lt;= @startDate)
 		and (ssh.accessEndDate is null or ssh.accessEndDate &gt;= @endDate)
@@ -212,44 +221,77 @@ from Person p
 							where userID = @userID)
 	join [Identity] i2 on i2.personID = p2.personID
 		and i2.identityID = p2.currentIdentityID
+	join (
+		select dayID
+				, calendarID
+				, date
+				, DATENAME(dw,date) as [Day of Week]
+				, DATEPART(day,date) as [Day Rank]
+				, day.periodScheduleID
+				, attendance
+			from Day
+			where 1 = 1
+				and calendarID = @calendarID
+				and DATENAME(dw,date) in ('Monday','Tuesday','Wednesday','Thursday','Friday')
+			) dow on dow.calendarID = cal.calendarID
+				and dow.periodScheduleID = ps.periodScheduleID
 	left join (
-				select p.personID
-					, max(case when dow.[Day of Week] = 'Monday' then case when att.status = 'T' and att.excuseID is null then 'T'
-																when att.status = 'A' and att.excuseID is null then 'A' else ae.code end end) as [Monday]
-					, max(case when dow.[Day of Week] = 'Tuesday' then case when att.status = 'T' and att.excuseID is null then 'T'
-																when att.status = 'A' and att.excuseID is null then 'A' else ae.code end end) as [Tuesday]
-					, max(case when dow.[Day of Week] = 'Wednesday' then case when att.status = 'T' and att.excuseID is null then 'T'
-																when att.status = 'A' and att.excuseID is null then 'A' else ae.code end end) as [Wednesday]
-					, max(case when dow.[Day of Week] = 'Thursday' then case when att.status = 'T' and att.excuseID is null then 'T'
-																when att.status = 'A' and att.excuseID is null then 'A' else ae.code end end) as [Thursday]
-					, max(case when dow.[Day of Week] = 'Friday' then case when att.status = 'T' and att.excuseID is null then 'T'
-																when att.status = 'A' and att.excuseID is null then 'A' else ae.code end end) as [Friday]
-					, att.periodID
-					, dow.periodScheduleID
-				from (select dayID
+				select e.personID
+					, per.periodID
+					, per.periodScheduleID
+					, dow.date
+					, DATENAME(dw,dow.date) as [Day of Week]
+					, case when att.attendanceID is null then 'P'
+							when att.status = 'T' and att.excuseID is null then 'T'
+							when att.status = 'A' and att.excuseID is null then 'A' else ae.code end as [Att Code]
+				from (
+						select dayID
 							, calendarID
 							, date
 							, DATENAME(dw,date) as [Day of Week]
 							, day.periodScheduleID
 						from Day
 						where attendance = 1
-							and calendarID = @calendarID) dow
-					left join Attendance att on att.calendarID = dow.calendarID
+							and calendarID = @calendarID
+							and date between @startDate and @endDate
+							) dow
+					left join Enrollment e on e.calendarID = dow.calendarID
+						and e.active = 1
+						and (e.startDate &lt;= @startDate)
+						and (e.endDate is null or e.endDate &gt;= @endDate)
+					join Calendar cal on cal.calendarID = e.calendarID
+						and cal.endYear = e.endYear
+					join School sch on sch.schoolID = cal.schoolID
+					JOIN ScheduleStructure AS ss ON ss.calendarID = cal.calendarID
+					join Trial tr on tr.structureID = ss.structureID
+						and tr.active = 1
+					JOIN SectionPlacement AS sp ON sp.trialID = tr.trialID
+					JOIN Term AS ter ON ter.termID = sp.termID 
+						AND ter.startDate &lt;= @startDate 
+						and ter.endDate &gt;= @endDate
+					join PeriodSchedule ps on ps.structureID = ss.structureID
+					INNER JOIN Period AS per ON per.periodID = sp.periodID
+						and per.periodScheduleID = ps.periodScheduleID
+						and per.periodScheduleID = dow.periodScheduleID
+					join Course cs on cs.calendarID = cal.calendarID
+					join Section sec on sec.courseID = cs.courseID
+						and sec.trialID = tr.trialID
+						AND sec.sectionID = sp.sectionID 
+					join Roster ros on ros.personID = e.personID
+						and ros.sectionID = sec.sectionID
+						and ros.trialID = tr.trialID
+					  and (ros.startDate is NULL or ros.startDate &lt;= @startDate)
+					  and (ros.endDate is null or ros.endDate &gt;= @endDate)
+					left join Attendance att on att.calendarID = e.calendarID
 						and att.date = dow.date
+						and att.personID = e.personID
+						and att.periodID = per.periodID
 					left join AttendanceExcuse ae on ae.excuseID = att.excuseID
 						and ae.calendarID = att.calendarID
-					left join Person p on p.personID = att.personID
-					join Enrollment e on e.personID = p.personID
-					join SchoolYear sy on sy.endYear = e.endYear
-						and sy.active = 1
-				where 1 = 1
-				and dow.date between @startDate and @endDate
-				and att.periodID = 1920
-				group by p.personID, att.periodID, dow.periodScheduleID
-				) da on da.personID = p.personID
-					and da.periodID = per.periodID
-where sec.sectionID = @sectionID
-group by sch.name, p.personID, i.firstName, i.lastName, cs.name, i2.firstName, i2.lastName, p.studentNumber</CommandText>
+			) att on att.personID = p.personID and att.periodScheduleID = ps.periodScheduleID and att.periodID = per.periodID
+where dow.date between @startDate and @endDate
+and sec.sectionID = @sectionID
+group by sch.name, p.personID, p.studentNumber, i.firstName, i.lastName, cs.name, i2.firstName, i2.lastName</CommandText>
       </Query>
       <Fields>
         <Field Name="School_Site">
@@ -339,7 +381,7 @@ select date
 			from Day
 			where attendance = 1
 				and calendarID = @calendarID
-			) wr on wr.[Week Number] = dow.[Week Number]
+			) wr on wr.[Week Number] = dow.[Week Number]-1
 where CONVERT(varchar(10), cast(dow.date as date),101) = CONVERT(varchar(10), cast(getdate() as date),101)
 group by dow.date, dow.[Day Rank], dow.[Week Number]</CommandText>
       </Query>
@@ -1238,97 +1280,8 @@ group by dow.date, dow.[Day Rank], dow.[Week Number]</CommandText>
               <PaddingBottom>2pt</PaddingBottom>
             </Style>
           </Textbox>
-          <Textbox Name="Textbox23">
-            <CanGrow>true</CanGrow>
-            <KeepTogether>true</KeepTogether>
-            <Paragraphs>
-              <Paragraph>
-                <TextRuns>
-                  <TextRun>
-                    <Value>Section D - Certification</Value>
-                    <Style>
-                      <FontWeight>Bold</FontWeight>
-                    </Style>
-                  </TextRun>
-                </TextRuns>
-                <Style />
-              </Paragraph>
-              <Paragraph>
-                <TextRuns>
-                  <TextRun>
-                    <Value />
-                    <Style>
-                      <FontSize>9pt</FontSize>
-                    </Style>
-                  </TextRun>
-                </TextRuns>
-                <Style />
-              </Paragraph>
-              <Paragraph>
-                <TextRuns>
-                  <TextRun>
-                    <Value>I hereby certify that the information contained on this record is accurate and correct, that the assignments listed represent _______ worth of instructional minutes on each day listed, and that daily participation, including absences was verified for each student in my class.</Value>
-                    <Style>
-                      <FontSize>9pt</FontSize>
-                    </Style>
-                  </TextRun>
-                </TextRuns>
-                <Style />
-              </Paragraph>
-              <Paragraph>
-                <TextRuns>
-                  <TextRun>
-                    <Value />
-                    <Style>
-                      <FontSize>9pt</FontSize>
-                    </Style>
-                  </TextRun>
-                </TextRuns>
-                <Style />
-              </Paragraph>
-              <Paragraph>
-                <TextRuns>
-                  <TextRun>
-                    <Value>Teacher's Printed Name: </Value>
-                    <Style>
-                      <FontSize>9pt</FontSize>
-                    </Style>
-                  </TextRun>
-                  <TextRun>
-                    <Value>=First(Fields!Cert_Employee_FN.Value, "data") + " " + First(Fields!Cert_Employee_LN.Value, "data")</Value>
-                    <Style>
-                      <FontSize>9pt</FontSize>
-                    </Style>
-                  </TextRun>
-                  <TextRun>
-                    <Value>          Teacher's Signature ______________________________________</Value>
-                    <Style>
-                      <FontSize>9pt</FontSize>
-                    </Style>
-                  </TextRun>
-                </TextRuns>
-                <Style />
-              </Paragraph>
-            </Paragraphs>
-            <rd:DefaultName>Textbox23</rd:DefaultName>
-            <Top>3.16072in</Top>
-            <Left>0.68436in</Left>
-            <Height>1.18452in</Height>
-            <Width>6.75703in</Width>
-            <ZIndex>9</ZIndex>
-            <Style>
-              <Border>
-                <Style>Solid</Style>
-                <Width>0.5pt</Width>
-              </Border>
-              <PaddingLeft>2pt</PaddingLeft>
-              <PaddingRight>2pt</PaddingRight>
-              <PaddingTop>2pt</PaddingTop>
-              <PaddingBottom>2pt</PaddingBottom>
-            </Style>
-          </Textbox>
         </ReportItems>
-        <Height>6.25023in</Height>
+        <Height>3.45856in</Height>
         <Style />
       </Body>
       <Width>8.5in</Width>
