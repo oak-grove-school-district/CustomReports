@@ -69,6 +69,7 @@
     <Report Include="CI_AtoZ.rdl" />
     <Report Include="ClassSizePenalties.rdl" />
     <Report Include="CustomGPAAddendum.rdl" />
+    <Report Include="DistanceLearningPLP.rdl" />
     <Report Include="DistrictClassAverage.rdl" />
     <Report Include="EmergencyCard.rdl" />
     <Report Include="EnrolledBetween.rdl" />

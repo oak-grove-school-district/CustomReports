@@ -49,7 +49,7 @@ FROM            Person p JOIN
                          GradingScore gs ON gs.taskID = gt.taskID AND gs.personID = p.personID AND gs.sectionID = sec.sectionID AND gs.termID = ter.termID AND gs.calendarID = cal.calendarID LEFT JOIN
                          SchedulingGroup sg ON sg.schedGroupID = sec.schedGroupID AND sg.calendarID = cal.calendarID
 	left join Lep on lep.personID = p.personID and lep.programStatus in ('LEP')
-WHERE        cal.calendarID IN (@calendarID) AND (gs.score IS NOT NULL or gs.progressScore is not null)  AND gs.score IN (@grade) AND ter.termID IN (@Term) AND isnull(sg.name,'') IN (@group)
+WHERE        cal.calendarID IN (@calendarID) AND (gs.score IS NOT NULL or gs.progressScore is not null)  AND (gs.score IN (@grade) or gs.progressScore in (@grade)) AND ter.termID IN (@Term) AND isnull(sg.name,'') IN (@group)
 
 	AND (e.startDate &lt;= ter.startDate and (e.endDate &gt;= ter.endDate or e.endDate is null)) 
 --and cs.name in (@courses)
@@ -210,13 +210,18 @@ END</CommandText>
             <Value>=Parameters!Task.Value</Value>
           </QueryParameter>
         </QueryParameters>
-        <CommandText>select isnull(gs.score,gs.progressScore) as score
+        <CommandText>select * from(
+
+select isnull(gs.score,gs.progressScore) as score
 from GradingScore gs
 where gs.calendarID in (@calendarID)
 and gs.taskID in (@Task)
 --and gs.score is not null
 group by gs.score, gs.progressScore
-order by gs.score, gs.progressScore</CommandText>
+--order by gs.score, gs.progressScore
+) x
+group by x.score
+order by x.score</CommandText>
         <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
       </Query>
       <Fields>
@@ -1552,7 +1557,6 @@ order by cs.name</CommandText>
       <DataType>String</DataType>
       <AllowBlank>true</AllowBlank>
       <Prompt>Courses</Prompt>
-      <Hidden>true</Hidden>
       <ValidValues>
         <DataSetReference>
           <DataSetName>Courses</DataSetName>
