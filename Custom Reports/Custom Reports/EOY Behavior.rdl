@@ -42,7 +42,7 @@ order by sy.endyear desc</CommandText>
             <Value>=Parameters!endyear.Value</Value>
           </QueryParameter>
         </QueryParameters>
-        <CommandText>select distinct p.studentNumber, i.lastName, i.firstName, i.gender, e.grade, c.name as [Cal], 
+        <CommandText>select distinct p.studentNumber, p.stateID, i.lastName, i.firstName, i.gender, e.grade, c.name as [Cal], 
 	(case when i.raceEthnicityFed = 1 then 'Hispanic'
 		when i.raceEthnicityFed = 2 then 'American Indian/Alaska Native'
 		when i.raceEthnicityFed = 3 then 'Asian'
@@ -110,14 +110,19 @@ where e.endYear = @endyear
 	and c.name not like '%Extended%'
 	and c.name not like '%Distric%'
 	and c.name not like '%public%'
+	and c.name not like '%private%'
 group by p.studentNumber, i.lastName, i.firstName, i.gender, e.grade, c.name, i.raceEthnicityFed, bi.timestamp, bt.code, bt.name, brt.name, brt.code
-	,pos.eligibility, lep.programStatus, ts.result, br.role, cbe.value, cd.name, i2.firstName, i2.lastName
+	,pos.eligibility, lep.programStatus, ts.result, br.role, cbe.value, cd.name, i2.firstName, i2.lastName, p.stateID
 order by c.name, i.lastName</CommandText>
         <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
       </Query>
       <Fields>
         <Field Name="studentNumber">
           <DataField>studentNumber</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="stateID">
+          <DataField>stateID</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
         <Field Name="lastName">
@@ -258,6 +263,9 @@ group by cal.startDate, cal.endDate, cal.endYear</CommandText>
             <TablixBody>
               <TablixColumns>
                 <TablixColumn>
+                  <Width>1.10417in</Width>
+                </TablixColumn>
+                <TablixColumn>
                   <Width>1in</Width>
                 </TablixColumn>
                 <TablixColumn>
@@ -363,6 +371,36 @@ group by cal.startDate, cal.endDate, cal.endYear</CommandText>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox1</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox13">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>SSID</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox13</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -1135,6 +1173,36 @@ group by cal.startDate, cal.endDate, cal.endYear</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
+                        <Textbox Name="stateID">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!stateID.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>stateID</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
                         <Textbox Name="lastName">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
@@ -1886,6 +1954,7 @@ group by cal.startDate, cal.endDate, cal.endYear</CommandText>
                 <TablixMember />
                 <TablixMember />
                 <TablixMember />
+                <TablixMember />
               </TablixMembers>
             </TablixColumnHierarchy>
             <TablixRowHierarchy>
@@ -1900,7 +1969,7 @@ group by cal.startDate, cal.endDate, cal.endYear</CommandText>
             </TablixRowHierarchy>
             <DataSetName>DataSet1</DataSetName>
             <Height>0.5in</Height>
-            <Width>22.20835in</Width>
+            <Width>23.31252in</Width>
             <Style>
               <Border>
                 <Style>None</Style>
@@ -1911,7 +1980,7 @@ group by cal.startDate, cal.endDate, cal.endYear</CommandText>
         <Height>0.5in</Height>
         <Style />
       </Body>
-      <Width>22.20835in</Width>
+      <Width>23.31252in</Width>
       <Page>
         <LeftMargin>1in</LeftMargin>
         <RightMargin>1in</RightMargin>

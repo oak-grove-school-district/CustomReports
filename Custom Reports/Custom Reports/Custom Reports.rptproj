@@ -122,6 +122,7 @@
     <Report Include="StudentDetails.rdl" />
     <Report Include="StudentRaceEthnicity.rdl" />
     <Report Include="SuspensionForm2.rdl" />
+    <Report Include="TBTest.rdl" />
     <Report Include="WeeklyAttByGrade.rdl" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Reporting Services\Microsoft.ReportingServices.MSBuilder.targets" />

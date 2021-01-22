@@ -1524,7 +1524,7 @@ ORDER BY nSchool, nCalID</CommandText>
       <DataType>String</DataType>
       <DefaultValue>
         <Values>
-          <Value>2020</Value>
+          <Value>=2021</Value>
         </Values>
       </DefaultValue>
       <Prompt>end Year</Prompt>
