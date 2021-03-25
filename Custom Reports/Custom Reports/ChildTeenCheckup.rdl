@@ -6,7 +6,7 @@
     <DataSource Name="DataSource1">
       <DataSourceReference>campus</DataSourceReference>
       <rd:SecurityType>None</rd:SecurityType>
-      <rd:DataSourceID>fa5c3c8e-d9d5-46c7-9e08-6be2611f90d9</rd:DataSourceID>
+      <rd:DataSourceID>cb6b1d6e-c218-4166-8162-6523715757dd</rd:DataSourceID>
     </DataSource>
   </DataSources>
   <DataSets>
@@ -88,36 +88,45 @@ END</CommandText>
         </Field>
       </Fields>
     </DataSet>
-    <DataSet Name="tbscreen">
+    <DataSet Name="checkup">
       <Query>
         <DataSourceName>DataSource1</DataSourceName>
         <QueryParameters>
-          <QueryParameter Name="@asOfDate">
-            <Value>=Parameters!asOfDate.Value</Value>
-          </QueryParameter>
           <QueryParameter Name="@calendarID">
             <Value>=Parameters!calendarID.Value</Value>
           </QueryParameter>
         </QueryParameters>
-        <CommandText>select p.studentNumber
-	, CONVERT(varchar(10), cast(i.birthdate as date),101) as Birthdate
-	, i.lastName, i.firstName, e.grade
-	, isnull(CONVERT(varchar(10), cast(hs.date as date),101),'') as [Screening Date]
-	, case when hst.tbFree = 1 then 'Y' else 'N' end as [Free From Communicable TB]
-from Person p
-	join [Identity] i on i.personID = p.personID
-		and i.identityID = p.currentIdentityID
-	join Enrollment e on e.personID = p.personID
-		and e.startDate &lt;= @asOfDate
-		and (e.endDate is null or e.endDate &gt;= @asOfDate)
-	join Calendar cal on cal.calendarID = e.calendarID
-		and cal.calendarID in (@calendarID)
-	left join HealthScreening hs on hs.personID = p.personID
-		and hs.type = 'Tuberculosis'
-	left join HealthScreeningTuberculosis hst on hst.screeningID = hs.screeningID
-where (hs.date is null or (hst.tbFree is null or hst.tbFree = 0))
-and e.grade not in ('PK','SO')
-order by i.lastName, i.firstName</CommandText>
+        <CommandText>	select x.studentNumber
+		, x.Birthdate
+		, x.lastName
+		, x.firstName
+		, x.grade
+		, CONVERT(varchar(10), cast(x.[Screening Date] as date),101) as [Screening Date]
+		, case when x.grade = '00' and x.[Screening Date] between convert(smalldatetime,concat('03/01/',convert(varchar,x.endYear-1))) and getdate() then 'Y'
+			   when x.grade = '01' and x.[Screening Date] between convert(smalldatetime,concat('03/01/',convert(varchar,x.endYear-2))) and convert(smalldatetime,concat('11/11/',convert(varchar,x.endYear-1))) then 'Y'
+			   else 'N' end as [Compliant]
+	from(
+		select p.studentNumber
+			, CONVERT(varchar(10), cast(i.birthdate as date),101) as Birthdate
+			, i.lastName, i.firstName, e.grade
+			, CONVERT(varchar(10), cast(hs.date as date),101) as [Screening Date]
+			, cal.endYear
+		from Person p
+			join [Identity] i on i.personID = p.personID
+				and i.identityID = p.currentIdentityID
+			join Enrollment e on e.personID = p.personID
+				and e.startDate &lt;= getdate()
+				and (e.endDate is null or e.endDate &gt;= getdate())
+			join Calendar cal on cal.calendarID = e.calendarID
+				and cal.calendarID in (@calendarID)
+			left join (
+					select hs.personID, hs.date
+						, ROW_NUMBER() over(PARTITION by hs.personID order by hs.screeningID desc) as rn
+					from HealthScreening hs
+					where hs.type = 'Child &amp; Teen Checkup'
+					) hs on hs.personID = p.personID and hs.rn = 1
+		where e.grade in ('00','01')
+		) x</CommandText>
       </Query>
       <Fields>
         <Field Name="studentNumber">
@@ -144,11 +153,20 @@ order by i.lastName, i.firstName</CommandText>
           <DataField>Screening Date</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="Free_From_Communicable_TB">
-          <DataField>Free From Communicable TB</DataField>
+        <Field Name="Compliant">
+          <DataField>Compliant</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
       </Fields>
+      <Filters>
+        <Filter>
+          <FilterExpression>=Fields!Compliant.Value</FilterExpression>
+          <Operator>Equal</Operator>
+          <FilterValues>
+            <FilterValue>N</FilterValue>
+          </FilterValues>
+        </Filter>
+      </Filters>
     </DataSet>
   </DataSets>
   <ReportSections>
@@ -159,286 +177,24 @@ order by i.lastName, i.firstName</CommandText>
             <TablixBody>
               <TablixColumns>
                 <TablixColumn>
-                  <Width>1.07292in</Width>
+                  <Width>1.01042in</Width>
                 </TablixColumn>
                 <TablixColumn>
-                  <Width>1in</Width>
+                  <Width>1.02083in</Width>
                 </TablixColumn>
                 <TablixColumn>
-                  <Width>2.92708in</Width>
+                  <Width>2.41667in</Width>
                 </TablixColumn>
                 <TablixColumn>
                   <Width>0.53125in</Width>
                 </TablixColumn>
                 <TablixColumn>
-                  <Width>1.16667in</Width>
-                </TablixColumn>
-                <TablixColumn>
-                  <Width>0.95833in</Width>
+                  <Width>1.15625in</Width>
                 </TablixColumn>
               </TablixColumns>
               <TablixRows>
                 <TablixRow>
                   <Height>0.25in</Height>
-                  <TablixCells>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Textbox16">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value>="Total Records: " &amp; CountRows("tbscreen")</Value>
-                                  <Style>
-                                    <FontFamily>Arial</FontFamily>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style>
-                                <TextAlign>Left</TextAlign>
-                              </Style>
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>Textbox16</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <VerticalAlign>Middle</VerticalAlign>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                        <ColSpan>6</ColSpan>
-                      </CellContents>
-                    </TablixCell>
-                    <TablixCell />
-                    <TablixCell />
-                    <TablixCell />
-                    <TablixCell />
-                    <TablixCell />
-                  </TablixCells>
-                </TablixRow>
-                <TablixRow>
-                  <Height>0.25in</Height>
-                  <TablixCells>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Textbox11">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value />
-                                  <Style>
-                                    <FontFamily>Arial</FontFamily>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style>
-                                <TextAlign>Center</TextAlign>
-                              </Style>
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>Textbox11</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <VerticalAlign>Middle</VerticalAlign>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Textbox12">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value />
-                                  <Style>
-                                    <FontFamily>Arial</FontFamily>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style>
-                                <TextAlign>Center</TextAlign>
-                              </Style>
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>Textbox12</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <VerticalAlign>Middle</VerticalAlign>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Textbox13">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value />
-                                  <Style>
-                                    <FontFamily>Arial</FontFamily>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style />
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>Textbox13</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <VerticalAlign>Middle</VerticalAlign>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Textbox21">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value />
-                                  <Style>
-                                    <FontFamily>Arial</FontFamily>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style>
-                                <TextAlign>Center</TextAlign>
-                              </Style>
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>Textbox21</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <VerticalAlign>Middle</VerticalAlign>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Textbox14">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value />
-                                  <Style>
-                                    <FontFamily>Arial</FontFamily>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style>
-                                <TextAlign>Center</TextAlign>
-                              </Style>
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>Textbox14</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <VerticalAlign>Middle</VerticalAlign>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Textbox15">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value />
-                                  <Style>
-                                    <FontFamily>Arial</FontFamily>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style>
-                                <TextAlign>Center</TextAlign>
-                              </Style>
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>Textbox15</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <VerticalAlign>Middle</VerticalAlign>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
-                  </TablixCells>
-                </TablixRow>
-                <TablixRow>
-                  <Height>0.625in</Height>
                   <TablixCells>
                     <TablixCell>
                       <CellContents>
@@ -449,13 +205,11 @@ order by i.lastName, i.firstName</CommandText>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>Student Number</Value>
+                                  <Value>StudentID</Value>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style>
-                                <TextAlign>Center</TextAlign>
-                              </Style>
+                              <Style />
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox1</rd:DefaultName>
@@ -464,7 +218,6 @@ order by i.lastName, i.firstName</CommandText>
                               <Color>LightGrey</Color>
                               <Style>Solid</Style>
                             </Border>
-                            <VerticalAlign>Middle</VerticalAlign>
                             <PaddingLeft>2pt</PaddingLeft>
                             <PaddingRight>2pt</PaddingRight>
                             <PaddingTop>2pt</PaddingTop>
@@ -486,9 +239,7 @@ order by i.lastName, i.firstName</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style>
-                                <TextAlign>Center</TextAlign>
-                              </Style>
+                              <Style />
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox3</rd:DefaultName>
@@ -497,7 +248,6 @@ order by i.lastName, i.firstName</CommandText>
                               <Color>LightGrey</Color>
                               <Style>Solid</Style>
                             </Border>
-                            <VerticalAlign>Middle</VerticalAlign>
                             <PaddingLeft>2pt</PaddingLeft>
                             <PaddingRight>2pt</PaddingRight>
                             <PaddingTop>2pt</PaddingTop>
@@ -515,7 +265,7 @@ order by i.lastName, i.firstName</CommandText>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>Student Name</Value>
+                                  <Value>last Name</Value>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
@@ -528,42 +278,6 @@ order by i.lastName, i.firstName</CommandText>
                               <Color>LightGrey</Color>
                               <Style>Solid</Style>
                             </Border>
-                            <VerticalAlign>Middle</VerticalAlign>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Textbox22">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value>Grade</Value>
-                                  <Style>
-                                    <FontFamily>Arial</FontFamily>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style>
-                                <TextAlign>Center</TextAlign>
-                              </Style>
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>Textbox22</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <VerticalAlign>Middle</VerticalAlign>
                             <PaddingLeft>2pt</PaddingLeft>
                             <PaddingRight>2pt</PaddingRight>
                             <PaddingTop>2pt</PaddingTop>
@@ -581,7 +295,7 @@ order by i.lastName, i.firstName</CommandText>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>Screening Date</Value>
+                                  <Value>Grade</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -598,7 +312,6 @@ order by i.lastName, i.firstName</CommandText>
                               <Color>LightGrey</Color>
                               <Style>Solid</Style>
                             </Border>
-                            <VerticalAlign>Middle</VerticalAlign>
                             <PaddingLeft>2pt</PaddingLeft>
                             <PaddingRight>2pt</PaddingRight>
                             <PaddingTop>2pt</PaddingTop>
@@ -616,7 +329,7 @@ order by i.lastName, i.firstName</CommandText>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>Free From Communicable TB</Value>
+                                  <Value>Screening Date</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -633,7 +346,6 @@ order by i.lastName, i.firstName</CommandText>
                               <Color>LightGrey</Color>
                               <Style>Solid</Style>
                             </Border>
-                            <VerticalAlign>Middle</VerticalAlign>
                             <PaddingLeft>2pt</PaddingLeft>
                             <PaddingRight>2pt</PaddingRight>
                             <PaddingTop>2pt</PaddingTop>
@@ -660,9 +372,7 @@ order by i.lastName, i.firstName</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style>
-                                <TextAlign>Center</TextAlign>
-                              </Style>
+                              <Style />
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>studentNumber</rd:DefaultName>
@@ -692,9 +402,7 @@ order by i.lastName, i.firstName</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style>
-                                <TextAlign>Center</TextAlign>
-                              </Style>
+                              <Style />
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Birthdate</rd:DefaultName>
@@ -817,47 +525,12 @@ order by i.lastName, i.firstName</CommandText>
                         </Textbox>
                       </CellContents>
                     </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Free_From_Communicable_TB">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value>=Fields!Free_From_Communicable_TB.Value</Value>
-                                  <Style>
-                                    <FontFamily>Arial</FontFamily>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style>
-                                <TextAlign>Center</TextAlign>
-                              </Style>
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>Free_From_Communicable_TB</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
                   </TablixCells>
                 </TablixRow>
               </TablixRows>
             </TablixBody>
             <TablixColumnHierarchy>
               <TablixMembers>
-                <TablixMember />
                 <TablixMember />
                 <TablixMember />
                 <TablixMember />
@@ -871,19 +544,21 @@ order by i.lastName, i.firstName</CommandText>
                   <KeepWithGroup>After</KeepWithGroup>
                 </TablixMember>
                 <TablixMember>
-                  <KeepWithGroup>After</KeepWithGroup>
-                </TablixMember>
-                <TablixMember>
-                  <KeepWithGroup>After</KeepWithGroup>
-                </TablixMember>
-                <TablixMember>
                   <Group Name="Details" />
                 </TablixMember>
               </TablixMembers>
             </TablixRowHierarchy>
-            <DataSetName>tbscreen</DataSetName>
-            <Height>1.375in</Height>
-            <Width>7.65625in</Width>
+            <DataSetName>checkup</DataSetName>
+            <SortExpressions>
+              <SortExpression>
+                <Value>=Fields!grade.Value</Value>
+              </SortExpression>
+              <SortExpression>
+                <Value>=Fields!lastName.Value</Value>
+              </SortExpression>
+            </SortExpressions>
+            <Height>0.5in</Height>
+            <Width>6.13542in</Width>
             <Style>
               <Border>
                 <Style>None</Style>
@@ -891,10 +566,10 @@ order by i.lastName, i.firstName</CommandText>
             </Style>
           </Tablix>
         </ReportItems>
-        <Height>1.375in</Height>
+        <Height>0.5in</Height>
         <Style />
       </Body>
-      <Width>7.65625in</Width>
+      <Width>6.13542in</Width>
       <Page>
         <LeftMargin>1in</LeftMargin>
         <RightMargin>1in</RightMargin>
@@ -927,7 +602,7 @@ order by i.lastName, i.firstName</CommandText>
     </ReportParameter>
     <ReportParameter Name="calendarID">
       <DataType>String</DataType>
-      <Prompt>Calendar</Prompt>
+      <Prompt>calendar ID</Prompt>
       <ValidValues>
         <DataSetReference>
           <DataSetName>userCalendar</DataSetName>
@@ -986,20 +661,11 @@ order by i.lastName, i.firstName</CommandText>
       <Prompt>contextIDType</Prompt>
       <Hidden>true</Hidden>
     </ReportParameter>
-    <ReportParameter Name="asOfDate">
-      <DataType>DateTime</DataType>
-      <DefaultValue>
-        <Values>
-          <Value>=Today()</Value>
-        </Values>
-      </DefaultValue>
-      <Prompt>As Of Date</Prompt>
-    </ReportParameter>
   </ReportParameters>
   <ReportParametersLayout>
     <GridLayoutDefinition>
       <NumberOfColumns>4</NumberOfColumns>
-      <NumberOfRows>3</NumberOfRows>
+      <NumberOfRows>2</NumberOfRows>
       <CellDefinitions>
         <CellDefinition>
           <ColumnIndex>0</ColumnIndex>
@@ -1041,14 +707,9 @@ order by i.lastName, i.firstName</CommandText>
           <RowIndex>1</RowIndex>
           <ParameterName>contextIDType</ParameterName>
         </CellDefinition>
-        <CellDefinition>
-          <ColumnIndex>0</ColumnIndex>
-          <RowIndex>2</RowIndex>
-          <ParameterName>asOfDate</ParameterName>
-        </CellDefinition>
       </CellDefinitions>
     </GridLayoutDefinition>
   </ReportParametersLayout>
   <rd:ReportUnitType>Inch</rd:ReportUnitType>
-  <rd:ReportID>76001d05-7636-4cd6-9e0e-fbced53816e9</rd:ReportID>
+  <rd:ReportID>71447a29-60cc-4979-899e-24cba972d9ec</rd:ReportID>
 </Report>

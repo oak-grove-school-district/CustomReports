@@ -66,9 +66,11 @@
     <Report Include="AttendanceTrends.rdl" />
     <Report Include="CDEParticipation.rdl" />
     <Report Include="Certified.rdl" />
+    <Report Include="ChildTeenCheckup.rdl" />
     <Report Include="CI_AtoZ.rdl" />
     <Report Include="ClassSizePenalties.rdl" />
     <Report Include="CustomGPAAddendum.rdl" />
+    <Report Include="DentalScreening.rdl" />
     <Report Include="DistanceLearningPLP.rdl" />
     <Report Include="DistrictClassAverage.rdl" />
     <Report Include="EmergencyCard.rdl" />
@@ -80,6 +82,7 @@
     <Report Include="Flags.rdl" />
     <Report Include="GATE.rdl" />
     <Report Include="GPA Report.rdl" />
+    <Report Include="HighSchool.rdl" />
     <Report Include="Home Primary Language.rdl" />
     <Report Include="HonorsNight.rdl" />
     <Report Include="HouseholdCheck.rdl" />
