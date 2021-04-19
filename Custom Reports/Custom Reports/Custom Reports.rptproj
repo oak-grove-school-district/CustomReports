@@ -64,6 +64,7 @@
     <Report Include="AttendancePercentageByDay.rdl" />
     <Report Include="AttendanceThing.rdl" />
     <Report Include="AttendanceTrends.rdl" />
+    <Report Include="BlendedLearningGroups.rdl" />
     <Report Include="CDEParticipation.rdl" />
     <Report Include="Certified.rdl" />
     <Report Include="ChildTeenCheckup.rdl" />

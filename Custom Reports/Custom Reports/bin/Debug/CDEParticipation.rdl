@@ -60,27 +60,32 @@ group by sec.sectionID, c.name, sec.number</CommandText></Query><Fields><Field N
 	, i2.firstName as [Cert Employee FN]
 	, i2.lastName as [Cert Employee LN]
 	, max(case when att.[Day of Week] = 'Monday' and dow.attendance = 1 then 
-			case when att.[Att Code] in ('T','TDE','TDU','TD30','VP','ECO','P') then 'PS' 
+			case when att.Status like 'Virtual' and att.[Att Code] in ('T','TDE','TDU','TD30','VP','ECO','P') then 'PS' 
+				 when att.Status like 'Physical' and att.[Att Code] in ('T','TDE','TDU','TD30','VP','ECO','P') then 'P' 
 				 when att.[Att Code] in ('PA','IS2') then 'PA'
 				 when att.[Att Code] in ('ILL','OTX','AEX','IS1') then 'VA'
 				 when att.[Att Code] in ('A','UNV') then 'UA' end else '' end) as [Monday]
 	, max(case when att.[Day of Week] = 'Tuesday' and dow.attendance = 1 then 
-			case when att.[Att Code] in ('T','TDE','TDU','TD30','VP','ECO','P') then 'PS' 
+			case when att.Status like 'Virtual' and att.[Att Code] in ('T','TDE','TDU','TD30','VP','ECO','P') then 'PS' 
+				 when att.Status like 'Physical' and att.[Att Code] in ('T','TDE','TDU','TD30','VP','ECO','P') then 'P' 
 				 when att.[Att Code] in ('PA','IS2') then 'PA'
 				 when att.[Att Code] in ('ILL','OTX','AEX','IS1') then 'VA'
 				 when att.[Att Code] in ('A','UNV') then 'UA' end else '' end) as [Tuesday]
 	, max(case when att.[Day of Week] = 'Wednesday' and dow.attendance = 1 then 
-			case when att.[Att Code] in ('T','TDE','TDU','TD30','VP','ECO','P') then 'PS' 
+			case when att.Status like 'Virtual' and att.[Att Code] in ('T','TDE','TDU','TD30','VP','ECO','P') then 'PS' 
+				 when att.Status like 'Physical' and att.[Att Code] in ('T','TDE','TDU','TD30','VP','ECO','P') then 'P' 
 				 when att.[Att Code] in ('PA','IS2') then 'PA'
 				 when att.[Att Code] in ('ILL','OTX','AEX','IS1') then 'VA'
 				 when att.[Att Code] in ('A','UNV') then 'UA' end else '' end) as [Wednesday]
 	, max(case when att.[Day of Week] = 'Thursday' and dow.attendance = 1 then 
-			case when att.[Att Code] in ('T','TDE','TDU','TD30','VP','ECO','P') then 'PS' 
+			case when att.Status like 'Virtual' and att.[Att Code] in ('T','TDE','TDU','TD30','VP','ECO','P') then 'PS' 
+				 when att.Status like 'Physical' and att.[Att Code] in ('T','TDE','TDU','TD30','VP','ECO','P') then 'P'  
 				 when att.[Att Code] in ('PA','IS2') then 'PA'
 				 when att.[Att Code] in ('ILL','OTX','AEX','IS1') then 'VA'
 				 when att.[Att Code] in ('A','UNV') then 'UA' end else '' end) as [Thursday]
 	, max(case when att.[Day of Week] = 'Friday' and dow.attendance = 1 then 
-			case when att.[Att Code] in ('T','TDE','TDU','TD30','VP','ECO','P') then 'PS' 
+			case when att.Status like 'Virtual' and att.[Att Code] in ('T','TDE','TDU','TD30','VP','ECO','P') then 'PS' 
+				 when att.Status like 'Physical' and att.[Att Code] in ('T','TDE','TDU','TD30','VP','ECO','P') then 'P'  
 				 when att.[Att Code] in ('PA','IS2') then 'PA'
 				 when att.[Att Code] in ('ILL','OTX','AEX','IS1') then 'VA'
 				 when att.[Att Code] in ('A','UNV') then 'UA' end else '' end) as [Friday]
@@ -89,7 +94,7 @@ from Person p
 		and i.identityID = p.currentIdentityID
 	join Enrollment e on e.personID = p.personID
 		and e.active = 1
-		and (e.startDate &lt;= @startDate)
+		and (e.startDate &lt;= @endDate)
 		and (e.endDate is null or e.endDate &gt;= @endDate)
 	join Calendar cal on cal.calendarID = e.calendarID
 		and cal.endYear = e.endYear
@@ -145,6 +150,8 @@ from Person p
 					, case when att.attendanceID is null then 'P'
 							when att.status = 'T' and att.excuseID is null then 'T'
 							when att.status = 'A' and att.excuseID is null then 'A' else ae.code end as [Att Code]
+					, case when ds.dayID is not null then 'Virtual'
+						   when ds.dayID is null then 'Physical' end as [Status]
 				from (
 						select dayID
 							, calendarID
@@ -189,6 +196,23 @@ from Person p
 						and att.periodID = per.periodID
 					left join AttendanceExcuse ae on ae.excuseID = att.excuseID
 						and ae.calendarID = att.calendarID
+					left join (
+						select bla.personID, bld.dayID, bld.blendedLearningGroupID
+						from BlendedLearningGroupAssignment bla
+							join BlendedLearningGroupRemoteDay bld on bld.blendedLearningGroupID = bla.blendedLearningGroupID
+								and bld.calendarID = @calendarID
+							join (
+							select dayID
+								, calendarID
+								, date
+								, DATENAME(dw,date) as [Day of Week]
+								, day.periodScheduleID
+							from Day
+							where attendance = 1
+								and calendarID = @calendarID
+								and date between @startDate and @endDate
+								) dow on dow.dayID = bld.dayID and dow.calendarID = bld.calendarID
+							) ds on ds.personID = e.personID and ds.dayID = dow.dayID
 			) att on att.personID = p.personID and att.periodScheduleID = ps.periodScheduleID and att.periodID = per.periodID
 where dow.date between @startDate and @endDate
 and sec.sectionID = @sectionID
