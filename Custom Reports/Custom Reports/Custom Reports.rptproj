@@ -64,6 +64,7 @@
     <Report Include="AttendancePercentageByDay.rdl" />
     <Report Include="AttendanceThing.rdl" />
     <Report Include="AttendanceTrends.rdl" />
+    <Report Include="BlendedLearningAggregated.rdl" />
     <Report Include="BlendedLearningGroups.rdl" />
     <Report Include="CDEParticipation.rdl" />
     <Report Include="Certified.rdl" />
@@ -125,7 +126,7 @@
     <Report Include="StaffChanges.rdl" />
     <Report Include="StudentDetails.rdl" />
     <Report Include="StudentRaceEthnicity.rdl" />
-    <Report Include="SuspensionForm2.rdl" />
+    <Report Include="SuspensionForm.rdl" />
     <Report Include="TBTest.rdl" />
     <Report Include="WeeklyAttByGrade.rdl" />
   </ItemGroup>

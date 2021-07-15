@@ -25,7 +25,7 @@ join IdentityRaceEthnicity ire on ire.identityID = i.identityID
 join RaceEthnicity re on re.raceID = ire.raceID
 where p.studentNumber is not null)
 
-select x.studentNumber, x.stateID, x.lastName, x.firstName, x.birthdate, x.grade, x.[Race(s)], isnull(x.MKV,'') as MKV, isnull(x.Foster,'') as Foster, isnull(x.IEP,'') as IEP, isnull(x.Migrant,'') as [Migrant], x.[EL Status], x.name
+select x.studentNumber, x.stateID, x.lastName, x.firstName, x.birthdate, x.grade, x.[Race(s)], isnull(x.MKV,'') as MKV, isnull(x.Foster,'') as Foster, isnull(x.IEP,'') as IEP, isnull(x.Migrant,'') as [Migrant], x.[EL Status], x.FRL, x.name
 	,sum(case when x.[Att Code] = 'A' then 1 else 0 end) as [A]
 	,sum(case when x.[Att Code] = 'ACT' then 1 else 0 end) as [ACT]
 	,sum(case when x.[Att Code] = 'AEX' then 1 else 0 end) as [AEX]
@@ -55,7 +55,8 @@ from
 		, case when pp.programID = '96' then 'Foster' end as [Foster]
 		, case when pp.programID = '53' then 'IEP' end as [IEP]
 		, case when pp.programID = '44' then 'Migrant' end as [Migrant]
-		, cpm.[EL Status]
+		, isnull(cpm.[EL Status],'EO') as [EL Status]
+		, case when cpm.FRL in ('F','R') then 'Y'  else '' end as [FRL]
 	from
 	(
 		SELECT p.studentNumber, p.stateID, p.personID, i.lastName, i.firstName, CONVERT(varchar(10), cast(i.birthdate as date),101) as birthdate, e.grade, c.name, a.date
@@ -88,9 +89,9 @@ from
 		and pp.programID in ('105','96','53','44')
 		and (pp.eligibilityEndDate is null or pp.eligibilityEndDate &gt;= getdate())
 	left join cust_og_programMatrix cpm on cpm.personID = y.personID
-	group by y.studentNumber, y.lastName, y.firstName, y.birthdate, y.grade, y.name, y.date, y.[Att Code], y.[Race(s)], pp.programID, cpm.[EL Status], y.stateID
+	group by y.studentNumber, y.lastName, y.firstName, y.birthdate, y.grade, y.name, y.date, y.[Att Code], y.[Race(s)], pp.programID, cpm.[EL Status], y.stateID, cpm.FRL
 ) x
-group by x.studentNumber, x.lastName, x.firstName, x.birthdate, x.grade, x.name, x.[Race(s)], x.MKV, x.Foster, x.IEP, x.Migrant, x.[EL Status], x.stateID
+group by x.studentNumber, x.lastName, x.firstName, x.birthdate, x.grade, x.name, x.[Race(s)], x.MKV, x.Foster, x.IEP, x.Migrant, x.[EL Status], x.stateID, x.FRL
 order by x.name, x.grade, x.lastName</CommandText>
       </Query>
       <Fields>
@@ -144,6 +145,10 @@ order by x.name, x.grade, x.lastName</CommandText>
         </Field>
         <Field Name="EL_Status">
           <DataField>EL Status</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="FRL">
+          <DataField>FRL</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
         <Field Name="A">
@@ -292,6 +297,9 @@ order by sy.endyear desc</CommandText>
                 </TablixColumn>
                 <TablixColumn>
                   <Width>0.78125in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>0.59375in</Width>
                 </TablixColumn>
                 <TablixColumn>
                   <Width>2.20833in</Width>
@@ -667,6 +675,38 @@ order by sy.endyear desc</CommandText>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox12</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox18">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>FRL</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox18</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -1725,6 +1765,38 @@ order by sy.endyear desc</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
+                        <Textbox Name="FRL">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!FRL.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>FRL</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
                         <Textbox Name="Race_s_">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
@@ -2483,6 +2555,7 @@ order by sy.endyear desc</CommandText>
                 <TablixMember />
                 <TablixMember />
                 <TablixMember />
+                <TablixMember />
               </TablixMembers>
             </TablixColumnHierarchy>
             <TablixRowHierarchy>
@@ -2497,7 +2570,7 @@ order by sy.endyear desc</CommandText>
             </TablixRowHierarchy>
             <DataSetName>Attendance</DataSetName>
             <Height>0.5in</Height>
-            <Width>20.76044in</Width>
+            <Width>21.35419in</Width>
             <Style>
               <Border>
                 <Style>None</Style>
@@ -2508,7 +2581,7 @@ order by sy.endyear desc</CommandText>
         <Height>0.5in</Height>
         <Style />
       </Body>
-      <Width>20.76044in</Width>
+      <Width>21.35419in</Width>
       <Page>
         <LeftMargin>1in</LeftMargin>
         <RightMargin>1in</RightMargin>
