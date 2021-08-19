@@ -4087,7 +4087,7 @@ COUNTDISTINCT(IIF(Fields!sectionNumber.Value &lt;&gt; "Unrostered" AND Fields!se
       <DataType>String</DataType>
       <DefaultValue>
         <Values>
-          <Value>=2021</Value>
+          <Value>=2022</Value>
         </Values>
       </DefaultValue>
       <AllowBlank>true</AllowBlank>

@@ -1,0 +1,222 @@
+﻿<?xml version="1.0" encoding="utf-8"?><Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2010/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner"><AutoRefresh>0</AutoRefresh><DataSources><DataSource Name="DataSource1"><DataSourceReference>campus</DataSourceReference><rd:SecurityType>None</rd:SecurityType><rd:DataSourceID>2f00b570-798d-4ec7-b933-fd9bd7681ce9</rd:DataSourceID></DataSource></DataSources><DataSets><DataSet Name="userCalendar"><Query><DataSourceName>DataSource1</DataSourceName><QueryParameters><QueryParameter Name="@userID"><Value>=Parameters!userID.Value</Value></QueryParameter></QueryParameters><CommandText>DECLARE @allCalendars bit
+SELECT @allCalendars = u.allCalendars FROM dbo.UserAccount u WHERE u.userID = @userID
+
+IF @allCalendars = 1
+BEGIN
+
+	SELECT c.districtID, c.schoolID, c.calendarID, c.name + ' - ' + s.name as Calendar, 1 as ModifyRights, 1 as ownerRights
+	FROM dbo.Calendar c
+	INNER JOIN school s on s.schoolID = c.schoolID
+	order by calendarID desc
+
+END
+
+ELSE
+BEGIN
+
+	SELECT c.districtID, c.schoolID, c.calendarID, c.name + ' - ' + s.name as calendar , mr.modifyRights, mr.ownerRights
+	FROM dbo.UserAccount ua
+	LEFT OUTER JOIN dbo.UserSchoolYearRights mr on mr.userID = ua.userID
+	INNER JOIN dbo.Calendar c on (mr.districtID = c.districtID)
+					AND ((c.endYear = mr.endYear AND c.schoolID = mr.schoolID AND mr.calendarID IS NULL)
+					OR (c.endYear = mr.endYear AND mr.schoolID IS NULL)
+					OR (c.schoolID = mr.schoolID AND mr.endYear IS NULL)
+					OR (c.calendarID = mr.calendarID)
+					OR (mr.endYear IS NULL AND mr.schoolID IS NULL))
+	INNER JOIN school s on s.schoolID = c.schoolID
+	WHERE ua.userID = @userID
+	UNION
+	SELECT c2.districtID, c2.schoolID, c2.calendarID, c2.name + ' - ' + s2.name as calendar, mr2.modifyRights, mr2.ownerRights
+	FROM dbo.UserGroupSchoolYearRights mr2
+	INNER JOIN dbo.Calendar c2 on mr2.districtID = c2.districtID
+					AND ((c2.endYear = mr2.endYear AND c2.schoolID = mr2.schoolID AND mr2.calendarID IS NULL)
+					OR (c2.endYear = mr2.endYear AND mr2.schoolID IS NULL)
+					OR (c2.schoolID = mr2.schoolID AND mr2.endYear IS NULL)
+					OR (c2.calendarID = mr2.calendarID)
+					OR (mr2.endYear IS NULL AND mr2.schoolID IS NULL))
+	INNER JOIN UserGroupMember gm2 on gm2.groupID = mr2.groupID
+	INNER JOIN school s2 on s2.schoolID = c2.schoolID
+	WHERE gm2.userID = @userID
+	ORDER BY calendarID DESC
+
+END</CommandText></Query><Fields><Field Name="districtID"><DataField>districtID</DataField><rd:TypeName>System.Int32</rd:TypeName></Field><Field Name="schoolID"><DataField>schoolID</DataField><rd:TypeName>System.Int32</rd:TypeName></Field><Field Name="calendarID"><DataField>calendarID</DataField><rd:TypeName>System.Int32</rd:TypeName></Field><Field Name="Calendar"><DataField>Calendar</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="ModifyRights"><DataField>ModifyRights</DataField><rd:TypeName>System.Int32</rd:TypeName></Field><Field Name="ownerRights"><DataField>ownerRights</DataField><rd:TypeName>System.Int32</rd:TypeName></Field></Fields></DataSet><DataSet Name="section"><Query><DataSourceName>DataSource1</DataSourceName><QueryParameters><QueryParameter Name="@startDate"><Value>=Parameters!startDate.Value</Value></QueryParameter><QueryParameter Name="@endDate"><Value>=Parameters!endDate.Value</Value></QueryParameter><QueryParameter Name="@calendarID"><Value>=Parameters!calendarID.Value</Value></QueryParameter><QueryParameter Name="@personID"><Value>=Parameters!personID.Value</Value></QueryParameter></QueryParameters><CommandText>select sec.sectionID, c.name + ' - ' + convert(varchar,sec.number) as Section
+from Section sec
+	join SectionStaffHistory ssh on ssh.sectionID = sec.sectionID
+		and (ssh.accessStartDate is null or ssh.accessStartDate &lt;= @startDate)
+		and (ssh.accessEndDate is null or ssh.accessEndDate &gt;= @endDate)
+	join Course c on c.courseID = sec.courseID
+	join Calendar cal on cal.calendarID = c.calendarID
+		and cal.calendarID = @calendarID
+	join Trial tr on tr.calendarID = cal.calendarID
+		and tr.active = 1
+		and tr.trialID = sec.trialID
+where ssh.personID = @personID
+group by sec.sectionID, c.name, sec.number</CommandText></Query><Fields><Field Name="sectionID"><DataField>sectionID</DataField><rd:TypeName>System.Int32</rd:TypeName></Field><Field Name="Section"><DataField>Section</DataField><rd:TypeName>System.String</rd:TypeName></Field></Fields></DataSet><DataSet Name="data"><Query><DataSourceName>DataSource1</DataSourceName><QueryParameters><QueryParameter Name="@startDate"><Value>=Parameters!startDate.Value</Value></QueryParameter><QueryParameter Name="@endDate"><Value>=Parameters!endDate.Value</Value></QueryParameter><QueryParameter Name="@userID"><Value>=Parameters!userID.Value</Value></QueryParameter><QueryParameter Name="@calendarID"><Value>=Parameters!calendarID.Value</Value></QueryParameter><QueryParameter Name="@sectionID"><Value>=Parameters!sectionID.Value</Value></QueryParameter></QueryParameters><CommandText>select sch.name as [School Site]
+	, p.personID
+	, p.studentNumber
+	, i.firstName as [Student FN]
+	, i.lastName as [Student LN]
+	, cs.name as [Class Title]
+	, i2.firstName as [Cert Employee FN]
+	, i2.lastName as [Cert Employee LN]
+	, max(case when att.[Day of Week] = 'Monday' and dow.attendance = 1 then 
+			case when att.[Att Code] in ('T','TDE','TDU','TD30','VP','ECO','P') then 'PS' 
+				 when att.[Att Code] in ('PA','IS2') then 'PA'
+				 when att.[Att Code] in ('ILL','OTX','AEX','IS1') then 'VA'
+				 when att.[Att Code] in ('A','UNV') then 'UA' end else '' end) as [Monday]
+	, max(case when att.[Day of Week] = 'Tuesday' and dow.attendance = 1 then 
+			case when att.[Att Code] in ('T','TDE','TDU','TD30','VP','ECO','P') then 'PS' 
+				 when att.[Att Code] in ('PA','IS2') then 'PA'
+				 when att.[Att Code] in ('ILL','OTX','AEX','IS1') then 'VA'
+				 when att.[Att Code] in ('A','UNV') then 'UA' end else '' end) as [Tuesday]
+	, max(case when att.[Day of Week] = 'Wednesday' and dow.attendance = 1 then 
+			case when att.[Att Code] in ('T','TDE','TDU','TD30','VP','ECO','P') then 'PS' 
+				 when att.[Att Code] in ('PA','IS2') then 'PA'
+				 when att.[Att Code] in ('ILL','OTX','AEX','IS1') then 'VA'
+				 when att.[Att Code] in ('A','UNV') then 'UA' end else '' end) as [Wednesday]
+	, max(case when att.[Day of Week] = 'Thursday' and dow.attendance = 1 then 
+			case when att.[Att Code] in ('T','TDE','TDU','TD30','VP','ECO','P') then 'PS' 
+				 when att.[Att Code] in ('PA','IS2') then 'PA'
+				 when att.[Att Code] in ('ILL','OTX','AEX','IS1') then 'VA'
+				 when att.[Att Code] in ('A','UNV') then 'UA' end else '' end) as [Thursday]
+	, max(case when att.[Day of Week] = 'Friday' and dow.attendance = 1 then 
+			case when att.[Att Code] in ('T','TDE','TDU','TD30','VP','ECO','P') then 'PS' 
+				 when att.[Att Code] in ('PA','IS2') then 'PA'
+				 when att.[Att Code] in ('ILL','OTX','AEX','IS1') then 'VA'
+				 when att.[Att Code] in ('A','UNV') then 'UA' end else '' end) as [Friday]
+from Person p
+	join [Identity] i on i.personID = p.personID
+		and i.identityID = p.currentIdentityID
+	join Enrollment e on e.personID = p.personID
+		and e.active = 1
+		and (e.startDate &lt;= @startDate)
+		and (e.endDate is null or e.endDate &gt;= @endDate)
+	join Calendar cal on cal.calendarID = e.calendarID
+		and cal.endYear = e.endYear
+	join School sch on sch.schoolID = cal.schoolID
+	JOIN ScheduleStructure AS ss ON ss.calendarID = cal.calendarID
+	join Trial tr on tr.structureID = ss.structureID
+		and tr.active = 1
+	JOIN SectionPlacement AS sp ON sp.trialID = tr.trialID
+	JOIN Term AS ter ON ter.termID = sp.termID 
+		AND ter.startDate &lt;= @startDate 
+		and ter.endDate &gt;= @endDate
+	join PeriodSchedule ps on ps.structureID = ss.structureID
+	INNER JOIN Period AS per ON per.periodID = sp.periodID
+		and per.periodScheduleID = ps.periodScheduleID
+	join Course cs on cs.calendarID = cal.calendarID
+	join Section sec on sec.courseID = cs.courseID
+		and sec.trialID = tr.trialID
+		AND sec.sectionID = sp.sectionID 
+	join Roster ros on ros.personID = p.personID
+		and ros.sectionID = sec.sectionID
+		and ros.trialID = tr.trialID
+      and (ros.startDate is NULL or ros.startDate &lt;= @startDate)
+      and (ros.endDate is null or ros.endDate &gt;= @endDate)
+	join SectionStaffHistory ssh on ssh.sectionID = sec.sectionID
+		and (ssh.accessStartDate is null or ssh.accessStartDate &lt;= @startDate)
+		and (ssh.accessEndDate is null or ssh.accessEndDate &gt;= @endDate)
+	join Person p2 on p2.personID = ssh.personID
+		and p2.personID = (select personID 
+							from UserAccount 
+							where userID = @userID)
+	join [Identity] i2 on i2.personID = p2.personID
+		and i2.identityID = p2.currentIdentityID
+	join (
+		select dayID
+				, calendarID
+				, date
+				, DATENAME(dw,date) as [Day of Week]
+				, DATEPART(day,date) as [Day Rank]
+				, day.periodScheduleID
+				, attendance
+			from Day
+			where 1 = 1
+				and calendarID = @calendarID
+				and DATENAME(dw,date) in ('Monday','Tuesday','Wednesday','Thursday','Friday')
+			) dow on dow.calendarID = cal.calendarID
+				and dow.periodScheduleID = ps.periodScheduleID
+	left join (
+				select e.personID
+					, per.periodID
+					, per.periodScheduleID
+					, dow.date
+					, DATENAME(dw,dow.date) as [Day of Week]
+					, case when att.attendanceID is null then 'P'
+							when att.status = 'T' and att.excuseID is null then 'T'
+							when att.status = 'A' and att.excuseID is null then 'A' else ae.code end as [Att Code]
+				from (
+						select dayID
+							, calendarID
+							, date
+							, DATENAME(dw,date) as [Day of Week]
+							, day.periodScheduleID
+						from Day
+						where attendance = 1
+							and calendarID = @calendarID
+							and date between @startDate and @endDate
+							) dow
+					left join Enrollment e on e.calendarID = dow.calendarID
+						and e.active = 1
+						and (e.startDate &lt;= @startDate)
+						and (e.endDate is null or e.endDate &gt;= @endDate)
+					join Calendar cal on cal.calendarID = e.calendarID
+						and cal.endYear = e.endYear
+					join School sch on sch.schoolID = cal.schoolID
+					JOIN ScheduleStructure AS ss ON ss.calendarID = cal.calendarID
+					join Trial tr on tr.structureID = ss.structureID
+						and tr.active = 1
+					JOIN SectionPlacement AS sp ON sp.trialID = tr.trialID
+					JOIN Term AS ter ON ter.termID = sp.termID 
+						AND ter.startDate &lt;= @startDate 
+						and ter.endDate &gt;= @endDate
+					join PeriodSchedule ps on ps.structureID = ss.structureID
+					INNER JOIN Period AS per ON per.periodID = sp.periodID
+						and per.periodScheduleID = ps.periodScheduleID
+						and per.periodScheduleID = dow.periodScheduleID
+					join Course cs on cs.calendarID = cal.calendarID
+					join Section sec on sec.courseID = cs.courseID
+						and sec.trialID = tr.trialID
+						AND sec.sectionID = sp.sectionID 
+					join Roster ros on ros.personID = e.personID
+						and ros.sectionID = sec.sectionID
+						and ros.trialID = tr.trialID
+					  and (ros.startDate is NULL or ros.startDate &lt;= @startDate)
+					  and (ros.endDate is null or ros.endDate &gt;= @endDate)
+					left join Attendance att on att.calendarID = e.calendarID
+						and att.date = dow.date
+						and att.personID = e.personID
+						and att.periodID = per.periodID
+					left join AttendanceExcuse ae on ae.excuseID = att.excuseID
+						and ae.calendarID = att.calendarID
+			) att on att.personID = p.personID and att.periodScheduleID = ps.periodScheduleID and att.periodID = per.periodID
+where dow.date between @startDate and @endDate
+and sec.sectionID = @sectionID
+group by sch.name, p.personID, p.studentNumber, i.firstName, i.lastName, cs.name, i2.firstName, i2.lastName</CommandText></Query><Fields><Field Name="School_Site"><DataField>School Site</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="personID"><DataField>personID</DataField><rd:TypeName>System.Int32</rd:TypeName></Field><Field Name="studentNumber"><DataField>studentNumber</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="Student_FN"><DataField>Student FN</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="Student_LN"><DataField>Student LN</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="Class_Title"><DataField>Class Title</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="Cert_Employee_FN"><DataField>Cert Employee FN</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="Cert_Employee_LN"><DataField>Cert Employee LN</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="Monday"><DataField>Monday</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="Tuesday"><DataField>Tuesday</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="Wednesday"><DataField>Wednesday</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="Thursday"><DataField>Thursday</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="Friday"><DataField>Friday</DataField><rd:TypeName>System.String</rd:TypeName></Field></Fields></DataSet><DataSet Name="dates"><Query><DataSourceName>DataSource1</DataSourceName><QueryParameters><QueryParameter Name="@calendarID"><Value>=Parameters!calendarID.Value</Value></QueryParameter></QueryParameters><CommandText>select  dow.date, dow.[Day Rank], dow.[Week Number]
+	, min(wr.date) as [Week Start]
+	, max(wr.date) as [Week End]
+from (
+select date
+	, case when DATENAME(dw,date) = 'Monday' then 1
+		   when DATENAME(dw,date) = 'Tuesday' then 2
+		   when DATENAME(dw,date) = 'Wednesday' then 3
+		   when DATENAME(dw,date) = 'Thursday' then 4
+		   when DATENAME(dw,date) = 'Friday' then 5 end as [Day Rank]
+	, DATEPART(ww,date) as [Week Number]
+		from Day
+		where attendance = 1
+			and calendarID = @calendarID) dow
+		join (
+		select date
+		, case when DATENAME(dw,date) = 'Monday' then 1
+			   when DATENAME(dw,date) = 'Tuesday' then 2
+			   when DATENAME(dw,date) = 'Wednesday' then 3
+			   when DATENAME(dw,date) = 'Thursday' then 4
+			   when DATENAME(dw,date) = 'Friday' then 5 end as [Day Rank]
+		, DATEPART(ww,date) as [Week Number]
+			from Day
+			where attendance = 1
+				and calendarID = @calendarID
+			) wr on wr.[Week Number] = dow.[Week Number]-1
+where CONVERT(varchar(10), cast(dow.date as date),101) = CONVERT(varchar(10), cast(getdate() as date),101)
+group by dow.date, dow.[Day Rank], dow.[Week Number]</CommandText></Query><Fields><Field Name="date"><DataField>date</DataField><rd:TypeName>System.DateTime</rd:TypeName></Field><Field Name="Day_Rank"><DataField>Day Rank</DataField><rd:TypeName>System.Int32</rd:TypeName></Field><Field Name="Week_Number"><DataField>Week Number</DataField><rd:TypeName>System.Int32</rd:TypeName></Field><Field Name="Week_Start"><DataField>Week Start</DataField><rd:TypeName>System.DateTime</rd:TypeName></Field><Field Name="Week_End"><DataField>Week End</DataField><rd:TypeName>System.DateTime</rd:TypeName></Field></Fields></DataSet></DataSets><ReportSections><ReportSection><Body><ReportItems><Tablix Name="Tablix1"><TablixBody><TablixColumns><TablixColumn><Width>3.15286in</Width></TablixColumn><TablixColumn><Width>0.63542in</Width></TablixColumn><TablixColumn><Width>0.63542in</Width></TablixColumn><TablixColumn><Width>0.6875in</Width></TablixColumn><TablixColumn><Width>0.8125in</Width></TablixColumn><TablixColumn><Width>0.83333in</Width></TablixColumn></TablixColumns><TablixRows><TablixRow><Height>0.25in</Height><TablixCells><TablixCell><CellContents><Textbox Name="Textbox1"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Student</Value><Style><FontSize>11pt</FontSize><FontWeight>Bold</FontWeight><FontFamily>Segoe UI</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox1</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox3"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>M</Value><Style><FontSize>11pt</FontSize><FontWeight>Bold</FontWeight><FontFamily>Segoe UI</FontFamily></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>Textbox3</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox5"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Tu</Value><Style><FontSize>11pt</FontSize><FontWeight>Bold</FontWeight><FontFamily>Segoe UI</FontFamily></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>Textbox5</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox7"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>W</Value><Style><FontFamily>Arial</FontFamily><FontSize>11pt</FontSize><FontWeight>Bold</FontWeight></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>Textbox7</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox9"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Th</Value><Style><FontFamily>Arial</FontFamily><FontSize>11pt</FontSize><FontWeight>Bold</FontWeight></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>Textbox9</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox11"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>F</Value><Style><FontFamily>Arial</FontFamily><FontSize>11pt</FontSize><FontWeight>Bold</FontWeight></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>Textbox11</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell></TablixCells></TablixRow><TablixRow><Height>0.25in</Height><TablixCells><TablixCell><CellContents><Textbox Name="Student_FN"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Student_FN.Value</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun><TextRun><Value xml:space="preserve"> </Value><Style><FontFamily>Arial</FontFamily></Style></TextRun><TextRun><Value>=Fields!Student_LN.Value</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Student_FN</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Monday"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Monday.Value</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>Monday</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Tuesday"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Tuesday.Value</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>Tuesday</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Wednesday"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Wednesday.Value</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>Wednesday</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Thursday"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Thursday.Value</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>Thursday</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Friday"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Friday.Value</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>Friday</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell></TablixCells></TablixRow></TablixRows></TablixBody><TablixColumnHierarchy><TablixMembers><TablixMember /><TablixMember /><TablixMember /><TablixMember /><TablixMember /><TablixMember /></TablixMembers></TablixColumnHierarchy><TablixRowHierarchy><TablixMembers><TablixMember><KeepWithGroup>After</KeepWithGroup></TablixMember><TablixMember><Group Name="Details" /></TablixMember></TablixMembers></TablixRowHierarchy><DataSetName>data</DataSetName><SortExpressions><SortExpression><Value>=Fields!Student_FN.Value</Value></SortExpression></SortExpressions><Top>2.21186in</Top><Left>0.68436in</Left><Height>0.5in</Height><Width>6.75703in</Width><Style><Border><Style>Solid</Style><Width>0.5pt</Width></Border></Style></Tablix><Textbox Name="Textbox13"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>LEA: Oak Grove School District</Value><Style><FontFamily>Segoe UI</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox13</rd:DefaultName><Top>0.64189in</Top><Left>0.68436in</Left><Height>0.25in</Height><Width>2.75703in</Width><ZIndex>1</ZIndex><Style><Border><Style>Solid</Style><Width>0.5pt</Width></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox><Textbox Name="Textbox14"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>School: </Value><Style><FontFamily>Segoe UI</FontFamily></Style></TextRun><TextRun><Value>=First(Fields!School_Site.Value, "data")</Value><Style><FontFamily>Segoe UI</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox14</rd:DefaultName><Top>0.89189in</Top><Left>0.68436in</Left><Height>0.25in</Height><Width>2.75703in</Width><ZIndex>2</ZIndex><Style><Border><Style>Solid</Style><Width>0.5pt</Width></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox><Textbox Name="Textbox16"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Week of:</Value><Style><FontFamily>Segoe UI</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox16</rd:DefaultName><Top>1.14189in</Top><Left>0.68436in</Left><Height>0.25in</Height><Width>0.63418in</Width><ZIndex>3</ZIndex><Style><Border><Style>Solid</Style><Width>0.5pt</Width></Border><TopBorder><Style>Solid</Style></TopBorder><BottomBorder><Style>Solid</Style></BottomBorder><LeftBorder><Style>Solid</Style></LeftBorder><RightBorder><Style>None</Style></RightBorder><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox><Textbox Name="Textbox17"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Parameters!startDate.Value + " - " + Parameters!endDate.Value</Value><Style><FontFamily>Segoe UI</FontFamily></Style></TextRun></TextRuns><Style><TextAlign>Left</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>Textbox17</rd:DefaultName><Top>1.14189in</Top><Left>1.31854in</Left><Height>0.25in</Height><Width>2.12285in</Width><ZIndex>4</ZIndex><Style><Border><Style>Solid</Style><Width>0.5pt</Width></Border><TopBorder><Style>Solid</Style></TopBorder><BottomBorder><Style>Solid</Style></BottomBorder><LeftBorder><Style>None</Style></LeftBorder><RightBorder><Style>Solid</Style></RightBorder><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox><Textbox Name="Textbox18"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Certificated Employee: </Value><Style><FontFamily>Segoe UI</FontFamily></Style></TextRun><TextRun><Value>=First(Fields!Cert_Employee_FN.Value, "data") + " " + First(Fields!Cert_Employee_LN.Value, "data")</Value><Style><FontFamily>Segoe UI</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox18</rd:DefaultName><Top>0.64189in</Top><Left>3.44139in</Left><Height>0.25in</Height><Width>4in</Width><ZIndex>5</ZIndex><Style><Border><Style>Solid</Style><Width>0.5pt</Width></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox><Textbox Name="Textbox19"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Grade/Class Title: </Value><Style><FontFamily>Segoe UI</FontFamily></Style></TextRun><TextRun><Value>=First(Fields!Class_Title.Value, "data")</Value><Style><FontFamily>Segoe UI</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox19</rd:DefaultName><Top>0.89189in</Top><Left>3.44139in</Left><Height>0.25in</Height><Width>4in</Width><ZIndex>6</ZIndex><Style><Border><Style>Solid</Style><Width>0.5pt</Width></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox><Textbox Name="Textbox20"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Section C - Daily Participation</Value><Style><FontWeight>Bold</FontWeight><FontFamily>Segoe UI</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox20</rd:DefaultName><Top>0.3971in</Top><Left>0.68436in</Left><Height>0.25in</Height><Width>2.07267in</Width><ZIndex>7</ZIndex><Style><Border><Style>None</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox><Textbox Name="Textbox21"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Legend: </Value><Style><FontFamily>Segoe UI</FontFamily></Style></TextRun><TextRun><Value>P</Value><Style><FontWeight>Bold</FontWeight><FontFamily>Segoe UI</FontFamily></Style></TextRun><TextRun><Value> - In-Person Instruction | </Value><Style><FontWeight>Normal</FontWeight><FontFamily>Segoe UI</FontFamily></Style></TextRun><TextRun><Value>PS</Value><Style><FontWeight>Bold</FontWeight><FontFamily>Segoe UI</FontFamily></Style></TextRun><TextRun><Value> - Student Contact; Assigned Work Submitted; Assessment Completed</Value><Style><FontWeight>Normal</FontWeight><FontFamily>Segoe UI</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph><Paragraph><TextRuns><TextRun><Value>  PA</Value><Style><FontWeight>Bold</FontWeight><FontFamily>Segoe UI</FontFamily></Style></TextRun><TextRun><Value> - Student Contact; Assigned Work Submitted; Assessment Completed</Value><Style><FontWeight>Normal</FontWeight><FontFamily>Segoe UI</FontFamily></Style></TextRun></TextRuns><ListLevel>1</ListLevel><Style /></Paragraph><Paragraph><TextRuns><TextRun><Value>  VA</Value><Style><FontWeight>Bold</FontWeight><FontFamily>Segoe UI</FontFamily></Style></TextRun><TextRun><Value> - Absent Parent/Guardian Contact | </Value><Style><FontWeight>Normal</FontWeight><FontFamily>Segoe UI</FontFamily></Style></TextRun><TextRun><Value>UA</Value><Style><FontWeight>Bold</FontWeight><FontFamily>Segoe UI</FontFamily></Style></TextRun><TextRun><Value> - No Participation/Absent</Value><Style><FontWeight>Normal</FontWeight><FontFamily>Segoe UI</FontFamily></Style></TextRun></TextRuns><ListLevel>1</ListLevel><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox21</rd:DefaultName><Top>1.46134in</Top><Left>0.68436in</Left><Height>0.60342in</Height><Width>6.75703in</Width><ZIndex>8</ZIndex><Style><Border><Style>None</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></ReportItems><Height>3.45856in</Height><Style /></Body><Width>8.5in</Width><Page><Style /></Page></ReportSection></ReportSections><ReportParameters><ReportParameter Name="nodeID"><DataType>String</DataType><DefaultValue><Values><Value>0</Value></Values></DefaultValue><Prompt>nodeID</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="userID"><DataType>String</DataType><DefaultValue><Values><Value>0</Value></Values></DefaultValue><Prompt>user ID</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="calendarID"><DataType>String</DataType><Prompt>Calendar</Prompt><ValidValues><DataSetReference><DataSetName>userCalendar</DataSetName><ValueField>calendarID</ValueField><LabelField>Calendar</LabelField></DataSetReference></ValidValues></ReportParameter><ReportParameter Name="personID"><DataType>String</DataType><DefaultValue><Values><Value>0</Value></Values></DefaultValue><Prompt>person ID</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="username"><DataType>String</DataType><DefaultValue><Values><Value>0</Value></Values></DefaultValue><Prompt>username</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="startDate"><DataType>DateTime</DataType><DefaultValue><DataSetReference><DataSetName>dates</DataSetName><ValueField>Week_Start</ValueField></DataSetReference></DefaultValue><Prompt>Week Start Date</Prompt></ReportParameter><ReportParameter Name="endDate"><DataType>DateTime</DataType><DefaultValue><DataSetReference><DataSetName>dates</DataSetName><ValueField>Week_End</ValueField></DataSetReference></DefaultValue><Prompt>Week End Date</Prompt></ReportParameter><ReportParameter Name="sectionID"><DataType>String</DataType><Prompt>Section</Prompt><ValidValues><DataSetReference><DataSetName>section</DataSetName><ValueField>sectionID</ValueField><LabelField>Section</LabelField></DataSetReference></ValidValues></ReportParameter><ReportParameter Name="contextID"><DataType>String</DataType><DefaultValue><Values><Value>0</Value></Values></DefaultValue><Prompt>contextID</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="contextIDType"><DataType>String</DataType><DefaultValue><Values><Value>0</Value></Values></DefaultValue><Prompt>contextIDType</Prompt><Hidden>true</Hidden></ReportParameter></ReportParameters><rd:ReportUnitType>Inch</rd:ReportUnitType><rd:ReportID>63501192-57fc-4bbb-af6b-c460d4660345</rd:ReportID></Report>
