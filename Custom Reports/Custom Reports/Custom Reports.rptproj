@@ -71,6 +71,7 @@
     <Report Include="ChildTeenCheckup.rdl" />
     <Report Include="CI_AtoZ.rdl" />
     <Report Include="ClassSizePenalties.rdl" />
+    <Report Include="covidcontact.rdl" />
     <Report Include="CustomGPAAddendum.rdl" />
     <Report Include="DentalScreening.rdl" />
     <Report Include="DistanceLearningPLP.rdl" />
@@ -128,6 +129,7 @@
     <Report Include="StudentRaceEthnicity.rdl" />
     <Report Include="SuspensionForm.rdl" />
     <Report Include="TBTest.rdl" />
+    <Report Include="TeacherClassEmail.rdl" />
     <Report Include="WeeklyAttByGrade.rdl" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Reporting Services\Microsoft.ReportingServices.MSBuilder.targets" />

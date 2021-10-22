@@ -136,24 +136,17 @@ END</CommandText>
 	, cd.name as homePrimaryLanguage
 	, max(case when lep.programStatus = 'Not LEP' then 'IFEP' else lep.programStatus end) as [Status]
 	, CONVERT(varchar(10), cast(lep.identifiedDate as date),101) as identifiedDate
-	, max(case when ts.testID = 323 and ts.date between '08/14/19' and '06/30/20' then CONVERT(varchar(10), cast(ts.date as date),101) end) as [19-20 Initial Date]
-	, max(case when ts.testID = 323 and ts.date between '08/14/19' and '06/30/20' then ts.result end) as [19-20 iOverall]
-	, max(case when ts.testID = 324 and ts.date between '08/14/19' and '06/30/20' then ts.result end) as [19-20 iOral]
-	, max(case when ts.testID = 325 and ts.date between '08/14/19' and '06/30/20' then ts.result end) as [19-20 iWr]
-	, max(case when ts.testID = 191 and ts.date between '08/20/18' and '06/30/19' then CONVERT(varchar(10), cast(ts.date as date),101) end) as [18-19 Date]
-	, max(case when ts.testID = 189 and ts.date between '08/20/18' and '06/30/19' then ts.result end) as [18-19 Overall]
-	, max(case when ts.testID = 191 and ts.date between '08/20/18' and '06/30/19' then ts.result end) as [18-19 Wr]
-	, max(case when ts.testID = 192 and ts.date between '08/20/18' and '06/30/19' then ts.result end) as [18-19 L]
-	, max(case when ts.testID = 193 and ts.date between '08/20/18' and '06/30/19' then ts.result end) as [18-19 S]
-	, max(case when ts.testID = 194 and ts.date between '08/20/18' and '06/30/19' then ts.result end) as [18-19 R]
-	, max(case when ts.testID = 195 and ts.date between '08/20/18' and '06/30/19' then ts.result end) as [18-19 W]
-	, max(case when ts.testID = 210 then cast(ts.scaleScore as int) end) as [ELA-SS]
-	, max(case when ts.testID = 210 and ts.result = 0 then 'No Score'
-			when ts.testID = 210 and ts.result = 1 then 'Standard Not Met'
-			when ts.testID = 210 and ts.result = 2 then 'Standard Nearly Met'
-			when ts.testID = 210 and ts.result = 3 then 'Standard Met'
-			when ts.testID = 210 and ts.result = 4 then 'Standard Exceeded'
-			when ts.testID = 210 and ts.result = 9 then 'No Score' end) as [ELA-Res]
+	, max(case when ts.testID = 252 and ts.date between '08/01/21' and '06/30/22' then CONVERT(varchar(10), cast(ts.date as date),101) end) as [21-22 Initial Date]
+	, max(case when ts.testID = 252 and ts.date between '08/01/21' and '06/30/22' then ts.result end) as [21-22 iOverall]
+	, max(case when ts.testID = 253 and ts.date between '08/01/21' and '06/30/22' then ts.result end) as [21-22 iOral]
+	, max(case when ts.testID = 254 and ts.date between '08/01/21' and '06/30/22' then ts.result end) as [21-22 iWr]
+	, max(case when ts.testID = 280 and ts.date between '08/01/20' and '06/30/21' then CONVERT(varchar(10), cast(ts.date as date),101) end) as [20-21 Date]
+	, max(case when ts.testID = 280 and ts.date between '08/01/20' and '06/30/21' then ts.result end) as [20-21 Overall]
+	, max(case when ts.testID = 282 and ts.date between '08/01/20' and '06/30/21' then ts.result end) as [20-21 Wr]
+	, max(case when ts.testID = 283 and ts.date between '08/01/20' and '06/30/21' then ts.result end) as [20-21 L]
+	, max(case when ts.testID = 284 and ts.date between '08/01/20' and '06/30/21' then ts.result end) as [20-21 S]
+	, max(case when ts.testID = 285 and ts.date between '08/01/20' and '06/30/21' then ts.result end) as [20-21 R]
+	, max(case when ts.testID = 286 and ts.date between '08/01/20' and '06/30/21' then ts.result end) as [20-21 W]
 from Person p
 	join [Identity] i on i.personID = p.personID
 		and i.identityID = p.currentIdentityID
@@ -185,7 +178,7 @@ from Person p
 	join Lep on lep.personID = p.personID
 		and lep.programStatus in ('LEP','Not LEP','Pending')
 	left join TestScore ts on ts.personID = p.personID
-		and ts.testID in (210,191,192,193,194,195,189,323,324,325)
+		and ts.testID in (280,281,282,283,284,285,286,252,253,254)
 where cal.calendarID = @calendarID
 	and per.name in (@period)
 	and lep.programStatus in (@status)
@@ -252,56 +245,48 @@ order by i.lastName, i.firstName</CommandText>
           <DataField>identifiedDate</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="ID19_20_Initial_Date">
-          <DataField>19-20 Initial Date</DataField>
+        <Field Name="ID21_22_Initial_Date">
+          <DataField>21-22 Initial Date</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="ID18_19_Date">
-          <DataField>18-19 Date</DataField>
+        <Field Name="ID21_22_iOverall">
+          <DataField>21-22 iOverall</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="ID18_19_Overall">
-          <DataField>18-19 Overall</DataField>
+        <Field Name="ID21_22_iOral">
+          <DataField>21-22 iOral</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="ID19_20_iOverall">
-          <DataField>19-20 iOverall</DataField>
+        <Field Name="ID21_22_iWr">
+          <DataField>21-22 iWr</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="ID19_20_iOral">
-          <DataField>19-20 iOral</DataField>
+        <Field Name="ID20_21_Date">
+          <DataField>20-21 Date</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="ID18_19_Wr">
-          <DataField>18-19 Wr</DataField>
+        <Field Name="ID20_21_Overall">
+          <DataField>20-21 Overall</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="ID18_19_L">
-          <DataField>18-19 L</DataField>
+        <Field Name="ID20_21_Wr">
+          <DataField>20-21 Wr</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="ID19_20_iWr">
-          <DataField>19-20 iWr</DataField>
+        <Field Name="ID20_21_L">
+          <DataField>20-21 L</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="ID18_19_S">
-          <DataField>18-19 S</DataField>
+        <Field Name="ID20_21_S">
+          <DataField>20-21 S</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="ID18_19_R">
-          <DataField>18-19 R</DataField>
+        <Field Name="ID20_21_R">
+          <DataField>20-21 R</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="ID18_19_W">
-          <DataField>18-19 W</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="ELA_SS">
-          <DataField>ELA-SS</DataField>
-          <rd:TypeName>System.Int32</rd:TypeName>
-        </Field>
-        <Field Name="ELA_Res">
-          <DataField>ELA-Res</DataField>
+        <Field Name="ID20_21_W">
+          <DataField>20-21 W</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
       </Fields>
@@ -406,12 +391,6 @@ group by per.name</CommandText>
                 <TablixColumn>
                   <Width>0.5625in</Width>
                 </TablixColumn>
-                <TablixColumn>
-                  <Width>0.85417in</Width>
-                </TablixColumn>
-                <TablixColumn>
-                  <Width>1.83334in</Width>
-                </TablixColumn>
               </TablixColumns>
               <TablixRows>
                 <TablixRow>
@@ -492,7 +471,7 @@ group by per.name</CommandText>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>2019-2020 ELPAC Initial</Value>
+                                  <Value>2021--2022 ELPAC Initial</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -550,7 +529,7 @@ group by per.name</CommandText>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>2018-2019 ELPAC</Value>
+                                  <Value>2020-2021 ELPAC</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -601,62 +580,6 @@ group by per.name</CommandText>
                     <TablixCell />
                     <TablixCell />
                     <TablixCell />
-                    <TablixCell />
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Textbox67">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value>CAASPP ELA 18-19</Value>
-                                  <Style>
-                                    <FontFamily>Arial</FontFamily>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style>
-                                <TextAlign>Center</TextAlign>
-                              </Style>
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>Textbox67</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Style>Solid</Style>
-                            </Border>
-                            <TopBorder>
-                              <Color>Black</Color>
-                              <Style>Solid</Style>
-                              <Width>1pt</Width>
-                            </TopBorder>
-                            <BottomBorder>
-                              <Color>Black</Color>
-                              <Style>Solid</Style>
-                              <Width>1pt</Width>
-                            </BottomBorder>
-                            <LeftBorder>
-                              <Color>Black</Color>
-                              <Style>Solid</Style>
-                              <Width>1pt</Width>
-                            </LeftBorder>
-                            <RightBorder>
-                              <Color>Black</Color>
-                              <Style>Solid</Style>
-                              <Width>1pt</Width>
-                            </RightBorder>
-                            <BackgroundColor>LightGrey</BackgroundColor>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                        <ColSpan>2</ColSpan>
-                      </CellContents>
-                    </TablixCell>
                     <TablixCell />
                   </TablixCells>
                 </TablixRow>
@@ -1908,116 +1831,6 @@ group by per.name</CommandText>
                         </Textbox>
                       </CellContents>
                     </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Textbox68">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value>ELA SS</Value>
-                                  <Style>
-                                    <FontFamily>Arial</FontFamily>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style>
-                                <TextAlign>Center</TextAlign>
-                              </Style>
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>Textbox68</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Style>Solid</Style>
-                            </Border>
-                            <TopBorder>
-                              <Color>Black</Color>
-                              <Style>Solid</Style>
-                              <Width>1pt</Width>
-                            </TopBorder>
-                            <BottomBorder>
-                              <Color>Black</Color>
-                              <Style>Solid</Style>
-                              <Width>1pt</Width>
-                            </BottomBorder>
-                            <LeftBorder>
-                              <Color>Black</Color>
-                              <Style>Solid</Style>
-                              <Width>1pt</Width>
-                            </LeftBorder>
-                            <RightBorder>
-                              <Color>Black</Color>
-                              <Style>Solid</Style>
-                              <Width>1pt</Width>
-                            </RightBorder>
-                            <BackgroundColor>LightGrey</BackgroundColor>
-                            <VerticalAlign>Middle</VerticalAlign>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="Textbox71">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value>ELA Res</Value>
-                                  <Style>
-                                    <FontFamily>Arial</FontFamily>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style>
-                                <TextAlign>Center</TextAlign>
-                              </Style>
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>Textbox71</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Style>Solid</Style>
-                            </Border>
-                            <TopBorder>
-                              <Color>Black</Color>
-                              <Style>Solid</Style>
-                              <Width>1pt</Width>
-                            </TopBorder>
-                            <BottomBorder>
-                              <Color>Black</Color>
-                              <Style>Solid</Style>
-                              <Width>1pt</Width>
-                            </BottomBorder>
-                            <LeftBorder>
-                              <Color>Black</Color>
-                              <Style>Solid</Style>
-                              <Width>1pt</Width>
-                            </LeftBorder>
-                            <RightBorder>
-                              <Color>Black</Color>
-                              <Style>Solid</Style>
-                              <Width>1pt</Width>
-                            </RightBorder>
-                            <BackgroundColor>LightGrey</BackgroundColor>
-                            <VerticalAlign>Middle</VerticalAlign>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
                   </TablixCells>
                 </TablixRow>
                 <TablixRow>
@@ -2417,14 +2230,14 @@ group by per.name</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="ID19_20_Initial_Date">
+                        <Textbox Name="ID21_22_Initial_Date">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!ID19_20_Initial_Date.Value</Value>
+                                  <Value>=Fields!ID21_22_Initial_Date.Value</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -2435,7 +2248,7 @@ group by per.name</CommandText>
                               </Style>
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>ID19_20_Initial_Date</rd:DefaultName>
+                          <rd:DefaultName>ID21_22_Initial_Date</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -2452,14 +2265,14 @@ group by per.name</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="ID19_20_iOverall">
+                        <Textbox Name="ID21_22_iOverall">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!ID19_20_iOverall.Value</Value>
+                                  <Value>=Fields!ID21_22_iOverall.Value</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -2470,7 +2283,7 @@ group by per.name</CommandText>
                               </Style>
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>ID19_20_iOverall</rd:DefaultName>
+                          <rd:DefaultName>ID21_22_iOverall</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -2487,14 +2300,14 @@ group by per.name</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="ID19_20_iOral">
+                        <Textbox Name="ID21_22_iOral">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!ID19_20_iOral.Value</Value>
+                                  <Value>=Fields!ID21_22_iOral.Value</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -2505,7 +2318,7 @@ group by per.name</CommandText>
                               </Style>
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>ID19_20_iOral</rd:DefaultName>
+                          <rd:DefaultName>ID21_22_iOral</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -2522,14 +2335,14 @@ group by per.name</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="ID19_20_iWr">
+                        <Textbox Name="ID21_22_iWr">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!ID19_20_iWr.Value</Value>
+                                  <Value>=Fields!ID21_22_iWr.Value</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -2540,7 +2353,7 @@ group by per.name</CommandText>
                               </Style>
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>ID19_20_iWr</rd:DefaultName>
+                          <rd:DefaultName>ID21_22_iWr</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -2557,14 +2370,14 @@ group by per.name</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="ID18_19_Date">
+                        <Textbox Name="ID20_21_Date">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!ID18_19_Date.Value</Value>
+                                  <Value>=Fields!ID20_21_Date.Value</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -2575,7 +2388,7 @@ group by per.name</CommandText>
                               </Style>
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>ID18_19_Date</rd:DefaultName>
+                          <rd:DefaultName>ID20_21_Date</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -2592,14 +2405,14 @@ group by per.name</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="ID18_19_Overall">
+                        <Textbox Name="ID20_21_Overall">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!ID18_19_Overall.Value</Value>
+                                  <Value>=Fields!ID20_21_Overall.Value</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -2610,7 +2423,7 @@ group by per.name</CommandText>
                               </Style>
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>ID18_19_Overall</rd:DefaultName>
+                          <rd:DefaultName>ID20_21_Overall</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -2627,14 +2440,14 @@ group by per.name</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="ID18_19_Wr">
+                        <Textbox Name="ID20_21_Wr">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!ID18_19_Wr.Value</Value>
+                                  <Value>=Fields!ID20_21_Wr.Value</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -2645,7 +2458,7 @@ group by per.name</CommandText>
                               </Style>
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>ID18_19_Wr</rd:DefaultName>
+                          <rd:DefaultName>ID20_21_Wr</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -2662,14 +2475,14 @@ group by per.name</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="ID18_19_L">
+                        <Textbox Name="ID20_21_L">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!ID18_19_L.Value</Value>
+                                  <Value>=Fields!ID20_21_L.Value</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -2680,7 +2493,7 @@ group by per.name</CommandText>
                               </Style>
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>ID18_19_L</rd:DefaultName>
+                          <rd:DefaultName>ID20_21_L</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -2697,14 +2510,14 @@ group by per.name</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="ID18_19_S">
+                        <Textbox Name="ID20_21_S">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!ID18_19_S.Value</Value>
+                                  <Value>=Fields!ID20_21_S.Value</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -2715,7 +2528,7 @@ group by per.name</CommandText>
                               </Style>
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>ID18_19_S</rd:DefaultName>
+                          <rd:DefaultName>ID20_21_S</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -2732,14 +2545,14 @@ group by per.name</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="ID18_19_R">
+                        <Textbox Name="ID20_21_R">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!ID18_19_R.Value</Value>
+                                  <Value>=Fields!ID20_21_R.Value</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -2750,7 +2563,7 @@ group by per.name</CommandText>
                               </Style>
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>ID18_19_R</rd:DefaultName>
+                          <rd:DefaultName>ID20_21_R</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -2767,14 +2580,14 @@ group by per.name</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="ID18_19_W">
+                        <Textbox Name="ID20_21_W">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!ID18_19_W.Value</Value>
+                                  <Value>=Fields!ID20_21_W.Value</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -2785,77 +2598,7 @@ group by per.name</CommandText>
                               </Style>
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>ID18_19_W</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <VerticalAlign>Middle</VerticalAlign>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="ELA_SS">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value>=Fields!ELA_SS.Value</Value>
-                                  <Style>
-                                    <FontFamily>Arial</FontFamily>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style>
-                                <TextAlign>Center</TextAlign>
-                              </Style>
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>ELA_SS</rd:DefaultName>
-                          <Style>
-                            <Border>
-                              <Color>LightGrey</Color>
-                              <Style>Solid</Style>
-                            </Border>
-                            <VerticalAlign>Middle</VerticalAlign>
-                            <PaddingLeft>2pt</PaddingLeft>
-                            <PaddingRight>2pt</PaddingRight>
-                            <PaddingTop>2pt</PaddingTop>
-                            <PaddingBottom>2pt</PaddingBottom>
-                          </Style>
-                        </Textbox>
-                      </CellContents>
-                    </TablixCell>
-                    <TablixCell>
-                      <CellContents>
-                        <Textbox Name="ELA_Res">
-                          <CanGrow>true</CanGrow>
-                          <KeepTogether>true</KeepTogether>
-                          <Paragraphs>
-                            <Paragraph>
-                              <TextRuns>
-                                <TextRun>
-                                  <Value>=Fields!ELA_Res.Value</Value>
-                                  <Style>
-                                    <FontFamily>Arial</FontFamily>
-                                  </Style>
-                                </TextRun>
-                              </TextRuns>
-                              <Style>
-                                <TextAlign>Center</TextAlign>
-                              </Style>
-                            </Paragraph>
-                          </Paragraphs>
-                          <rd:DefaultName>ELA_Res</rd:DefaultName>
+                          <rd:DefaultName>ID20_21_W</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -2899,8 +2642,6 @@ group by per.name</CommandText>
                 <TablixMember />
                 <TablixMember />
                 <TablixMember />
-                <TablixMember />
-                <TablixMember />
               </TablixMembers>
             </TablixColumnHierarchy>
             <TablixRowHierarchy>
@@ -2918,7 +2659,7 @@ group by per.name</CommandText>
             </TablixRowHierarchy>
             <DataSetName>DataSet1</DataSetName>
             <Height>0.75in</Height>
-            <Width>23.38544in</Width>
+            <Width>20.69793in</Width>
             <Style>
               <Border>
                 <Style>None</Style>
@@ -2929,7 +2670,7 @@ group by per.name</CommandText>
         <Height>0.75in</Height>
         <Style />
       </Body>
-      <Width>23.38544in</Width>
+      <Width>20.69793in</Width>
       <Page>
         <LeftMargin>1in</LeftMargin>
         <RightMargin>1in</RightMargin>

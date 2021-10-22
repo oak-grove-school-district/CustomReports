@@ -5,7 +5,7 @@ FROM            Person p JOIN
                          IdentityRaceEthnicity ire ON ire.identityID = i.identityID JOIN
                          RaceEthnicity re ON re.raceID = ire.raceID
 WHERE        p.studentNumber IS NOT NULL)
-    SELECT        name, studentNumber, gender, lastName, firstName/*, teacherDisplay*/, grade, [Race(s)], [Household Name], householdPhone, addressLine1, addressLine2, gln, gfn, relationship, cellPhone, email
+    SELECT        name, studentNumber, gender, lastName, firstName/*, teacherDisplay*/ , grade, [Race(s)], [Household Name], householdPhone, addressLine1, addressLine2, gln, gfn, relationship, cellPhone, email
      FROM            (SELECT        cal.name, p.studentNumber, i.gender, i.lastName, i.firstName, /*sec.teacherDisplay,*/ e.grade, COALESCE (MAX(CASE WHEN i.hispanicEthnicity LIKE 'Y' AND ra.rn IS NOT NULL 
                                                          THEN 'Hispanic, ' WHEN i.hispanicEthnicity LIKE 'Y' AND ra.rn IS NULL THEN 'Hispanic' ELSE NULL END), MAX(CASE WHEN i.hispanicEthnicity NOT LIKE 'Y' AND ra.rn = 1 THEN ra.name END)) 
                                                          + COALESCE (MAX(CASE WHEN i.hispanicEthnicity LIKE 'Y' AND ra.rn = 1 THEN ra.name END), MAX(CASE WHEN i.hispanicEthnicity NOT LIKE 'Y' AND ra.rn = 2 THEN ', ' + ra.name END), '') 
@@ -16,12 +16,7 @@ WHERE        p.studentNumber IS NOT NULL)
                                                          Enrollment AS e ON e.personID = p.personID AND e.active = 1 AND e.endDate IS NULL INNER JOIN
                                                          Calendar AS cal ON cal.calendarID = e.calendarID AND cal.endYear = e.endYear INNER JOIN
                                                          SchoolYear sy ON sy.endYear = cal.endYear AND sy.active = 1 INNER JOIN
-                                                         Trial AS tr ON tr.calendarID = cal.calendarID AND tr.active = 1 
-														 --INNER JOIN
-                                                         --Course AS cs ON cs.calendarID = cal.calendarID INNER JOIN
-                                                         --Section AS sec ON sec.courseID = cs.courseID AND sec.trialID = tr.trialID INNER JOIN
-                                                         --Roster AS ros ON ros.sectionID = sec.sectionID AND ros.trialID = tr.trialID AND ros.personID = p.personID
-														  LEFT JOIN
+                                                         Trial AS tr ON tr.calendarID = cal.calendarID AND tr.active = 1 /*Roster AS ros ON ros.sectionID = sec.sectionID AND ros.trialID = tr.trialID AND ros.personID = p.personID*/ LEFT JOIN
                                                              (SELECT        p.studentNumber, ROW_NUMBER() OVER (PARTITION BY studentNumber
                                                                ORDER BY name DESC) AS rn, name
                                FROM            Person p JOIN
@@ -30,7 +25,7 @@ WHERE        p.studentNumber IS NOT NULL)
                                                          RaceEthnicity re ON re.raceID = ire.raceID
                                WHERE        p.studentNumber IS NOT NULL) ra ON ra.studentNumber = p.studentNumber LEFT OUTER JOIN
                                   (SELECT        p.personID, hh.householdID, hh.name AS [Household Name], ccsl.householdPhone, ccsl.addressLine1, ccsl.addressLine2, ccsl.lastName AS gln, ccsl.firstName AS gfn, ccsl.relationship, ccsl.cellPhone, 
-                                                              CASE WHEN ccsl.email LIKE '%@oakgrovesd.net' THEN ccsl.secondaryEmail ELSE ccsl.email END AS email
+                                                              CASE WHEN ccsl.email LIKE '%@ogsd.net' THEN ccsl.secondaryEmail ELSE ccsl.email END AS email
                                     FROM            Person AS p INNER JOIN
                                                               [Identity] AS i ON i.personID = p.personID AND i.identityID = p.currentIdentityID INNER JOIN
                                                               Enrollment AS e ON e.personID = p.personID AND e.active = 1 INNER JOIN
@@ -44,9 +39,9 @@ WHERE        p.studentNumber IS NOT NULL)
                                     WHERE        (e.startDate BETWEEN cal.startDate AND cal.endDate) AND (cal.calendarID IN (@calendarID))
                                     GROUP BY p.personID, p.studentNumber, i.lastName, i.firstName, hh.name, ccsl.lastName, ccsl.firstName, ccsl.relationship, ccsl.addressLine1, ccsl.addressLine2, ccsl.email, ccsl.secondaryEmail, ccsl.householdPhone, 
                                                               ccsl.workPhone, ccsl.cellPhone, hh.householdID) AS y ON y.personID = p.personID
-     WHERE        (cal.calendarID IN (@calendarID)) --AND (ros.endDate IS NULL)
-     GROUP BY p.studentNumber, i.lastName, i.firstName, /*sec.teacherDisplay,*/ cal.name, e.grade, i.gender, y.[Household Name], y.relationship, y.addressLine1, y.addressLine2, y.cellPhone, y.householdPhone, y.gln, y.gfn, y.email) 
-AS x
+     WHERE        (cal.calendarID IN (@calendarID))
+     /*AND (ros.endDate IS NULL)*/ GROUP BY p.studentNumber, i.lastName, i.firstName, /*sec.teacherDisplay,*/ cal.name, e.grade, i.gender, y.[Household Name], y.relationship, y.addressLine1, y.addressLine2, y.cellPhone, 
+                              y.householdPhone, y.gln, y.gfn, y.email) AS x
 WHERE        ([Race(s)] LIKE '%' + @raceID + '%')</CommandText></Query><Fields><Field Name="name"><DataField>name</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="studentNumber"><DataField>studentNumber</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="gender"><DataField>gender</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="lastName"><DataField>lastName</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="firstName"><DataField>firstName</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="grade"><DataField>grade</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="Race_s_"><DataField>Race(s)</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="householdPhone"><DataField>householdPhone</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="Household_Name"><DataField>Household Name</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="addressLine1"><DataField>addressLine1</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="addressLine2"><DataField>addressLine2</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="gln"><DataField>gln</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="gfn"><DataField>gfn</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="relationship"><DataField>relationship</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="cellPhone"><DataField>cellPhone</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="email"><DataField>email</DataField><rd:TypeName>System.String</rd:TypeName></Field></Fields></DataSet><DataSet Name="userCalendar"><Query><DataSourceName>DataSource1</DataSourceName><QueryParameters><QueryParameter Name="@userID"><Value>=Parameters!userID.Value</Value></QueryParameter></QueryParameters><CommandText>DECLARE @allCalendars bit
 SELECT @allCalendars = u.allCalendars FROM dbo.UserAccount u WHERE u.userID = @userID
 
