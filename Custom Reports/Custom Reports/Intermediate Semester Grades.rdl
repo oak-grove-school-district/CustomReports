@@ -28,32 +28,87 @@
           <QueryParameter Name="@group">
             <Value>=Parameters!group.Value</Value>
           </QueryParameter>
+          <QueryParameter Name="@courses">
+            <Value>=Parameters!courses.Value</Value>
+          </QueryParameter>
         </QueryParameters>
-        <CommandText>SELECT p.studentNumber, e.grade as [Grade], i.lastName, i.firstName, cal.name AS Calendar, cs.name AS [Course Name], cs.number + ' - ' + cast(sec.number AS varchar) AS [Course - Section], sec.teacherDisplay AS Teacher, per.name AS Period, isnull(gs.score,isnull(gs.progressScore,NULL)) AS [Letter Grade], isnull(gs.[percent],isnull(gs.progressPercent,NULL)) AS [Percent], ter.name AS Term, gt.name AS Task, sg.name AS Team
-, case when lep.programStatus = 'LEP' then 'X' else '' end as LEP
-FROM            Person p JOIN
-                         [Identity] i ON i.personID = p.personID AND i.identityID = p.currentIdentityID JOIN
-                         Enrollment e ON e.personID = p.personID AND e.active = 1 JOIN
-                         Calendar cal ON cal.calendarID = e.calendarID AND cal.endYear = e.endYear JOIN
-                         SchoolYear sy ON sy.endYear = cal.endYear JOIN
-                         ScheduleStructure ss ON ss.calendarID = cal.calendarID JOIN
-                         Trial tr ON tr.structureID = ss.structureID AND tr.active = 1 JOIN
-                         SectionPlacement sp ON sp.trialID = tr.trialID JOIN
-                         Term ter ON ter.termID = sp.termID JOIN
-                         Period per ON per.periodID = sp.periodID JOIN
-                         Course cs ON cs.calendarID = cal.calendarID AND cs.active = 1 JOIN
-                         Section sec ON sec.courseID = cs.courseID AND sec.trialID = tr.trialID AND sec.sectionID = sp.sectionID JOIN
-                         Roster r ON r.sectionID = sec.sectionID AND r.trialID = tr.trialID AND r.personID = p.personID AND r.endDate IS NULL LEFT JOIN
-                         GradingTaskCredit gtc ON gtc.courseID = cs.courseID AND gtc.calendarID = cal.calendarID LEFT JOIN
-                         GradingTask gt ON gt.taskID = gtc.taskID AND gt.taskID = @Task LEFT JOIN
-                         GradingScore gs ON gs.taskID = gt.taskID AND gs.personID = p.personID AND gs.sectionID = sec.sectionID AND gs.termID = ter.termID AND gs.calendarID = cal.calendarID LEFT JOIN
-                         SchedulingGroup sg ON sg.schedGroupID = sec.schedGroupID AND sg.calendarID = cal.calendarID
-	left join Lep on lep.personID = p.personID and lep.programStatus in ('LEP')
-WHERE        cal.calendarID IN (@calendarID) AND (gs.score IS NOT NULL or gs.progressScore is not null)  AND (gs.score IN (@grade) or gs.progressScore in (@grade)) AND ter.termID IN (@Term) AND isnull(sg.name,'') IN (@group)
+        <CommandText>with Races (studentNumber, rn, name) as (
+select p.studentNumber, ROW_NUMBER() over(PARTITION by studentNumber order by name desc) as rn, name
+from Person p
+join [identity] i on i.personID = p.personID and i.identityID = p.currentIdentityID
+join IdentityRaceEthnicity ire on ire.identityID = i.identityID
+join RaceEthnicity re on re.raceID = ire.raceID
+where p.studentNumber is not null)
 
+
+SELECT p.studentNumber
+	, i.lastName
+	, i.firstName
+	, i.gender
+	, e.grade as [Grade]
+	, cal.name AS Calendar
+	, cs.name AS [Course Name]
+	, cs.number + ' - ' + cast(sec.number AS varchar) AS [Course - Section]
+	, sec.teacherDisplay AS Teacher
+	, per.name AS Period
+	, isnull(gs.score,isnull(gs.progressScore,NULL)) AS [Letter Grade]
+	, isnull(gs.[percent],isnull(gs.progressPercent,NULL)) AS [Percent]
+	, ter.name AS Term
+	, gt.name AS Task
+	, sg.name AS Team
+	, case when cpm.[EL Status] = 'LEP' then 'X' else '' end as LEP
+	, case when cpm.IEP = 'Y' then 'X' else '' end as IEP
+	, case when cpm.[504] = 'Y' then 'X' else '' end as [504]
+	, coalesce(max(case when i.hispanicEthnicity like 'Y' and ra.rn is not null then 'Hispanic, ' when i.hispanicEthnicity like 'Y' and ra.rn is null then 'Hispanic' else null end)
+				, max(case when i.hispanicEthnicity not like 'Y' and ra.rn = 1 then ra.name end))
+				+ coalesce(max(case when i.hispanicEthnicity like 'Y' and ra.rn = 1 then ra.name end)
+				, max(case when i.hispanicEthnicity not like 'Y' and ra.rn = 2 then ', ' + ra.name end), '')
+				+ coalesce(max(case when i.hispanicEthnicity like 'Y' and ra.rn = 2 then ', ' + ra.name end)
+				, max(case when i.hispanicEthnicity not like 'Y' and ra.rn = 3 then ', ' + ra.name end), '') as [Race(s)]
+FROM Person p 
+	JOIN [Identity] i ON i.personID = p.personID 
+		AND i.identityID = p.currentIdentityID 
+	JOIN Enrollment e ON e.personID = p.personID 
+		AND e.active = 1 
+	JOIN Calendar cal ON cal.calendarID = e.calendarID 
+		AND cal.endYear = e.endYear 
+	JOIN SchoolYear sy ON sy.endYear = cal.endYear 
+	JOIN ScheduleStructure ss ON ss.calendarID = cal.calendarID 
+	JOIN Trial tr ON tr.structureID = ss.structureID 
+		AND tr.active = 1 
+	JOIN SectionPlacement sp ON sp.trialID = tr.trialID 
+	JOIN Term ter ON ter.termID = sp.termID 
+	JOIN Period per ON per.periodID = sp.periodID 
+	JOIN Course cs ON cs.calendarID = cal.calendarID 
+		AND cs.active = 1 
+	JOIN Section sec ON sec.courseID = cs.courseID 
+		AND sec.trialID = tr.trialID 
+		AND sec.sectionID = sp.sectionID
+	JOIN Roster r ON r.sectionID = sec.sectionID 
+		AND r.trialID = tr.trialID 
+		AND r.personID = p.personID 
+		AND r.endDate IS NULL 
+	LEFT JOIN GradingTaskCredit gtc ON gtc.courseID = cs.courseID 
+		AND gtc.calendarID = cal.calendarID 
+	LEFT JOIN GradingTask gt ON gt.taskID = gtc.taskID 
+		AND gt.taskID = @Task 
+	LEFT JOIN GradingScore gs ON gs.taskID = gt.taskID 
+		AND gs.personID = p.personID 
+		AND gs.sectionID = sec.sectionID 
+		AND gs.termID = ter.termID 
+		AND gs.calendarID = cal.calendarID 
+	LEFT JOIN SchedulingGroup sg ON sg.schedGroupID = sec.schedGroupID 
+		AND sg.calendarID = cal.calendarID
+	left join cust_og_programMatrix cpm on cpm.personID = p.personID
+	left join Races ra on ra.StudentNumber = p.studentNumber
+WHERE cal.calendarID IN (@calendarID) 
+	AND (gs.score IS NOT NULL or gs.progressScore is not null)  
+	AND (gs.score IN (@grade) or gs.progressScore in (@grade)) 
+	AND ter.termID IN (@Term) 
+	AND isnull(sg.name,'') IN (@group)
 	AND (e.startDate &lt;= ter.startDate and (e.endDate &gt;= ter.endDate or e.endDate is null)) 
---and cs.name in (@courses)
-GROUP BY p.studentNumber, i.lastName, i.firstName, cs.name, cs.number, sec.number, sec.teacherDisplay, per.name, gs.score, cal.name, ter.name, gt.name, gs.[percent], sg.name, lep.programStatus, e.grade, gs.progressScore, gs.progressPercent
+	and cs.name in (@courses)
+GROUP BY p.studentNumber, i.gender, i.lastName, i.firstName, cs.name, cs.number, sec.number, sec.teacherDisplay, per.name, gs.score, cal.name, ter.name, gt.name, gs.[percent], sg.name, e.grade, gs.progressScore, gs.progressPercent, cpm.[EL Status],cpm.IEP, cpm.[504]
 ORDER BY i.lastName, i.firstName, per.name, ter.name</CommandText>
         <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
       </Query>
@@ -72,6 +127,10 @@ ORDER BY i.lastName, i.firstName, per.name, ter.name</CommandText>
         </Field>
         <Field Name="firstName">
           <DataField>firstName</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="gender">
+          <DataField>gender</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
         <Field Name="Calendar">
@@ -116,6 +175,18 @@ ORDER BY i.lastName, i.firstName, per.name, ter.name</CommandText>
         </Field>
         <Field Name="LEP">
           <DataField>LEP</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="IEP">
+          <DataField>IEP</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="ID504">
+          <DataField>504</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Race_s_">
+          <DataField>Race(s)</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
       </Fields>
@@ -360,6 +431,15 @@ order by cs.name</CommandText>
                 <TablixColumn>
                   <Width>0.35417in</Width>
                 </TablixColumn>
+                <TablixColumn>
+                  <Width>0.5in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>0.48958in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>2.03125in</Width>
+                </TablixColumn>
               </TablixColumns>
               <TablixRows>
                 <TablixRow>
@@ -564,6 +644,102 @@ order by cs.name</CommandText>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox3</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox4">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>IEP</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox4</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox7">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>504</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox7</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox23">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Race/Ethnicity</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox23</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -794,6 +970,102 @@ order by cs.name</CommandText>
                         </Textbox>
                       </CellContents>
                     </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="IEP">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!IEP.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>IEP</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="ID504">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!ID504.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>ID504</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Race_s_">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!Race_s_.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Race_s_</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
                   </TablixCells>
                 </TablixRow>
               </TablixRows>
@@ -807,15 +1079,18 @@ order by cs.name</CommandText>
                 <TablixMember />
                 <TablixMember />
                 <TablixMember />
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
               </TablixMembers>
             </TablixColumnHierarchy>
             <TablixRowHierarchy>
               <TablixMembers>
                 <TablixMember>
                   <TablixHeader>
-                    <Size>1.80208in</Size>
+                    <Size>1.88542in</Size>
                     <CellContents>
-                      <Textbox Name="Textbox19">
+                      <Textbox Name="Textbox5">
                         <CanGrow>true</CanGrow>
                         <KeepTogether>true</KeepTogether>
                         <Paragraphs>
@@ -829,7 +1104,7 @@ order by cs.name</CommandText>
                             <Style />
                           </Paragraph>
                         </Paragraphs>
-                        <rd:DefaultName>Textbox19</rd:DefaultName>
+                        <rd:DefaultName>Textbox5</rd:DefaultName>
                         <Style>
                           <Border>
                             <Color>LightGrey</Color>
@@ -846,9 +1121,9 @@ order by cs.name</CommandText>
                   <TablixMembers>
                     <TablixMember>
                       <TablixHeader>
-                        <Size>0.71875in</Size>
+                        <Size>0.84375in</Size>
                         <CellContents>
-                          <Textbox Name="Textbox21">
+                          <Textbox Name="Textbox8">
                             <CanGrow>true</CanGrow>
                             <KeepTogether>true</KeepTogether>
                             <Paragraphs>
@@ -862,7 +1137,7 @@ order by cs.name</CommandText>
                                 <Style />
                               </Paragraph>
                             </Paragraphs>
-                            <rd:DefaultName>Textbox21</rd:DefaultName>
+                            <rd:DefaultName>Textbox8</rd:DefaultName>
                             <Style>
                               <Border>
                                 <Color>LightGrey</Color>
@@ -879,9 +1154,9 @@ order by cs.name</CommandText>
                       <TablixMembers>
                         <TablixMember>
                           <TablixHeader>
-                            <Size>0.51042in</Size>
+                            <Size>0.53125in</Size>
                             <CellContents>
-                              <Textbox Name="Textbox5">
+                              <Textbox Name="Textbox10">
                                 <CanGrow>true</CanGrow>
                                 <KeepTogether>true</KeepTogether>
                                 <Paragraphs>
@@ -895,7 +1170,7 @@ order by cs.name</CommandText>
                                     <Style />
                                   </Paragraph>
                                 </Paragraphs>
-                                <rd:DefaultName>Textbox5</rd:DefaultName>
+                                <rd:DefaultName>Textbox10</rd:DefaultName>
                                 <Style>
                                   <Border>
                                     <Color>LightGrey</Color>
@@ -912,9 +1187,9 @@ order by cs.name</CommandText>
                           <TablixMembers>
                             <TablixMember>
                               <TablixHeader>
-                                <Size>1.70833in</Size>
+                                <Size>1.80208in</Size>
                                 <CellContents>
-                                  <Textbox Name="Textbox23">
+                                  <Textbox Name="Textbox12">
                                     <CanGrow>true</CanGrow>
                                     <KeepTogether>true</KeepTogether>
                                     <Paragraphs>
@@ -928,7 +1203,7 @@ order by cs.name</CommandText>
                                         <Style />
                                       </Paragraph>
                                     </Paragraphs>
-                                    <rd:DefaultName>Textbox23</rd:DefaultName>
+                                    <rd:DefaultName>Textbox12</rd:DefaultName>
                                     <Style>
                                       <Border>
                                         <Color>LightGrey</Color>
@@ -945,23 +1220,23 @@ order by cs.name</CommandText>
                               <TablixMembers>
                                 <TablixMember>
                                   <TablixHeader>
-                                    <Size>0.45833in</Size>
+                                    <Size>0.53125in</Size>
                                     <CellContents>
-                                      <Textbox Name="Textbox34">
+                                      <Textbox Name="Textbox16">
                                         <CanGrow>true</CanGrow>
                                         <KeepTogether>true</KeepTogether>
                                         <Paragraphs>
                                           <Paragraph>
                                             <TextRuns>
                                               <TextRun>
-                                                <Value>Period</Value>
+                                                <Value>Gender</Value>
                                                 <Style />
                                               </TextRun>
                                             </TextRuns>
                                             <Style />
                                           </Paragraph>
                                         </Paragraphs>
-                                        <rd:DefaultName>Textbox34</rd:DefaultName>
+                                        <rd:DefaultName>Textbox16</rd:DefaultName>
                                         <Style>
                                           <Border>
                                             <Color>LightGrey</Color>
@@ -978,23 +1253,23 @@ order by cs.name</CommandText>
                                   <TablixMembers>
                                     <TablixMember>
                                       <TablixHeader>
-                                        <Size>1.88541in</Size>
+                                        <Size>0.54167in</Size>
                                         <CellContents>
-                                          <Textbox Name="Textbox28">
+                                          <Textbox Name="Textbox14">
                                             <CanGrow>true</CanGrow>
                                             <KeepTogether>true</KeepTogether>
                                             <Paragraphs>
                                               <Paragraph>
                                                 <TextRuns>
                                                   <TextRun>
-                                                    <Value>Course Name</Value>
+                                                    <Value>Period</Value>
                                                     <Style />
                                                   </TextRun>
                                                 </TextRuns>
                                                 <Style />
                                               </Paragraph>
                                             </Paragraphs>
-                                            <rd:DefaultName>Textbox28</rd:DefaultName>
+                                            <rd:DefaultName>Textbox14</rd:DefaultName>
                                             <Style>
                                               <Border>
                                                 <Color>LightGrey</Color>
@@ -1011,23 +1286,23 @@ order by cs.name</CommandText>
                                       <TablixMembers>
                                         <TablixMember>
                                           <TablixHeader>
-                                            <Size>1.17708in</Size>
+                                            <Size>1.96875in</Size>
                                             <CellContents>
-                                              <Textbox Name="Textbox30">
+                                              <Textbox Name="Textbox19">
                                                 <CanGrow>true</CanGrow>
                                                 <KeepTogether>true</KeepTogether>
                                                 <Paragraphs>
                                                   <Paragraph>
                                                     <TextRuns>
                                                       <TextRun>
-                                                        <Value>Course/Section</Value>
+                                                        <Value>Course Name</Value>
                                                         <Style />
                                                       </TextRun>
                                                     </TextRuns>
                                                     <Style />
                                                   </Paragraph>
                                                 </Paragraphs>
-                                                <rd:DefaultName>Textbox30</rd:DefaultName>
+                                                <rd:DefaultName>Textbox19</rd:DefaultName>
                                                 <Style>
                                                   <Border>
                                                     <Color>LightGrey</Color>
@@ -1042,7 +1317,42 @@ order by cs.name</CommandText>
                                             </CellContents>
                                           </TablixHeader>
                                           <TablixMembers>
-                                            <TablixMember />
+                                            <TablixMember>
+                                              <TablixHeader>
+                                                <Size>1.48958in</Size>
+                                                <CellContents>
+                                                  <Textbox Name="Textbox21">
+                                                    <CanGrow>true</CanGrow>
+                                                    <KeepTogether>true</KeepTogether>
+                                                    <Paragraphs>
+                                                      <Paragraph>
+                                                        <TextRuns>
+                                                          <TextRun>
+                                                            <Value>Course Section</Value>
+                                                            <Style />
+                                                          </TextRun>
+                                                        </TextRuns>
+                                                        <Style />
+                                                      </Paragraph>
+                                                    </Paragraphs>
+                                                    <rd:DefaultName>Textbox21</rd:DefaultName>
+                                                    <Style>
+                                                      <Border>
+                                                        <Color>LightGrey</Color>
+                                                        <Style>Solid</Style>
+                                                      </Border>
+                                                      <PaddingLeft>2pt</PaddingLeft>
+                                                      <PaddingRight>2pt</PaddingRight>
+                                                      <PaddingTop>2pt</PaddingTop>
+                                                      <PaddingBottom>2pt</PaddingBottom>
+                                                    </Style>
+                                                  </Textbox>
+                                                </CellContents>
+                                              </TablixHeader>
+                                              <TablixMembers>
+                                                <TablixMember />
+                                              </TablixMembers>
+                                            </TablixMember>
                                           </TablixMembers>
                                         </TablixMember>
                                       </TablixMembers>
@@ -1056,7 +1366,6 @@ order by cs.name</CommandText>
                       </TablixMembers>
                     </TablixMember>
                   </TablixMembers>
-                  <KeepWithGroup>After</KeepWithGroup>
                 </TablixMember>
                 <TablixMember>
                   <Group Name="Calendar">
@@ -1070,9 +1379,9 @@ order by cs.name</CommandText>
                     </SortExpression>
                   </SortExpressions>
                   <TablixHeader>
-                    <Size>1.80208in</Size>
+                    <Size>1.88542in</Size>
                     <CellContents>
-                      <Textbox Name="Calendar1">
+                      <Textbox Name="Calendar">
                         <CanGrow>true</CanGrow>
                         <KeepTogether>true</KeepTogether>
                         <Paragraphs>
@@ -1086,7 +1395,7 @@ order by cs.name</CommandText>
                             <Style />
                           </Paragraph>
                         </Paragraphs>
-                        <rd:DefaultName>Calendar1</rd:DefaultName>
+                        <rd:DefaultName>Calendar</rd:DefaultName>
                         <Style>
                           <Border>
                             <Color>LightGrey</Color>
@@ -1107,8 +1416,13 @@ order by cs.name</CommandText>
                           <GroupExpression>=Fields!studentNumber.Value</GroupExpression>
                         </GroupExpressions>
                       </Group>
+                      <SortExpressions>
+                        <SortExpression>
+                          <Value>=Fields!studentNumber.Value</Value>
+                        </SortExpression>
+                      </SortExpressions>
                       <TablixHeader>
-                        <Size>0.71875in</Size>
+                        <Size>0.84375in</Size>
                         <CellContents>
                           <Textbox Name="studentNumber">
                             <CanGrow>true</CanGrow>
@@ -1151,9 +1465,9 @@ order by cs.name</CommandText>
                             </SortExpression>
                           </SortExpressions>
                           <TablixHeader>
-                            <Size>0.51042in</Size>
+                            <Size>0.53125in</Size>
                             <CellContents>
-                              <Textbox Name="Grade1">
+                              <Textbox Name="Grade">
                                 <CanGrow>true</CanGrow>
                                 <KeepTogether>true</KeepTogether>
                                 <Paragraphs>
@@ -1167,7 +1481,7 @@ order by cs.name</CommandText>
                                     <Style />
                                   </Paragraph>
                                 </Paragraphs>
-                                <rd:DefaultName>Grade1</rd:DefaultName>
+                                <rd:DefaultName>Grade</rd:DefaultName>
                                 <Style>
                                   <Border>
                                     <Color>LightGrey</Color>
@@ -1194,7 +1508,7 @@ order by cs.name</CommandText>
                                 </SortExpression>
                               </SortExpressions>
                               <TablixHeader>
-                                <Size>1.70833in</Size>
+                                <Size>1.80208in</Size>
                                 <CellContents>
                                   <Textbox Name="lastName">
                                     <CanGrow>true</CanGrow>
@@ -1234,34 +1548,34 @@ order by cs.name</CommandText>
                               </TablixHeader>
                               <TablixMembers>
                                 <TablixMember>
-                                  <Group Name="Period">
+                                  <Group Name="gender">
                                     <GroupExpressions>
-                                      <GroupExpression>=Fields!Period.Value</GroupExpression>
+                                      <GroupExpression>=Fields!gender.Value</GroupExpression>
                                     </GroupExpressions>
                                   </Group>
                                   <SortExpressions>
                                     <SortExpression>
-                                      <Value>=Fields!Period.Value</Value>
+                                      <Value>=Fields!gender.Value</Value>
                                     </SortExpression>
                                   </SortExpressions>
                                   <TablixHeader>
-                                    <Size>0.45833in</Size>
+                                    <Size>0.53125in</Size>
                                     <CellContents>
-                                      <Textbox Name="Period">
+                                      <Textbox Name="gender">
                                         <CanGrow>true</CanGrow>
                                         <KeepTogether>true</KeepTogether>
                                         <Paragraphs>
                                           <Paragraph>
                                             <TextRuns>
                                               <TextRun>
-                                                <Value>=Fields!Period.Value</Value>
+                                                <Value>=Fields!gender.Value</Value>
                                                 <Style />
                                               </TextRun>
                                             </TextRuns>
                                             <Style />
                                           </Paragraph>
                                         </Paragraphs>
-                                        <rd:DefaultName>Period</rd:DefaultName>
+                                        <rd:DefaultName>gender</rd:DefaultName>
                                         <Style>
                                           <Border>
                                             <Color>LightGrey</Color>
@@ -1277,34 +1591,34 @@ order by cs.name</CommandText>
                                   </TablixHeader>
                                   <TablixMembers>
                                     <TablixMember>
-                                      <Group Name="Course_Name">
+                                      <Group Name="Period">
                                         <GroupExpressions>
-                                          <GroupExpression>=Fields!Course_Name.Value</GroupExpression>
+                                          <GroupExpression>=Fields!Period.Value</GroupExpression>
                                         </GroupExpressions>
                                       </Group>
                                       <SortExpressions>
                                         <SortExpression>
-                                          <Value>=Fields!Course_Name.Value</Value>
+                                          <Value>=Fields!Period.Value</Value>
                                         </SortExpression>
                                       </SortExpressions>
                                       <TablixHeader>
-                                        <Size>1.88541in</Size>
+                                        <Size>0.54167in</Size>
                                         <CellContents>
-                                          <Textbox Name="Course_Name">
+                                          <Textbox Name="Period">
                                             <CanGrow>true</CanGrow>
                                             <KeepTogether>true</KeepTogether>
                                             <Paragraphs>
                                               <Paragraph>
                                                 <TextRuns>
                                                   <TextRun>
-                                                    <Value>=Fields!Course_Name.Value</Value>
+                                                    <Value>=Fields!Period.Value</Value>
                                                     <Style />
                                                   </TextRun>
                                                 </TextRuns>
                                                 <Style />
                                               </Paragraph>
                                             </Paragraphs>
-                                            <rd:DefaultName>Course_Name</rd:DefaultName>
+                                            <rd:DefaultName>Period</rd:DefaultName>
                                             <Style>
                                               <Border>
                                                 <Color>LightGrey</Color>
@@ -1320,34 +1634,34 @@ order by cs.name</CommandText>
                                       </TablixHeader>
                                       <TablixMembers>
                                         <TablixMember>
-                                          <Group Name="Course___Section">
+                                          <Group Name="Course_Name">
                                             <GroupExpressions>
-                                              <GroupExpression>=Fields!Course___Section.Value</GroupExpression>
+                                              <GroupExpression>=Fields!Course_Name.Value</GroupExpression>
                                             </GroupExpressions>
                                           </Group>
                                           <SortExpressions>
                                             <SortExpression>
-                                              <Value>=Fields!Course___Section.Value</Value>
+                                              <Value>=Fields!Course_Name.Value</Value>
                                             </SortExpression>
                                           </SortExpressions>
                                           <TablixHeader>
-                                            <Size>1.17708in</Size>
+                                            <Size>1.96875in</Size>
                                             <CellContents>
-                                              <Textbox Name="Course___Section">
+                                              <Textbox Name="Course_Name">
                                                 <CanGrow>true</CanGrow>
                                                 <KeepTogether>true</KeepTogether>
                                                 <Paragraphs>
                                                   <Paragraph>
                                                     <TextRuns>
                                                       <TextRun>
-                                                        <Value>=Fields!Course___Section.Value</Value>
+                                                        <Value>=Fields!Course_Name.Value</Value>
                                                         <Style />
                                                       </TextRun>
                                                     </TextRuns>
                                                     <Style />
                                                   </Paragraph>
                                                 </Paragraphs>
-                                                <rd:DefaultName>Course___Section</rd:DefaultName>
+                                                <rd:DefaultName>Course_Name</rd:DefaultName>
                                                 <Style>
                                                   <Border>
                                                     <Color>LightGrey</Color>
@@ -1363,7 +1677,52 @@ order by cs.name</CommandText>
                                           </TablixHeader>
                                           <TablixMembers>
                                             <TablixMember>
-                                              <Group Name="Details" />
+                                              <Group Name="Course___Section">
+                                                <GroupExpressions>
+                                                  <GroupExpression>=Fields!Course___Section.Value</GroupExpression>
+                                                </GroupExpressions>
+                                              </Group>
+                                              <SortExpressions>
+                                                <SortExpression>
+                                                  <Value>=Fields!Course___Section.Value</Value>
+                                                </SortExpression>
+                                              </SortExpressions>
+                                              <TablixHeader>
+                                                <Size>1.48958in</Size>
+                                                <CellContents>
+                                                  <Textbox Name="Course___Section">
+                                                    <CanGrow>true</CanGrow>
+                                                    <KeepTogether>true</KeepTogether>
+                                                    <Paragraphs>
+                                                      <Paragraph>
+                                                        <TextRuns>
+                                                          <TextRun>
+                                                            <Value>=Fields!Course___Section.Value</Value>
+                                                            <Style />
+                                                          </TextRun>
+                                                        </TextRuns>
+                                                        <Style />
+                                                      </Paragraph>
+                                                    </Paragraphs>
+                                                    <rd:DefaultName>Course___Section</rd:DefaultName>
+                                                    <Style>
+                                                      <Border>
+                                                        <Color>LightGrey</Color>
+                                                        <Style>Solid</Style>
+                                                      </Border>
+                                                      <PaddingLeft>2pt</PaddingLeft>
+                                                      <PaddingRight>2pt</PaddingRight>
+                                                      <PaddingTop>2pt</PaddingTop>
+                                                      <PaddingBottom>2pt</PaddingBottom>
+                                                    </Style>
+                                                  </Textbox>
+                                                </CellContents>
+                                              </TablixHeader>
+                                              <TablixMembers>
+                                                <TablixMember>
+                                                  <Group Name="Details" />
+                                                </TablixMember>
+                                              </TablixMembers>
                                             </TablixMember>
                                           </TablixMembers>
                                         </TablixMember>
@@ -1383,7 +1742,7 @@ order by cs.name</CommandText>
             </TablixRowHierarchy>
             <DataSetName>Grades</DataSetName>
             <Height>0.5in</Height>
-            <Width>14.35416in</Width>
+            <Width>18.70834in</Width>
             <Style>
               <Border>
                 <Style>None</Style>
@@ -1394,7 +1753,7 @@ order by cs.name</CommandText>
         <Height>0.5in</Height>
         <Style />
       </Body>
-      <Width>14.35416in</Width>
+      <Width>18.70834in</Width>
       <Page>
         <LeftMargin>1in</LeftMargin>
         <RightMargin>1in</RightMargin>

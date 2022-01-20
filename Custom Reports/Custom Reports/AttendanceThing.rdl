@@ -40,7 +40,7 @@ from
 				and c.endYear = case when @asOfDate between c.startDate and c.endDate then c.endYear end
 				AND (e.startDate &lt;= c.endDate
 				AND (e.endDate &gt;= c.startDate OR e.endDate IS NULL))
-			JOIN Attendance a ON a.personID = p.personID
+			left JOIN Attendance a ON a.personID = p.personID
 				AND a.date BETWEEN c.startDate AND c.endDate
 				and a.date &lt;= @asOfDate
 				and a.calendarID = c.calendarID

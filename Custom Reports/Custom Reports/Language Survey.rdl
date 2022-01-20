@@ -32,8 +32,8 @@
 /* MIN/MAX IS A TRICK TO NOT AGGREGATE DATA */
 	MIN(case lang.attributeID when '280' then lang.language end) as homeLanguage,
 	MIN(case lang.attributeID when '341' then lang.language end) as correspondenceLanguage,
-	MIN(case lang.attributeID when '342' then lang.language end) as studentSpokenTo,
-	MIN(case lang.attributeID when '343' then lang.language end) as adultSpokenLanguage
+	MIN(case lang.attributeID when '342' then lang.language end) as adultSpokenLanguage,
+	MIN(case lang.attributeID when '343' then lang.language end) as studentSpokenTo
 from 
 /* SUB QUERY FOR TABLE YOU WANT TO PIVOT */
 (		select cs.attributeID, s.lastName, s.firstName, cd.name as [language],
@@ -474,7 +474,7 @@ WHERE        (endYear = @endyear) AND (summerSchool = 0 OR
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="Textbox18">
+                        <Textbox Name="Textbox4">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
@@ -488,7 +488,7 @@ WHERE        (endYear = @endyear) AND (summerSchool = 0 OR
                               <Style />
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>Textbox18</rd:DefaultName>
+                          <rd:DefaultName>Textbox4</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>

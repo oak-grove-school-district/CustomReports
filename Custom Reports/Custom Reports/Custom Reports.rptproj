@@ -66,6 +66,9 @@
     <Report Include="AttendanceTrends.rdl" />
     <Report Include="BlendedLearningAggregated.rdl" />
     <Report Include="BlendedLearningGroups.rdl" />
+    <Report Include="CampusParentEnglish.rdl" />
+    <Report Include="CampusParentSpa.rdl" />
+    <Report Include="CampusParentVi.rdl" />
     <Report Include="CDEParticipation.rdl" />
     <Report Include="Certified.rdl" />
     <Report Include="ChildTeenCheckup.rdl" />
@@ -124,6 +127,7 @@
     <Report Include="Section GATE Report.rdl" />
     <Report Include="Section IEP.rdl" />
     <Report Include="Section LEP Report.rdl" />
+    <Report Include="ShortTermIS.rdl" />
     <Report Include="StaffChanges.rdl" />
     <Report Include="StudentDetails.rdl" />
     <Report Include="StudentRaceEthnicity.rdl" />

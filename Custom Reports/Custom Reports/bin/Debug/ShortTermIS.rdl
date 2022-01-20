@@ -1,0 +1,183 @@
+﻿<?xml version="1.0" encoding="utf-8"?><Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2010/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner"><AutoRefresh>0</AutoRefresh><DataSources><DataSource Name="DataSource1"><DataSourceReference>campus</DataSourceReference><rd:SecurityType>None</rd:SecurityType><rd:DataSourceID>d24bf771-80e2-458d-a73c-d41dc4357b82</rd:DataSourceID></DataSource></DataSources><DataSets><DataSet Name="userCalendar"><Query><DataSourceName>DataSource1</DataSourceName><QueryParameters><QueryParameter Name="@userID"><Value>=Parameters!userID.Value</Value></QueryParameter></QueryParameters><CommandText>DECLARE @allCalendars bit
+SELECT @allCalendars = u.allCalendars FROM dbo.UserAccount u WHERE u.userID = @userID
+
+IF @allCalendars = 1
+BEGIN
+
+	SELECT c.districtID, c.schoolID, c.calendarID, c.name + ' - ' + s.name as Calendar, 1 as ModifyRights, 1 as ownerRights
+	FROM dbo.Calendar c
+	INNER JOIN school s on s.schoolID = c.schoolID
+	order by calendarID desc
+
+END
+
+ELSE
+BEGIN
+
+	SELECT c.districtID, c.schoolID, c.calendarID, c.name + ' - ' + s.name as calendar , mr.modifyRights, mr.ownerRights
+	FROM dbo.UserAccount ua
+	LEFT OUTER JOIN dbo.UserSchoolYearRights mr on mr.userID = ua.userID
+	INNER JOIN dbo.Calendar c on (mr.districtID = c.districtID)
+					AND ((c.endYear = mr.endYear AND c.schoolID = mr.schoolID AND mr.calendarID IS NULL)
+					OR (c.endYear = mr.endYear AND mr.schoolID IS NULL)
+					OR (c.schoolID = mr.schoolID AND mr.endYear IS NULL)
+					OR (c.calendarID = mr.calendarID)
+					OR (mr.endYear IS NULL AND mr.schoolID IS NULL))
+	INNER JOIN school s on s.schoolID = c.schoolID
+	WHERE ua.userID = @userID
+	UNION
+	SELECT c2.districtID, c2.schoolID, c2.calendarID, c2.name + ' - ' + s2.name as calendar, mr2.modifyRights, mr2.ownerRights
+	FROM dbo.UserGroupSchoolYearRights mr2
+	INNER JOIN dbo.Calendar c2 on mr2.districtID = c2.districtID
+					AND ((c2.endYear = mr2.endYear AND c2.schoolID = mr2.schoolID AND mr2.calendarID IS NULL)
+					OR (c2.endYear = mr2.endYear AND mr2.schoolID IS NULL)
+					OR (c2.schoolID = mr2.schoolID AND mr2.endYear IS NULL)
+					OR (c2.calendarID = mr2.calendarID)
+					OR (mr2.endYear IS NULL AND mr2.schoolID IS NULL))
+	INNER JOIN UserGroupMember gm2 on gm2.groupID = mr2.groupID
+	INNER JOIN school s2 on s2.schoolID = c2.schoolID
+	WHERE gm2.userID = @userID
+	ORDER BY calendarID DESC
+
+END</CommandText></Query><Fields><Field Name="districtID"><DataField>districtID</DataField><rd:TypeName>System.Int32</rd:TypeName></Field><Field Name="schoolID"><DataField>schoolID</DataField><rd:TypeName>System.Int32</rd:TypeName></Field><Field Name="calendarID"><DataField>calendarID</DataField><rd:TypeName>System.Int32</rd:TypeName></Field><Field Name="Calendar"><DataField>Calendar</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="ModifyRights"><DataField>ModifyRights</DataField><rd:TypeName>System.Int32</rd:TypeName></Field><Field Name="ownerRights"><DataField>ownerRights</DataField><rd:TypeName>System.Int32</rd:TypeName></Field></Fields></DataSet><DataSet Name="schoolMonth"><Query><DataSourceName>DataSource1</DataSourceName><QueryParameters><QueryParameter Name="@calendarID"><Value>=Parameters!calendarID.Value</Value></QueryParameter></QueryParameters><CommandText>select sm.seq, sm.endDate, sm.name
+from SchoolMonth sm
+where sm.calendarID = @calendarID
+order by sm.seq</CommandText></Query><Fields><Field Name="seq"><DataField>seq</DataField><rd:TypeName>System.Byte</rd:TypeName></Field><Field Name="endDate"><DataField>endDate</DataField><rd:TypeName>System.DateTime</rd:TypeName></Field><Field Name="name"><DataField>name</DataField><rd:TypeName>System.String</rd:TypeName></Field></Fields></DataSet><DataSet Name="ISData"><Query><DataSourceName>DataSource1</DataSourceName><QueryParameters><QueryParameter Name="@calendarID"><Value>=Parameters!calendarID.Value</Value></QueryParameter><QueryParameter Name="@endDate"><Value>=Parameters!endDate.Value</Value></QueryParameter><QueryParameter Name="@month"><Value>=Parameters!month.Value</Value></QueryParameter></QueryParameters><CommandText>select fin.name as [School]
+	, fin.studentNumber
+	, fin.lastName
+	, fin.firstName
+	, fin.grade
+	, fin.teacherDisplay
+	, fin.startDate
+	, fin.endDate
+	, CONCAT('Month ',fin.startMonth) as [startMonth]
+	, CONCAT('Month ',fin.endMonth) as [endMonth]
+	, fin.Month
+	, fin.Length
+	, case when fin.Complete &gt; 0 then 'Y' else 'N' end as [Complete]
+from(
+select comp.*
+, sum(case when ae.code = 'IS2' then 1 else 0 end) as [Complete]
+, sm.name as [Month]
+from
+(
+	select gisp.name
+		, gisp.personID
+		, gisp.studentNumber
+		, gisp.lastName
+		, gisp.firstName
+		, gisp.grade
+		, gisp.teacherDisplay
+		, min(gisp.date) as startDate
+		, max(gisp.date) as endDate
+		, min(gisp.AttMonth) as startMonth
+		, max(gisp.AttMonth) as endMonth
+		, (max(gisp.attDay) - min(gisp.attDay)) + 1 as [Length]
+		--, gisp.AttMonth
+	from(
+		select *
+			, (isp.studentNumber) - ((isp.attDay) - DENSE_RANK() OVER(partition by isp.studentNumber ORDER BY attDay)) as [seqID]
+			,  DENSE_RANK() OVER(partition by isp.studentNumber ORDER BY attDay) as [rank]
+		from(
+			select cal.name, p.studentNumber, p.personID, i.lastName, i.firstName, e.grade, CONVERT(varchar(10), cast(att.date as date),101) as date
+				, ae.code, attd.attDay, sm.seq as [AttMonth]
+				, teach.teacherDisplay
+			from Person p
+				join [Identity] i on i.personID = p.personID
+					and i.identityID = p.currentIdentityID
+				join Enrollment e on e.personID = p.personID
+					--and e.startDate &lt;= '01/06/2020'
+					--and (e.endDate &gt;= '01/06/2020' or e.endDate is null)
+				join Calendar cal on cal.calendarID = e.calendarID
+					and cal.endYear = e.endYear
+				join SchoolYear sy on sy.endYear = cal.endYear
+					and sy.active = 1
+				join Attendance att on att.personID = p.personID
+					and att.calendarID = e.calendarID
+				left join AttendanceExcuse ae on ae.excuseID = att.excuseID
+					and ae.calendarID = cal.calendarID
+				join (
+					select d.dayID, d.calendarID, d.structureID, d.periodScheduleID, d.date, ROW_NUMBER() over(PARTITION by d.calendarID order by d.date) as attDay
+					from Day d
+					where d.calendarID = @calendarID
+					and d.attendance = 1
+					) attd on attd.calendarID = cal.calendarID 
+						and att.date = attd.date
+				join SchoolMonth sm on sm.calendarID = cal.calendarID
+					and att.date between sm.startDate and sm.endDate
+				join (
+					select p.personID, sec.teacherDisplay, per.name, ros.startDate, ros.endDate, cal.calendarID
+					from Person p
+					join [Identity] i on i.personID = p.personID
+						and i.identityID = p.currentIdentityID
+					join Enrollment e on e.personID = p.personID
+					join Calendar cal on cal.calendarID = e.calendarID
+						and cal.endYear = e.endYear
+					join SchoolYear sy on sy.endYear = cal.endYear
+						and sy.active = 1
+					JOIN ScheduleStructure AS ss ON ss.calendarID = cal.calendarID
+					join Trial tr on tr.structureID = ss.structureID
+						and tr.active = 1
+					JOIN SectionPlacement AS sp ON sp.trialID = tr.trialID
+					join PeriodSchedule ps on ps.structureID = ss.structureID
+					INNER JOIN Period AS per ON per.periodID = sp.periodID
+						and per.periodScheduleID = ps.periodScheduleID
+					join Course cs on cs.calendarID = cal.calendarID
+					join Section sec on sec.courseID = cs.courseID
+						and sec.trialID = tr.trialID
+						AND sec.sectionID = sp.sectionID 
+					join Roster ros on ros.personID = p.personID
+						and ros.sectionID = sec.sectionID
+						and ros.trialID = tr.trialID
+						and (ros.startDate is NULL or ros.startDate &lt;= @endDate)
+						and (ros.endDate is null or ros.endDate &gt;= @endDate)
+					where per.name in ('A','00')
+					) teach on teach.personID = p.personID
+						and teach.calendarID = cal.calendarID
+			where ae.code in ('IS1','IS2')
+			and cal.calendarID = @calendarID
+			group by p.studentNumber, i.lastName, i.firstName, e.grade, att.date, ae.code, cal.name, attd.attDay, sm.seq, p.personID
+				, teach.teacherDisplay
+			) isp
+		--order by isp.studentNumber, isp.date
+		) gisp
+	group by gisp.studentNumber
+		, gisp.personID
+		, gisp.seqID
+		, gisp.grade
+		, gisp.lastName
+		, gisp.firstName
+		, gisp.name
+		, gisp.teacherDisplay
+		--, gisp.AttMonth
+	--order by gisp.studentNumber
+) comp
+join Attendance att on att.personID = comp.personID
+	and att.calendarID = @calendarID
+	and att.date between comp.startDate and comp.endDate
+left join AttendanceExcuse ae on ae.excuseID = att.excuseID
+	and ae.calendarID = att.calendarID
+join SchoolMonth sm on sm.calendarID = att.calendarID
+	and sm.seq = @month
+where comp.startMonth = @month
+	 or comp.endMonth = @month
+group by comp.name
+	, comp.personID
+	, comp.studentNumber
+	, comp.lastName
+	, comp.firstName
+	, comp.grade
+	, comp.teacherDisplay
+	, comp.startDate
+	, comp.endDate
+	, comp.startMonth
+	, comp.endMonth
+	, comp.Length
+	, sm.name
+	--, ae.code
+--order by comp.studentNumber
+--	, comp.startMonth
+) fin</CommandText></Query><Fields><Field Name="School"><DataField>School</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="studentNumber"><DataField>studentNumber</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="lastName"><DataField>lastName</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="firstName"><DataField>firstName</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="grade"><DataField>grade</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="teacherDisplay"><DataField>teacherDisplay</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="startDate"><DataField>startDate</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="endDate"><DataField>endDate</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="startMonth"><DataField>startMonth</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="endMonth"><DataField>endMonth</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="Month"><DataField>Month</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="Length"><DataField>Length</DataField><rd:TypeName>System.Int64</rd:TypeName></Field><Field Name="Complete"><DataField>Complete</DataField><rd:TypeName>System.String</rd:TypeName></Field></Fields></DataSet><DataSet Name="schoolMonthDate"><Query><DataSourceName>DataSource1</DataSourceName><QueryParameters><QueryParameter Name="@calendarID"><Value>=Parameters!calendarID.Value</Value></QueryParameter><QueryParameter Name="@month"><Value>=Parameters!month.Value</Value></QueryParameter></QueryParameters><CommandText>select sm.seq, sm.endDate
+from SchoolMonth sm
+where sm.calendarID = @calendarID
+and sm.seq = @month</CommandText></Query><Fields><Field Name="seq"><DataField>seq</DataField><rd:TypeName>System.Byte</rd:TypeName></Field><Field Name="endDate"><DataField>endDate</DataField><rd:TypeName>System.DateTime</rd:TypeName></Field></Fields></DataSet></DataSets><ReportSections><ReportSection><Body><ReportItems><Tablix Name="Tablix1"><TablixBody><TablixColumns><TablixColumn><Width>1.67708in</Width></TablixColumn><TablixColumn><Width>0.84375in</Width></TablixColumn><TablixColumn><Width>2.16667in</Width></TablixColumn><TablixColumn><Width>0.48958in</Width></TablixColumn><TablixColumn><Width>1.76042in</Width></TablixColumn><TablixColumn><Width>0.64583in</Width></TablixColumn><TablixColumn><Width>0.80208in</Width></TablixColumn><TablixColumn><Width>0.84375in</Width></TablixColumn><TablixColumn><Width>0.92708in</Width></TablixColumn><TablixColumn><Width>0.6875in</Width></TablixColumn></TablixColumns><TablixRows><TablixRow><Height>0.25in</Height><TablixCells><TablixCell><CellContents><Textbox Name="Textbox33"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>="Total Records: " &amp; CountRows("ISData")</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style><TextAlign>Left</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>Textbox33</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox><ColSpan>10</ColSpan></CellContents></TablixCell><TablixCell /><TablixCell /><TablixCell /><TablixCell /><TablixCell /><TablixCell /><TablixCell /><TablixCell /><TablixCell /></TablixCells></TablixRow><TablixRow><Height>0.25in</Height><TablixCells><TablixCell><CellContents><Textbox Name="Textbox23"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value /><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox23</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox><rd:Selected>true</rd:Selected></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox24"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value /><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>Textbox24</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox25"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value /><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox25</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox26"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value /><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>Textbox26</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox27"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value /><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox27</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox28"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value /><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>Textbox28</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox29"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value /><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>Textbox29</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox30"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value /><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>Textbox30</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox31"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value /><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>Textbox31</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox32"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value /><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>Textbox32</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell></TablixCells></TablixRow><TablixRow><Height>0.25in</Height><TablixCells><TablixCell><CellContents><Textbox Name="Textbox1"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>School</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox1</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox3"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Student ID</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>Textbox3</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox5"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Student Name</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox5</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox17"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Grade</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>Textbox17</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox7"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Homeroom Teacher</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox7</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox21"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Month</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>Textbox21</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox9"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>IS Contract Start Date</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>Textbox9</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox11"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>IS Contract End Date</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>Textbox11</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox13"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>IS Contract Length</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>Textbox13</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox15"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Complete</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>Textbox15</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell></TablixCells></TablixRow><TablixRow><Height>0.25in</Height><TablixCells><TablixCell><CellContents><Textbox Name="School"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!School.Value</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>School</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="studentNumber"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!studentNumber.Value</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>studentNumber</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="lastName"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!lastName.Value</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun><TextRun><Value>, </Value><Style><FontFamily>Arial</FontFamily></Style></TextRun><TextRun><Value>=Fields!firstName.Value</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>lastName</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="grade"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!grade.Value</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>grade</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="teacherDisplay"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!teacherDisplay.Value</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>teacherDisplay</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Month"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Month.Value</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>Month</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="startDate"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!startDate.Value</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>startDate</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="endDate"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!endDate.Value</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>endDate</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Length"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Length.Value</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>Length</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Complete"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Complete.Value</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style><TextAlign>Center</TextAlign></Style></Paragraph></Paragraphs><rd:DefaultName>Complete</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><VerticalAlign>Middle</VerticalAlign><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell></TablixCells></TablixRow></TablixRows></TablixBody><TablixColumnHierarchy><TablixMembers><TablixMember /><TablixMember /><TablixMember /><TablixMember /><TablixMember /><TablixMember /><TablixMember /><TablixMember /><TablixMember /><TablixMember /></TablixMembers></TablixColumnHierarchy><TablixRowHierarchy><TablixMembers><TablixMember><KeepWithGroup>After</KeepWithGroup></TablixMember><TablixMember><KeepWithGroup>After</KeepWithGroup></TablixMember><TablixMember><KeepWithGroup>After</KeepWithGroup></TablixMember><TablixMember><Group Name="Details" /></TablixMember></TablixMembers></TablixRowHierarchy><DataSetName>ISData</DataSetName><SortExpressions><SortExpression><Value>=Fields!lastName.Value</Value></SortExpression><SortExpression><Value>=Fields!startDate.Value</Value></SortExpression></SortExpressions><Height>1in</Height><Width>10.84375in</Width><Style><Border><Style>None</Style></Border></Style></Tablix></ReportItems><Height>1in</Height><Style /></Body><Width>10.84375in</Width><Page><LeftMargin>1in</LeftMargin><RightMargin>1in</RightMargin><TopMargin>1in</TopMargin><BottomMargin>1in</BottomMargin><Style /></Page></ReportSection></ReportSections><ReportParameters><ReportParameter Name="nodeID"><DataType>String</DataType><DefaultValue><Values><Value>1</Value></Values></DefaultValue><Prompt>nodeID</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="userID"><DataType>String</DataType><DefaultValue><Values><Value>1</Value></Values></DefaultValue><Prompt>user ID</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="calendarID"><DataType>String</DataType><Prompt>Calendar</Prompt><ValidValues><DataSetReference><DataSetName>userCalendar</DataSetName><ValueField>calendarID</ValueField><LabelField>Calendar</LabelField></DataSetReference></ValidValues></ReportParameter><ReportParameter Name="personID"><DataType>String</DataType><DefaultValue><Values><Value>1</Value></Values></DefaultValue><Prompt>personID</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="username"><DataType>String</DataType><DefaultValue><Values><Value>1</Value></Values></DefaultValue><Prompt>username</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="sectionID"><DataType>String</DataType><DefaultValue><Values><Value>1</Value></Values></DefaultValue><Prompt>sectionID</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="contextID"><DataType>String</DataType><DefaultValue><Values><Value>1</Value></Values></DefaultValue><Prompt>contextID</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="contextIDType"><DataType>String</DataType><DefaultValue><Values><Value>1</Value></Values></DefaultValue><Prompt>contextIDType</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="month"><DataType>String</DataType><Prompt>School Month</Prompt><ValidValues><DataSetReference><DataSetName>schoolMonth</DataSetName><ValueField>seq</ValueField><LabelField>name</LabelField></DataSetReference></ValidValues></ReportParameter><ReportParameter Name="endDate"><DataType>DateTime</DataType><DefaultValue><DataSetReference><DataSetName>schoolMonthDate</DataSetName><ValueField>endDate</ValueField></DataSetReference></DefaultValue><Prompt>End Date</Prompt><Hidden>true</Hidden></ReportParameter></ReportParameters><rd:ReportUnitType>Inch</rd:ReportUnitType><rd:ReportID>78e2bc78-3a07-484b-b9a0-542f80eb318a</rd:ReportID></Report>

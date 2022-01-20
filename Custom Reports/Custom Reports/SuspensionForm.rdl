@@ -380,7 +380,7 @@ where brt.code in ('100','110')
             <KeepTogether>true</KeepTogether>
             <Top>0.05083in</Top>
             <Left>0.24269in</Left>
-            <Height>0.45833in</Height>
+            <Height>0.45834in</Height>
             <Width>8.02193in</Width>
             <Style>
               <Border>
@@ -2830,7 +2830,7 @@ where brt.code in ('100','110')
                     </Style>
                   </TextRun>
                   <TextRun>
-                    <Value> I was informed of the reason(s) for this discipline and given an opportunity to present my version and evidence in my defense.</Value>
+                    <Value> I was informed of the reason(s) for this discipline, other means that were attempted before the suspension, and given an opportunity to present my version and evidence in my defense.</Value>
                     <Style>
                       <FontFamily>Times New Roman</FontFamily>
                       <FontSize>9pt</FontSize>
@@ -2845,7 +2845,7 @@ where brt.code in ('100','110')
             <rd:DefaultName>Textbox86</rd:DefaultName>
             <Top>8.155in</Top>
             <Left>0.57081in</Left>
-            <Height>0.25in</Height>
+            <Height>0.38021in</Height>
             <Width>7.58443in</Width>
             <ZIndex>68</ZIndex>
             <Style>

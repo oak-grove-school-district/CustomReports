@@ -73,10 +73,10 @@ END</CommandText></Query><Fields><Field Name="districtID"><DataField>districtID<
 	, cd.name as homePrimaryLanguage
 	, max(case when lep.programStatus = 'Not LEP' then 'IFEP' else lep.programStatus end) as [Status]
 	, CONVERT(varchar(10), cast(lep.identifiedDate as date),101) as identifiedDate
-	, max(case when ts.testID = 252 and ts.date between '08/01/21' and '06/30/22' then CONVERT(varchar(10), cast(ts.date as date),101) end) as [21-22 Initial Date]
-	, max(case when ts.testID = 252 and ts.date between '08/01/21' and '06/30/22' then ts.result end) as [21-22 iOverall]
-	, max(case when ts.testID = 253 and ts.date between '08/01/21' and '06/30/22' then ts.result end) as [21-22 iOral]
-	, max(case when ts.testID = 254 and ts.date between '08/01/21' and '06/30/22' then ts.result end) as [21-22 iWr]
+	, max(case when ts.testID = 189 and ts.date between '08/01/21' and '06/30/22' then CONVERT(varchar(10), cast(ts.date as date),101) end) as [21-22 Initial Date]
+	, max(case when ts.testID = 189 and ts.date between '08/01/21' and '06/30/22' then ts.result end) as [21-22 iOverall]
+	, max(case when ts.testID = 190 and ts.date between '08/01/21' and '06/30/22' then ts.result end) as [21-22 iOral]
+	, max(case when ts.testID = 191 and ts.date between '08/01/21' and '06/30/22' then ts.result end) as [21-22 iWr]
 	, max(case when ts.testID = 280 and ts.date between '08/01/20' and '06/30/21' then CONVERT(varchar(10), cast(ts.date as date),101) end) as [20-21 Date]
 	, max(case when ts.testID = 280 and ts.date between '08/01/20' and '06/30/21' then ts.result end) as [20-21 Overall]
 	, max(case when ts.testID = 282 and ts.date between '08/01/20' and '06/30/21' then ts.result end) as [20-21 Wr]
@@ -115,7 +115,7 @@ from Person p
 	join Lep on lep.personID = p.personID
 		and lep.programStatus in ('LEP','Not LEP','Pending')
 	left join TestScore ts on ts.personID = p.personID
-		and ts.testID in (280,281,282,283,284,285,286,252,253,254)
+		and ts.testID in (280,281,282,283,284,285,286,189,190,191)
 where cal.calendarID = @calendarID
 	and per.name in (@period)
 	and lep.programStatus in (@status)
