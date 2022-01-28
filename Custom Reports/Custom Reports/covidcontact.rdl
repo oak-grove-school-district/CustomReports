@@ -17,6 +17,9 @@
           <QueryParameter Name="@asOfDate">
             <Value>=Parameters!asOfDate.Value</Value>
           </QueryParameter>
+          <QueryParameter Name="@endYear">
+            <Value>=Parameters!endYear.Value</Value>
+          </QueryParameter>
           <QueryParameter Name="@studentNumber">
             <Value>=Parameters!studentNumber.Value</Value>
           </QueryParameter>
@@ -27,6 +30,7 @@
 	, e.grade
 	, i.lastName
 	, i.firstName
+	, CONVERT(varchar(10), cast(lat.lastAttendDate as date),101) as [Last Day Present]
 	, per.name as [Period]
 	, sec.teacherDisplay
 	, con2.email as [Teacher Email]
@@ -90,6 +94,65 @@ from Person p
 			left join Address a on a.addressID = hl.addressID
 			left join Contact co on co.personID = rp.personID2
 		where rp.guardian = 1) rp on rp.stuID = p.personID and rp.gn = 1
+	left join (
+			select lad.calendarID, lad.studentNumber
+				, case when lad.startAbsentDay is null or lad.endAbsentDay &lt; lad.todayDay then lad.todayDay
+					   when lad.endAbsentDay = lad.todayDay then lad.startAbsentDay - 1 end as [lastAttendDay]
+				, case when lad.startAbsentDate is null or lad.endAbsentDate &lt; cast(lad.todayDate as date) then lad.todayDate
+					   when lad.endAbsentDate = cast(lad.todayDate as date) then lad.startAbsentDate - 1 end as [lastAttendDate]
+			from(
+				select cal.calendarID
+					, p.studentNumber
+					, la.startDate as [startAbsentDate]
+					, la.endDate as [endAbsentDate]
+					, la.startDay as [startAbsentDay]
+					, la.endDay as [endAbsentDay]
+					, @asOfDate as [todayDate]
+					, tod.attDay as [todayDay]
+				from Person p
+					join [Identity] i on i.personID = p.personID
+						and i.identityID = p.currentIdentityID
+					join Enrollment e on e.personID = p.personID
+						and e.startDate &lt;= @asOfDate
+						and (e.endDate is null or e.endDate &gt;= @asOfDate)
+					join Calendar cal on cal.calendarID = e.calendarID
+					join SchoolYear sy on sy.endYear = cal.endYear
+						and sy.active = 1
+					left join (
+						select absg.student
+							, min(absg.attDay) as [startDay]
+							, max(absg.attDay) as [endDay]
+							, min(absg.date) as [startDate]
+							, max(absg.date) as [endDate]
+							, ROW_NUMBER() over(PARTITION by absg.student order by absg.seqID desc) as rn
+						from(
+								select cas.student, cas.date, attd.attDay
+								, (attd.attDay - DENSE_RANK() OVER(partition by cas.student ORDER BY attd.attDay)) as [seqID]
+								, ROW_NUMBER() over(PARTITION by cas.student order by cas.date desc) as rn
+								from cust_og_AttendanceSource(@endYear) cas
+									join (
+										select d.dayID, d.calendarID, d.structureID, d.periodScheduleID, d.date, ROW_NUMBER() over(PARTITION by d.calendarID order by d.date) as attDay
+										from Day d
+										where d.attendance = 1
+										and d.date &lt;= @asOfDate
+										) attd on attd.date = cas.date
+								where cas.status &lt;&gt; 'T'
+								and cas.fullDayAbsence = 'x'
+								--and cas.student = 30110533
+							) absg
+							group by absg.student, absg.seqID
+					) la on la.student = p.studentNumber
+						left join (
+								select d.dayID, d.calendarID, d.structureID, d.periodScheduleID, d.date, ROW_NUMBER() over(PARTITION by d.calendarID order by d.date) as attDay
+								from Day d
+								where d.attendance = 1
+									and d.date &lt;= @asOfDate
+							) tod on tod.date = cast(@asOfDate as date)
+					where la.rn = 1 or la.rn is null
+					--order by la.student
+				) lad
+			group by lad.calendarID, lad.studentNumber, lad.endAbsentDate, lad.endAbsentDay, lad.startAbsentDay, lad.startAbsentDate, lad.todayDate, lad.todayDay
+				) lat on lat.calendarID = cal.calendarID and lat.studentNumber = p.studentNumber
 where sec.sectionID in (
 		select r.sectionID
 		from Person p
@@ -133,6 +196,7 @@ group by p.studentNumber
 	, cal.name
 	, con.email
 	, con2.email
+	, lat.lastAttendDate
 order by per.name, i.lastName, i.firstName</CommandText>
       </Query>
       <Fields>
@@ -158,6 +222,10 @@ order by per.name, i.lastName, i.firstName</CommandText>
         </Field>
         <Field Name="firstName">
           <DataField>firstName</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Last_Day_Present">
+          <DataField>Last Day Present</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
         <Field Name="Period">
@@ -218,6 +286,23 @@ order by per.name, i.lastName, i.firstName</CommandText>
         </Field>
       </Fields>
     </DataSet>
+    <DataSet Name="year">
+      <Query>
+        <DataSourceName>DataSource1</DataSourceName>
+        <CommandText>select endYear, label
+from SchoolYear</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="endYear">
+          <DataField>endYear</DataField>
+          <rd:TypeName>System.Int16</rd:TypeName>
+        </Field>
+        <Field Name="label">
+          <DataField>label</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+      </Fields>
+    </DataSet>
   </DataSets>
   <ReportSections>
     <ReportSection>
@@ -233,7 +318,7 @@ order by per.name, i.lastName, i.firstName</CommandText>
                   <Width>1.09375in</Width>
                 </TablixColumn>
                 <TablixColumn>
-                  <Width>1.92708in</Width>
+                  <Width>2.16666in</Width>
                 </TablixColumn>
                 <TablixColumn>
                   <Width>0.48958in</Width>
@@ -246,6 +331,9 @@ order by per.name, i.lastName, i.firstName</CommandText>
                 </TablixColumn>
                 <TablixColumn>
                   <Width>1.57292in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>1.14583in</Width>
                 </TablixColumn>
                 <TablixColumn>
                   <Width>0.58333in</Width>
@@ -496,6 +584,40 @@ order by per.name, i.lastName, i.firstName</CommandText>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox11</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox2">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Last Day Present</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox2</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -1150,6 +1272,40 @@ order by per.name, i.lastName, i.firstName</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
+                        <Textbox Name="Last_Day_Present">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!Last_Day_Present.Value</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Last_Day_Present</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
                         <Textbox Name="Period">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
@@ -1590,6 +1746,7 @@ order by per.name, i.lastName, i.firstName</CommandText>
                 <TablixMember />
                 <TablixMember />
                 <TablixMember />
+                <TablixMember />
               </TablixMembers>
             </TablixColumnHierarchy>
             <TablixRowHierarchy>
@@ -1604,7 +1761,7 @@ order by per.name, i.lastName, i.firstName</CommandText>
             </TablixRowHierarchy>
             <DataSetName>data</DataSetName>
             <Height>0.5in</Height>
-            <Width>28.65625in</Width>
+            <Width>30.04168in</Width>
             <Style>
               <Border>
                 <Style>None</Style>
@@ -1615,7 +1772,7 @@ order by per.name, i.lastName, i.firstName</CommandText>
         <Height>0.5in</Height>
         <Style />
       </Body>
-      <Width>28.65625in</Width>
+      <Width>30.04168in</Width>
       <Page>
         <LeftMargin>1in</LeftMargin>
         <RightMargin>1in</RightMargin>
@@ -1626,15 +1783,30 @@ order by per.name, i.lastName, i.firstName</CommandText>
     </ReportSection>
   </ReportSections>
   <ReportParameters>
-    <ReportParameter Name="asOfDate">
+    <ReportParameter Name="endYear">
       <DataType>String</DataType>
+      <DefaultValue>
+        <Values>
+          <Value>=2022</Value>
+        </Values>
+      </DefaultValue>
+      <Prompt>School Year</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>year</DataSetName>
+          <ValueField>endYear</ValueField>
+          <LabelField>label</LabelField>
+        </DataSetReference>
+      </ValidValues>
+    </ReportParameter>
+    <ReportParameter Name="asOfDate">
+      <DataType>DateTime</DataType>
       <DefaultValue>
         <Values>
           <Value>=Today()</Value>
         </Values>
       </DefaultValue>
       <Prompt>As of Date</Prompt>
-      <Hidden>true</Hidden>
     </ReportParameter>
     <ReportParameter Name="studentNumber">
       <DataType>String</DataType>
@@ -1649,10 +1821,15 @@ order by per.name, i.lastName, i.firstName</CommandText>
         <CellDefinition>
           <ColumnIndex>0</ColumnIndex>
           <RowIndex>0</RowIndex>
-          <ParameterName>asOfDate</ParameterName>
+          <ParameterName>endYear</ParameterName>
         </CellDefinition>
         <CellDefinition>
           <ColumnIndex>1</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>asOfDate</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>2</ColumnIndex>
           <RowIndex>0</RowIndex>
           <ParameterName>studentNumber</ParameterName>
         </CellDefinition>
