@@ -91,7 +91,7 @@ from Person p
 					and cbr.attributeID in (1518,1519)
 				left join CampusDictionary cd on cd.code = cbr.value
 					and cd.attributeID = 1518
-			where brt.name in ('SJ Police Contacted','Parent Contact','Expulsion Recommended')
+			where brt.name in ('SJ Police Contacted','Parent Contact','Expulsion Recommended','Law Enforcement Referal')
 			  ) res on res.eventID = be.eventID and res.personID = p.personID and res.roleID = br.roleID
 	left join (
 		select stu.personID as stuID, rp.personID2 as [gdID], rp.seq, rp.name

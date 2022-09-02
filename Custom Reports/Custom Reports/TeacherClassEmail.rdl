@@ -35,7 +35,7 @@ from Calendar cal
 		and (ea.title &lt;&gt; 'Long-Term Sub' and ea.title &lt;&gt; 'Student Teacher')
 		and ea.startDate &lt;= getdate()
 		and (ea.endDate is null or ea.endDate &gt;= getdate())
-where cal.endYear = 2022
+where cal.endYear = 2023
 group by cal.name
 	, cs.name
 	, i.lastName

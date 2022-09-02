@@ -66,7 +66,7 @@ from (
 		join SchoolChoiceApplication sca on sca.personID = p.personID
 --subquery to get IntraTypes
 		left join (
-				select sca.personID, sca.applicationID, sca.calendarID, case when sca.gradeLevel = 'TK' then 'Transitional Kinder' else isnull(scr.name,'4: Choice') end as [name], ROW_NUMBER() over(PARTITION by sca.personID order by scar.ruleID) as rn
+				select sca.personID, sca.applicationID, sca.calendarID, /*case when sca.gradeLevel = 'TK' then 'Transitional Kinder' else*/ isnull(scr.name,'4: Choice') /*end*/ as [name], ROW_NUMBER() over(PARTITION by sca.personID order by scar.ruleID) as rn
 				from SchoolChoiceApplication sca
 				left join SchoolChoiceApplicationRule scar on scar.applicationID = sca.applicationID and (scar.ruleID between 4 and 17 or scar.ruleID in (27,28))
 				left join SchoolChoiceRule scr on scr.ruleID = scar.ruleID
@@ -91,7 +91,7 @@ from (
 					join HouseholdMember hm on hm.personID = p.personID and hm.secondary = 0 and hm.endDate is null
 					join HouseholdLocation hl on hl.householdID = hm.householdID and hl.secondary = 0 and hl.endDate is null
 					left join SchoolBoundary sb on sb.addressID = hl.addressID
-					where sb.startDate = '03/08/2018' or sb.startDate is null
+					where sb.startDate = '03/08/2018'
 					) hs on hs.personID = p.personID
 		left join School sc on sc.schoolID = hs.schID
 		left join [Address] ad on ad.addressID = hs.addressID
@@ -148,7 +148,7 @@ from (
 	join SchoolChoiceApplication sca on sca.personID = p.personID
 	--subquery to get IntraTypes
 	left join (
-			select sca.personID, sca.applicationID, sca.calendarID, case when sca.gradeLevel = 'TK' then 'Transitional Kinder' else isnull(scr.name,'4: Choice') end as [name], ROW_NUMBER() over(PARTITION by sca.personID order by scar.ruleID) as rn
+			select sca.personID, sca.applicationID, sca.calendarID, /*case when sca.gradeLevel = 'TK' then 'Transitional Kinder' else*/ isnull(scr.name,'4: Choice') /*end*/ as [name], ROW_NUMBER() over(PARTITION by sca.personID order by scar.ruleID) as rn
 			from SchoolChoiceApplication sca
 			left join SchoolChoiceApplicationRule scar on scar.applicationID = sca.applicationID and scar.ruleID between 4 and 17
 			left join SchoolChoiceRule scr on scr.ruleID = scar.ruleID
@@ -171,7 +171,7 @@ from (
 			join HouseholdMember hm on hm.personID = p.personID and hm.secondary = 0 and hm.endDate is null
 			join HouseholdLocation hl on hl.householdID = hm.householdID and hl.secondary = 0 and hl.endDate is null
 			left join SchoolBoundary sb on sb.addressID = hl.addressID
-			where sb.startDate = '03/08/2018' or sb.startDate is null
+			where sb.startDate = '03/08/2018'
 	) hs on hs.personID = p.personID
 	left join School sc on sc.schoolID = hs.schID
 	left join [Address] ad on ad.addressID = hs.addressID

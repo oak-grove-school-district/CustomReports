@@ -24,13 +24,13 @@ from Person p
 		and i.identityID = p.currentIdentityID
 	join Enrollment e on e.personID = p.personID
 		and e.startDate &lt;= getdate()
-		and (e.endDate &gt;= getdate() or e.endDate is null)
 	join RelatedPair rp on rp.personID1 = p.personID
 	join Person p2 on p2.personID = rp.personID2
 		and rp.guardian = 1
 	join [Identity] i2 on i2.personID = p2.personID
 		and i2.identityID = p2.currentIdentityID
 where p.studentNumber = @studentnumber
+group by p.studentNumber, p2.personID, i2.lastName, i2.firstName
 order by p.studentNumber</CommandText>
       </Query>
       <Fields>
@@ -66,9 +66,12 @@ from Person p
 	join [Identity] i2 on i2.personID = p2.personID
 		and i2.identityID = p2.currentIdentityID
 	join Enrollment e on e.personID = p2.personID
-		and e.startDate &lt;= getdate()
-		and (e.endDate &gt;= getdate() or e.endDate is null)
-where p.personID = @parents</CommandText>
+                                     and (e.endDate is null or e.endDate &gt;= getdate())
+                  join Calendar cal on cal.calendarID = e.calendarID
+                  join SchoolYear sy on sy.endYear = cal.endYear
+                                     and sy.active = 1
+where p.personID = @parents
+group by p2.studentNumber, i2.firstName, i2.lastName, i.firstName, i.lastName, p.personGUID</CommandText>
       </Query>
       <Fields>
         <Field Name="studentNumber">

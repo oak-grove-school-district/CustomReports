@@ -281,9 +281,8 @@ else 'OTX,UNV,TD30,CUT' end as [code]</CommandText>
         </QueryParameters>
         <CommandText>select
 case 
-when @letterName like 'Form A%' then 3.0
-when @letterName like 'Form B%' then 5.0
-when @letterName like 'Soft Letter%' then 2.0
+when @letterName like 'Truancy Letter 1%' then 3.0
+when @letterName like 'Truancy Letter 2%' then 5.0
 when @letterName like 'Excessive Illness 1%' then (cast(x.InstDay as float) - cast(x.StartDay as float)) / 10
 when @letterName like 'Excessive Illness 2%' then ((cast(x.InstDay as float) - cast(x.StartDay as float)) / 10) + 1
 end as [threshold]
@@ -1318,7 +1317,7 @@ where c.calendarID in (@calendarID)</CommandText>
             </Style>
           </Tablix>
         </ReportItems>
-        <Height>2.06771in</Height>
+        <Height>0.98438in</Height>
         <Style />
       </Body>
       <Width>12.66666in</Width>
@@ -1455,12 +1454,12 @@ where c.calendarID in (@calendarID)</CommandText>
       <ValidValues>
         <ParameterValues>
           <ParameterValue>
-            <Value>Form A</Value>
-            <Label>Form A</Label>
+            <Value>Truancy Letter 1</Value>
+            <Label>Truancy Letter 1</Label>
           </ParameterValue>
           <ParameterValue>
-            <Value>Form B</Value>
-            <Label>Form B</Label>
+            <Value>Truancy Letter 2</Value>
+            <Label>Truancy Letter 2</Label>
           </ParameterValue>
           <ParameterValue>
             <Value>Excessive Illness 1</Value>
@@ -1469,10 +1468,6 @@ where c.calendarID in (@calendarID)</CommandText>
           <ParameterValue>
             <Value>Excessive Illness 2</Value>
             <Label>Excessive Illness 2</Label>
-          </ParameterValue>
-          <ParameterValue>
-            <Value>Soft Letter</Value>
-            <Label>Soft Letter</Label>
           </ParameterValue>
         </ParameterValues>
       </ValidValues>

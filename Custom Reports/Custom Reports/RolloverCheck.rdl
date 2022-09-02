@@ -187,7 +187,7 @@ from Person p
 join [Identity] i on i.personID = p.personID and i.identityID = p.currentIdentityID
 left join Enrollment e on e.personID = p.personID and e.active = 1
 left join Calendar c on c.calendarID = e.calendarID
-join SchoolYear sy on (sy.endYear = e.endYear and sy.active = 1) or (sy.active = 1 and sy.endYear + 1 = e.endYear)
+join SchoolYear sy on (sy.endYear = e.endYear and sy.active = 1) or (sy.active = 1 and sy.endYear - 1 = e.endYear)
 where p.studentNumber is not null
 and (c.name not like '%private%' and c.name not like '%evaluation%')
 group by c.calendarID
