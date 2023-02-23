@@ -59,6 +59,7 @@ order by sy.endyear desc</CommandText>
 			    when datepart(hour,convert(varchar(15), convert(time, bi.timestamp),100)) &lt;= 12  then datepart(hour,convert(varchar(15), convert(time, bi.timestamp),100)) end) + ':' +
 				convert(varchar(2),datepart(MINUTE,convert(varchar(15), convert(time, bi.timestamp),100))) as [Time]
 		, case when datepart(hour,convert(varchar(15), convert(time, bi.timestamp),100)) &gt;= 12 then 'PM' when datepart(hour,convert(varchar(15), convert(time, bi.timestamp),108)) &lt; 12 then 'AM' else NULL end as [AM/PM]
+		,bi.incidentID as [Incident ID]
 		,bt.code as Code, bt.name as [Event Name]
 		,cd.name as [Location]
 		,brt.name as [Res Name], brt.code as [Res Code]
@@ -75,6 +76,7 @@ from Person p
 	join Enrollment e on e.personID = p.personID
 		and e.active in (0,1)
 	join Calendar c on c.calendarID = e.calendarID
+and (c.summerschool is null or c.summerschool = 0)
 	left join BehaviorRole br on br.personID = p.personID
 		and br.calendarID = e.calendarID
 		and br.role not like 'Victim'
@@ -112,8 +114,8 @@ where e.endYear = @endyear
 	and c.name not like '%public%'
 	and c.name not like '%private%'
 group by p.studentNumber, i.lastName, i.firstName, i.gender, e.grade, c.name, i.raceEthnicityFed, bi.timestamp, bt.code, bt.name, brt.name, brt.code
-	,pos.eligibility, lep.programStatus, ts.result, br.role, cbe.value, cd.name, i2.firstName, i2.lastName, p.stateID
-order by c.name, i.lastName</CommandText>
+	,pos.eligibility, lep.programStatus, ts.result, br.role, cbe.value, cd.name, i2.firstName, i2.lastName, p.stateID ,bi.incidentID
+order by c.name, i.lastName, bi.incidentID asc</CommandText>
         <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
       </Query>
       <Fields>
@@ -176,6 +178,10 @@ order by c.name, i.lastName</CommandText>
         <Field Name="Event_Name">
           <DataField>Event Name</DataField>
           <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Incident_ID">
+          <DataField>Incident ID</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
         </Field>
         <Field Name="AM_PM">
           <DataField>AM/PM</DataField>
@@ -294,6 +300,9 @@ group by cal.startDate, cal.endDate, cal.endYear</CommandText>
                 </TablixColumn>
                 <TablixColumn>
                   <Width>1in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>0.86458in</Width>
                 </TablixColumn>
                 <TablixColumn>
                   <Width>0.80208in</Width>
@@ -682,6 +691,37 @@ group by cal.startDate, cal.endDate, cal.endYear</CommandText>
                             <PaddingBottom>2pt</PaddingBottom>
                           </Style>
                         </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox14">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Incident ID</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox14</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                        <rd:Selected>true</rd:Selected>
                       </CellContents>
                     </TablixCell>
                     <TablixCell>
@@ -1473,6 +1513,37 @@ group by cal.startDate, cal.endDate, cal.endYear</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
+                        <Textbox Name="Incident_ID">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!Incident_ID.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Incident_ID</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                        <rd:Selected>true</rd:Selected>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
                         <Textbox Name="Date">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
@@ -1955,6 +2026,7 @@ group by cal.startDate, cal.endDate, cal.endYear</CommandText>
                 <TablixMember />
                 <TablixMember />
                 <TablixMember />
+                <TablixMember />
               </TablixMembers>
             </TablixColumnHierarchy>
             <TablixRowHierarchy>
@@ -1969,7 +2041,7 @@ group by cal.startDate, cal.endDate, cal.endYear</CommandText>
             </TablixRowHierarchy>
             <DataSetName>DataSet1</DataSetName>
             <Height>0.5in</Height>
-            <Width>23.31252in</Width>
+            <Width>24.1771in</Width>
             <Style>
               <Border>
                 <Style>None</Style>
@@ -1980,7 +2052,7 @@ group by cal.startDate, cal.endDate, cal.endYear</CommandText>
         <Height>0.5in</Height>
         <Style />
       </Body>
-      <Width>23.31252in</Width>
+      <Width>24.31252in</Width>
       <Page>
         <LeftMargin>1in</LeftMargin>
         <RightMargin>1in</RightMargin>

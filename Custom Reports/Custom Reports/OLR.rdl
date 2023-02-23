@@ -80,7 +80,7 @@
 , max(case when oa.mailing is null and oa.secondary = 1 then isnull(oa.city,'') end) as [a2AddrCity]
 , max(case when oa.mailing is null and oa.secondary = 1 then isnull(oa.state,'') end) as [a2AddrState]
 , max(case when oa.mailing is null and oa.secondary = 1 then isnull(oa.zip,'') end) as [a2AddrZip]
-, max(case when op2.personTypeValue like 'parent/guardian' and opo.militaryRA = 'Y' and cps.olr_customBuilderID = 128 then cps.value end) as [militaryDate]
+, max(case when op2.personTypeValue like 'parent/guardian' and oso.militaryRA = 'Y' and cps.olr_customBuilderID = 128 then cps.value end) as [militaryDate]
 , max(case when och.value = '10' then '*' end) as [grad]
 , max(case when och.value = '11' then '*' end) as [cogr]
 , max(case when och.value = '12' then '*' end) as [scad]
@@ -131,7 +131,8 @@
 , max(case when op2.personTypeValue = 'emergency contact' and [or].rn = 3 then [or].olr_relationship end) as [ec3relationship]
 , max(case when op2.personTypeValue = 'emergency contact' and [or].rn = 3 then oc.cellPhone end) as [ec3cell]
 from olr_application ap
-join SchoolYear sy on sy.endYear = ap.endYear
+join olr_configGroup ocg on ocg.olr_configGroupID = ap.olr_configGroupID
+join SchoolYear sy on sy.endYear = ocg.endYear
 join olr_household oh on oh.olr_applicationID = ap.olr_applicationID
 join olr_person op on op.olr_applicationID = ap.olr_applicationID
 	and op.olr_personID = @studentOLRpersonID
@@ -139,20 +140,58 @@ join olr_person op2 on op2.olr_applicationID = ap.olr_applicationID
 --left join olr_householdMember ohm on ohm.olr_personID = op.olr_personID
 join olr_address oa on oa.olr_applicationID = ap.olr_applicationID
 left join (
-select [or].*, row_number() over(partition by [or].olr_applicationID, [op].personTypeValue order by [or].seq) as [rn]
-from olr_relationship [or]
-left join olr_person op on op.olr_personID = [or].olr_personID2
-where [or].olr_personID1 = @studentOLRpersonID
-) [or] on [or].olr_applicationID = ap.olr_applicationID and [or].olr_personID2 = op2.olr_personID
-left join olr_contact oc on oc.olr_applicationID = ap.olr_applicationID and oc.olr_personID = [or].olr_personID2
+		select [or].*, op.olr_applicationID, row_number() over(partition by [op].olr_applicationID, [op].personTypeValue order by [or].seq) as [rn]
+		from olr_relationship [or]
+		left join olr_person op on op.olr_personID = [or].olr_personID2
+		where [or].olr_personID1 = @studentOLRpersonID
+) [or] on [or].olr_applicationID = ap.olr_applicationID 
+	and [or].olr_personID2 = op2.olr_personID
+left join (
+	select op.olr_applicationID, oc.*
+		from olr_contact oc
+		join olr_person op on op.olr_personID = oc.olr_personID
+		) oc on oc.olr_personID = [or].olr_personID2
+		and [oc].olr_applicationID = ap.olr_applicationID
 left join olr_customParentSave cps on cps.olr_personID = op2.olr_personID
-left join olr_parentOther opo on opo.olr_parentpersonID = op2.olr_personID and opo.olr_applicationID = ap.olr_applicationID
-left join olr_studentOther oso on oso.olr_studentpersonID = op.olr_personID and oso.olr_applicationID = ap.olr_applicationID and oso.olr_studentpersonID = @studentOLRpersonID
-left join olr_customStudentSave css on css.olr_personID = op.olr_personID and css.olr_customBuilderID in (97,98,99,105,106,107,108,109) and css.olr_personID = @studentOLRpersonID
-left join olr_raceEthnicity ore on ore.olr_studentpersonID = op.olr_personID and ore.olr_studentpersonID = @studentOLRpersonID
-left join olr_customHouseholdSave och on och.olr_householdID = oh.olr_householdID and och.olr_customBuilderID in (127)
-left join olr_dictionary od on (od.code = oso.language or od.code = oso.parentLanguage or od.code = oso.firstLanguage or od.code = oso.homeLanguage or od.code = oso.homePrimaryLanguage) and od.olr_attributeID = 3
-left join olr_healthCondition ohc on ohc.olr_personID = op.olr_personID and ohc.olr_personID = @studentOLRpersonID
+left join (
+	select op.olr_applicationID, opo.*
+		from olr_parentOther opo
+		join olr_person op on op.olr_personID = opo.olr_personID
+		) opo on opo.olr_personID = op2.olr_personID 
+		and [opo].olr_applicationID = ap.olr_applicationID
+left join (
+		select css.olr_personID, op.olr_applicationID, oso.chosenSchoolID, oso.grade
+			, max(case when css.olr_customBuilderID = 1366 then css.value end) as homePrimaryLanguage
+			, max(case when css.olr_customBuilderID = 1406 then css.value end) as homeLanguage
+			, max(case when css.olr_customBuilderID = 1390 then css.value end) as parentLanguage
+			, max(case when css.olr_customBuilderID = 1382 then css.value end) as [language]
+			, max(case when css.olr_customBuilderID = 1430 then css.value end) as previousSchool
+			, max(case when css.olr_customBuilderID = 1438 then css.value end) as previousCity
+			, max(case when css.olr_customBuilderID = 1446 then css.value end) as previousState
+			, max(case when css.olr_customBuilderID = 1268 then css.value end) as gifted
+			, max(case when css.olr_customBuilderID = 1276 then css.value end) as ell
+			, max(case when css.olr_customBuilderID = 1260 then css.value end) as plan504
+			, max(case when css.olr_customBuilderID = 1740 then css.value end) as militaryRA
+		--, cb.displayName, cb.olr_customBuilderID, css.value
+		from olr_customStudentSave css
+			join olr_customBuilder cb on cb.olr_customBuilderID = css.olr_customBuilderID
+			join olr_studentOther oso on oso.olr_personID = css.olr_personID
+			join olr_person op on op.olr_personID = css.olr_personID
+		group by css.olr_personID, op.olr_applicationID, oso.chosenSchoolID, oso.grade
+		) oso on oso.olr_personID = op.olr_personID 
+		and [oso].olr_applicationID = ap.olr_applicationID 
+		and oso.olr_personID = @studentOLRpersonID
+left join olr_customStudentSave css on css.olr_personID = op.olr_personID 
+	and css.olr_customBuilderID in (97,98,99,105,106,107,108,109) 
+	and css.olr_personID = @studentOLRpersonID
+left join olr_raceEthnicity ore on ore.olr_personID = op.olr_personID 
+	and ore.olr_personID = @studentOLRpersonID
+left join olr_customHouseholdSave och on och.olr_householdID = oh.olr_householdID 
+	and och.olr_customBuilderID in (127)
+left join olr_dictionary od on (od.code = oso.language or od.code = oso.parentLanguage or od.code = oso.homeLanguage or od.code = oso.homePrimaryLanguage) 
+	and od.olr_attributeID = 3
+left join olr_healthCondition ohc on ohc.olr_personID = op.olr_personID 
+	and ohc.olr_personID = @studentOLRpersonID
 left join School sc on sc.schoolID = oso.chosenSchoolID
 where ap.olr_applicationID = @ApplicationNumber and ap.status is not null</CommandText>
         <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
@@ -382,16 +421,16 @@ where ap.olr_applicationID = @ApplicationNumber and ap.status is not null</Comma
           <DataField>a2AddrCity</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="militaryDate">
-          <DataField>militaryDate</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
         <Field Name="a2AddrState">
           <DataField>a2AddrState</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
         <Field Name="a2AddrZip">
           <DataField>a2AddrZip</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="militaryDate">
+          <DataField>militaryDate</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
         <Field Name="grad">

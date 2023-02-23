@@ -92,6 +92,9 @@ END</CommandText>
       <Query>
         <DataSourceName>DataSource1</DataSourceName>
         <QueryParameters>
+          <QueryParameter Name="@asOfDate">
+            <Value>=Parameters!asOfDate.Value</Value>
+          </QueryParameter>
           <QueryParameter Name="@calendarID">
             <Value>=Parameters!calendarID.Value</Value>
           </QueryParameter>
@@ -109,7 +112,7 @@ from(
 				and i.personID = p.personID
 			join Enrollment e on e.personID = p.personID
 				and e.active in (1)
-				and (e.endDate is null or e.endDate &gt;= getdate())
+				and (e.endDate is null or e.endDate &gt;= @asOfDate)
 			join Calendar c on c.calendarID = e.calendarID
 			left join BehaviorRole br on br.personID = p.personID
 				and br.calendarID = e.calendarID
@@ -153,6 +156,9 @@ as up;</CommandText>
       <Query>
         <DataSourceName>DataSource1</DataSourceName>
         <QueryParameters>
+          <QueryParameter Name="@asOfDate">
+            <Value>=Parameters!asOfDate.Value</Value>
+          </QueryParameter>
           <QueryParameter Name="@calendarID">
             <Value>=Parameters!calendarID.Value</Value>
           </QueryParameter>
@@ -176,7 +182,7 @@ from(
 			and i.personID = p.personID
 		join Enrollment e on e.personID = p.personID
 			and e.active in (1)
-			and (e.endDate is null or e.endDate &gt;= getdate())
+			and (e.endDate is null or e.endDate &gt;= @asOfDate)
 		join Calendar c on c.calendarID = e.calendarID
 		left join BehaviorRole br on br.personID = p.personID
 			and br.calendarID = e.calendarID
@@ -195,7 +201,7 @@ from(
 		left join CampusDictionary cd on cd.code = bi.location
 			and cd.attributeID = 726
 		left join ProgramParticipation pp on pp.personID = p.personID
-			and ((pp.eligibilityEndDate is null or pp.eligibilityEndDate &gt;= getdate()) or (pp.endDate is null or pp.endDate &gt;= getdate()))
+			and ((pp.eligibilityEndDate is null or pp.eligibilityEndDate &gt;= @asOfDate) or (pp.endDate is null or pp.endDate &gt;= @asOfDate))
 			and pp.programID in ('53')
 	where c.calendarID in (@calendarID)
 	group by p.studentNumber, i.lastName, i.firstName, i.gender, e.grade, c.name, i.raceEthnicityFed, bi.timestamp, bt.code, bt.name, brt.name, brt.code
@@ -211,11 +217,11 @@ from(
 							and i.personID = p.personID
 						join Enrollment e on e.personID = p.personID
 							and e.active in (1)
-							and e.startDate &lt;= getdate()
-							and (e.endDate is null or e.endDate &gt;= getdate())
+							and e.startDate &lt;= @asOfDate
+							and (e.endDate is null or e.endDate &gt;= @asOfDate)
 						join Calendar c on c.calendarID = e.calendarID
 						left join ProgramParticipation pp on pp.personID = p.personID
-							and ((pp.eligibilityEndDate is null or pp.eligibilityEndDate &gt;= getdate()) or (pp.endDate is null or pp.endDate &gt;= getdate()))
+							and ((pp.eligibilityEndDate is null or pp.eligibilityEndDate &gt;= @asOfDate) or (pp.endDate is null or pp.endDate &gt;= @asOfDate))
 							and pp.programID in ('53')
 					where c.calendarID in (@calendarID)
 					group by p.studentNumber, i.lastName, i.firstName, i.gender, e.grade, c.name, i.raceEthnicityFed, pp.programID
@@ -233,7 +239,7 @@ from(
 						and i.personID = p.personID
 					join Enrollment e on e.personID = p.personID
 						and e.active in (1)
-						and (e.endDate is null or e.endDate &gt;= getdate())
+						and (e.endDate is null or e.endDate &gt;= @asOfDate)
 					join Calendar c on c.calendarID = e.calendarID
 					left join BehaviorRole br on br.personID = p.personID
 						and br.calendarID = e.calendarID
@@ -252,7 +258,7 @@ from(
 					left join CampusDictionary cd on cd.code = bi.location
 						and cd.attributeID = 726
 					left join ProgramParticipation pp on pp.personID = p.personID
-							and ((pp.eligibilityEndDate is null or pp.eligibilityEndDate &gt;= getdate()) or (pp.endDate is null or pp.endDate &gt;= getdate()))
+							and ((pp.eligibilityEndDate is null or pp.eligibilityEndDate &gt;= @asOfDate) or (pp.endDate is null or pp.endDate &gt;= @asOfDate))
 							and pp.programID in ('53')
 				where c.calendarID in (@calendarID)
 						and bi.timestamp is not null
@@ -279,6 +285,25 @@ group by x.IEP, enr.count, sturef.Count</CommandText>
         <Field Name="Total_Referrals">
           <DataField>Total Referrals</DataField>
           <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="endDate">
+      <Query>
+        <DataSourceName>DataSource1</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@calendarID">
+            <Value>=Parameters!calendarID.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>select cal.endDate
+from Calendar cal
+where cal.calendarID = @calendarID</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="endDate">
+          <DataField>endDate</DataField>
+          <rd:TypeName>System.DateTime</rd:TypeName>
         </Field>
       </Fields>
     </DataSet>
@@ -2932,6 +2957,16 @@ group by x.IEP, enr.count, sturef.Count</CommandText>
       <Prompt>contextIDType</Prompt>
       <Hidden>true</Hidden>
     </ReportParameter>
+    <ReportParameter Name="asOfDate">
+      <DataType>DateTime</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>endDate</DataSetName>
+          <ValueField>endDate</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>as Of Date</Prompt>
+    </ReportParameter>
   </ReportParameters>
   <ReportParametersLayout>
     <GridLayoutDefinition>
@@ -2977,6 +3012,11 @@ group by x.IEP, enr.count, sturef.Count</CommandText>
           <ColumnIndex>3</ColumnIndex>
           <RowIndex>1</RowIndex>
           <ParameterName>contextIDType</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>0</ColumnIndex>
+          <RowIndex>2</RowIndex>
+          <ParameterName>asOfDate</ParameterName>
         </CellDefinition>
       </CellDefinitions>
     </GridLayoutDefinition>

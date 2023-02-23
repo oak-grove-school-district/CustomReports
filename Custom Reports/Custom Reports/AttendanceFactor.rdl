@@ -41,16 +41,16 @@ from (
 	when y.calendarName like '%Anderson%' then '1'
 	when y.calendarName like '%TWBI%' then '2'
 	when y.calendarName like '%Baldwin%' then '3'
-	when y.calendarName like '%Christopher%' and y.grade in ('TK','00','01','02','03','04','05','06') then '4'
+	when y.calendarName like '%Christopher%' and y.grade in ('TK','00','01','02','03','04','05','06',',07','08') then '4'
 	when y.calendarName like '%Del Roble%' then '5'
 	when y.calendarName like '%Edenvale%' then '6'
 	when y.calendarName like '%Frost%' then '7'
-	when y.calendarName like '%Independent Study%' and y.grade in ('TK','00','01','02','03','04','05','06') then '8'
-	when y.calendarName like '%Indigo%' and y.grade in ('TK','00','01','02','03','04','05','06') then '9'
-	when y.calendarName like '%Glider%' then '10'
+	when y.calendarName like '%Virtual%' and y.grade in ('TK','00','01','02','03','04','05','06') then '8'
+	when y.calendarName like '%Indigo%' and y.grade in ('TK','00','01','02','03','04','05','06','07','08') then '9'
+	--when y.calendarName like '%Glider%' then '10'
 	when y.calendarName like '%Hayes%' then '11'
 	when y.calendarName like '%Ledesma%' then '12'
-	when y.calendarName like '%Miner%' then '13'
+	--when y.calendarName like '%Miner%' then '13'
 	when y.calendarName like '%Oak Ridge%' then '14'
 	when y.calendarName like '%Parkview%' then '15'
 	when y.calendarName like '%Sakamoto%' then '16'
@@ -58,12 +58,12 @@ from (
 	when y.calendarName like '%Stipe%' then '18'
 	when y.calendarName like '%Taylor%' then '19'
 	when y.calendarName like '%Bernal%' then '21'
-	when y.calendarName like '%Christopher%' and y.grade in ('07','08') then '22'
+	--when y.calendarName like '%Christopher%' and y.grade in ('07','08') then '22'
 	when y.calendarName like '%Davis%' then '23'
-	when y.calendarName like '%Independent Study%' and y.grade in ('07','08') then '24'
-	when y.calendarName like '%Indigo%' and y.grade in ('07','08') then '25'
+	--when y.calendarName like '%Independent Study%' and y.grade in ('07','08') then '24'
+	--when y.calendarName like '%Indigo%' and y.grade in ('07','08') then '25'
 	when y.calendarName like '%Herman%' then '26'
-	when y.calendarName like '%Academy%' then '27'
+	--when y.calendarName like '%Academy%' then '27'
 	end) as int) as [sort]
 	, y.calendarName
 	, case when y.grade = 'TK' then sum(y.Appt) end as [TKAppt]
@@ -107,16 +107,34 @@ from (
 				from Attendance at
 				left join AttendanceExcuse ae on ae.excuseID = at.excuseID and ae.calendarID = at.calendarID
 				join Calendar c on c.calendarID = at.calendarID and c.schoolChoice = 1 and c.endYear = @endYear
+				join ScheduleStructure ss on ss.calendarID = c.calendarID
+				join Trial tr on tr.structureID = ss.structureID
+					and tr.active = 1
 				join Period pe on pe.periodID = at.periodID and pe.name not in ('07','A','Courses')
 				join (
-					select c.calendarID, day.date, count(pe.name) as [tPeriods]
-					from Period pe
-					join PeriodSchedule ps on ps.periodScheduleID = pe.periodScheduleID
-					join Trial tr on tr.structureID = ps.structureID and tr.active = 1
-					join Calendar c on c.calendarID = tr.calendarID and c.schoolChoice = 1 and c.endYear = @endYear
-					join Day on day.calendarID = c.calendarID and day.calendarID = tr.calendarID and day.periodScheduleID = ps.periodScheduleID and day.structureID = ps.structureID
-					where pe.name not in ('07','A','Courses')
-					group by c.calendarID, day.date
+					select ppd.calendarID, ppd.date, count(ppd.name) as [tPeriods]
+					from(
+						select c.calendarID, day.date
+						, pe.name
+						from Period pe
+						join PeriodSchedule ps on ps.periodScheduleID = pe.periodScheduleID
+						join Trial tr on tr.structureID = ps.structureID and tr.active = 1
+						join Calendar c on c.calendarID = tr.calendarID and c.schoolChoice = 1 and c.endYear = @endYear
+						join School sch on sch.schoolID = c.schoolID
+						join Day on day.calendarID = c.calendarID and day.calendarID = tr.calendarID and day.periodScheduleID = ps.periodScheduleID and day.structureID = ps.structureID
+							and day.attendance = 1
+						join Course cs on cs.calendarID = c.calendarID
+							and cs.active = 1
+							and cs.attendance = 1
+						join Section sec on sec.courseID = cs.courseID
+							and sec.trialID = tr.trialID
+						join SectionPlacement sp on sp.sectionID = sec.sectionID
+							and sp.periodID = pe.periodID
+							and sp.trialID = tr.trialID
+						where pe.name not in ('07','A','Courses')
+						group by c.calendarID, day.date, pe.name
+						) ppd
+					group by ppd.calendarID, ppd.date
 				) np on np.calendarID = c.calendarID and np.date = at.date
 				where at.date between @mStartDate and @mEndDate
 				and ((at.status = 'A' or (ae.status = 'A' and ae.excuse in ('U','E'))) or ae.code = 'SS')
@@ -125,7 +143,7 @@ from (
 				having count(at.periodID) = np.tPeriods
 			) ab on ab.personID = e.personID and ab.calendarID = e.calendarID
 			where e.endYear = @endYear and (e.startDate &lt;= @mEndDate) and (e.endDate &gt;= @mStartDate or e.endDate is null) and e.serviceType = 'P'
-			and dbo.fn_age(i.birthDate,@mEndDate) &gt;= 5
+			and i.birthdate &lt;= '02/02/2018'
 			group by c.name, e.personID, p.studentNumber, i.lastName, i.firstName, e.grade
 		) en
 	) y
@@ -2979,7 +2997,7 @@ where (c.summerSchool = 0 or c.summerSchool is null) and convert(date,getdate())
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=IIF(Fields!sort.Value &lt;= 19, Sum(Fields!TKAppt.Value)/Sum(Fields!TKtEnrolled.Value),"")</Value>
+                                  <Value>=Sum(Fields!TKAppt.Value)/Sum(Fields!TKtEnrolled.Value)</Value>
                                   <Style>
                                     <Format>0.00%</Format>
                                   </Style>
@@ -3134,7 +3152,7 @@ where (c.summerSchool = 0 or c.summerSchool is null) and convert(date,getdate())
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=IIF(Fields!sort.Value &lt;= 19, Sum(Fields!KAppt.Value)/Sum(Fields!KtEnrolled.Value),"")</Value>
+                                  <Value>=Sum(Fields!KAppt.Value)/Sum(Fields!KtEnrolled.Value)</Value>
                                   <Style>
                                     <Format>0.00%</Format>
                                   </Style>
@@ -3290,7 +3308,7 @@ where (c.summerSchool = 0 or c.summerSchool is null) and convert(date,getdate())
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=IIF(Fields!sort.Value &lt;= 19, Sum(Fields!ID01Appt.Value)/Sum(Fields!ID01tEnrolled.Value),"")</Value>
+                                  <Value>=Sum(Fields!ID01Appt.Value)/Sum(Fields!ID01tEnrolled.Value)</Value>
                                   <Style>
                                     <Format>0.00%</Format>
                                   </Style>
@@ -3446,7 +3464,7 @@ where (c.summerSchool = 0 or c.summerSchool is null) and convert(date,getdate())
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=IIF(Fields!sort.Value &lt;= 19, Sum(Fields!ID02Appt.Value)/Sum(Fields!ID02tEnrolled.Value),"")</Value>
+                                  <Value>=Sum(Fields!ID02Appt.Value)/Sum(Fields!ID02tEnrolled.Value)</Value>
                                   <Style>
                                     <Format>0.00%</Format>
                                   </Style>
@@ -3602,7 +3620,7 @@ where (c.summerSchool = 0 or c.summerSchool is null) and convert(date,getdate())
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=IIF(Fields!sort.Value &lt;= 19, Sum(Fields!ID03Appt.Value)/Sum(Fields!ID03tEnrolled.Value),"")</Value>
+                                  <Value>=Sum(Fields!ID03Appt.Value)/Sum(Fields!ID03tEnrolled.Value)</Value>
                                   <Style>
                                     <Format>0.00%</Format>
                                   </Style>
@@ -3758,7 +3776,7 @@ where (c.summerSchool = 0 or c.summerSchool is null) and convert(date,getdate())
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=IIF(Fields!sort.Value &lt;= 19, Sum(Fields!ID04Appt.Value)/Sum(Fields!ID04tEnrolled.Value),"")</Value>
+                                  <Value>=Sum(Fields!ID04Appt.Value)/Sum(Fields!ID04tEnrolled.Value)</Value>
                                   <Style>
                                     <Format>0.00%</Format>
                                   </Style>
@@ -3914,7 +3932,7 @@ where (c.summerSchool = 0 or c.summerSchool is null) and convert(date,getdate())
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=IIF(Fields!sort.Value &lt;= 19, Sum(Fields!ID05Appt.Value)/Sum(Fields!ID05tEnrolled.Value),Sum(Fields!ID05Appt.Value)/Sum(Fields!ID05tEnrolled.Value))</Value>
+                                  <Value>=Sum(Fields!ID05Appt.Value)/Sum(Fields!ID05tEnrolled.Value)</Value>
                                   <Style>
                                     <Format>0.00%</Format>
                                   </Style>
@@ -4070,7 +4088,7 @@ where (c.summerSchool = 0 or c.summerSchool is null) and convert(date,getdate())
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=IIF(Fields!sort.Value &lt;=19, Sum(Fields!ID06Appt.Value)/Sum(Fields!ID06tEnrolled.Value), Sum(Fields!ID06Appt.Value)/Sum(Fields!ID06tEnrolled.Value))</Value>
+                                  <Value>=Sum(Fields!ID06Appt.Value)/Sum(Fields!ID06tEnrolled.Value)</Value>
                                   <Style>
                                     <Format>0.00%</Format>
                                   </Style>
@@ -4226,7 +4244,7 @@ where (c.summerSchool = 0 or c.summerSchool is null) and convert(date,getdate())
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=IIF(Fields!sort.Value &gt; 19, Sum(Fields!ID07Appt.Value)/Sum(Fields!ID07tEnrolled.Value), "")</Value>
+                                  <Value>=Sum(Fields!ID07Appt.Value)/Sum(Fields!ID07tEnrolled.Value)</Value>
                                   <Style>
                                     <Format>0.00%</Format>
                                   </Style>
@@ -4382,7 +4400,7 @@ where (c.summerSchool = 0 or c.summerSchool is null) and convert(date,getdate())
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=IIF(Fields!sort.Value &gt; 19, Sum(Fields!ID08Appt.Value)/Sum(Fields!ID08tEnrolled.Value),"")</Value>
+                                  <Value>=Sum(Fields!ID08Appt.Value)/Sum(Fields!ID08tEnrolled.Value)</Value>
                                   <Style>
                                     <Format>0.00%</Format>
                                   </Style>
@@ -4436,10 +4454,8 @@ where (c.summerSchool = 0 or c.summerSchool is null) and convert(date,getdate())
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=IIF(Fields!sort.Value &lt;= 19,(Sum(Fields!TKAppt.Value)+Sum(Fields!KAppt.Value)+Sum(Fields!ID01Appt.Value)+Sum(Fields!ID02Appt.Value)+Sum(Fields!ID03Appt.Value)+Sum(Fields!ID04Appt.Value)+Sum(Fields!ID05Appt.Value)+Sum(Fields!ID06Appt.Value)+Sum(Fields!ID07Appt.Value)+Sum(Fields!ID08Appt.Value))/
-(Sum(Fields!TKtEnrolled.Value)+Sum(Fields!KtEnrolled.Value)+Sum(Fields!ID01tEnrolled.Value)+Sum(Fields!ID02tEnrolled.Value)+Sum(Fields!ID03tEnrolled.Value)+Sum(Fields!ID04tEnrolled.Value)+Sum(Fields!ID05tEnrolled.Value)+Sum(Fields!ID06tEnrolled.Value)+Sum(Fields!ID07tEnrolled.Value)+Sum(Fields!ID08tEnrolled.Value)),
-(Sum(Fields!TKAppt.Value)+Sum(Fields!KAppt.Value)+Sum(Fields!ID01Appt.Value)+Sum(Fields!ID02Appt.Value)+Sum(Fields!ID03Appt.Value)+Sum(Fields!ID04Appt.Value)+Sum(Fields!ID05Appt.Value)+Sum(Fields!ID06Appt.Value)+Sum(Fields!ID07Appt.Value)+Sum(Fields!ID08Appt.Value))/
-(Sum(Fields!TKtEnrolled.Value)+Sum(Fields!KtEnrolled.Value)+Sum(Fields!ID01tEnrolled.Value)+Sum(Fields!ID02tEnrolled.Value)+Sum(Fields!ID03tEnrolled.Value)+Sum(Fields!ID04tEnrolled.Value)+Sum(Fields!ID05tEnrolled.Value)+Sum(Fields!ID06tEnrolled.Value)+Sum(Fields!ID07tEnrolled.Value)+Sum(Fields!ID08tEnrolled.Value)))</Value>
+                                  <Value>=(Sum(Fields!TKAppt.Value)+Sum(Fields!KAppt.Value)+Sum(Fields!ID01Appt.Value)+Sum(Fields!ID02Appt.Value)+Sum(Fields!ID03Appt.Value)+Sum(Fields!ID04Appt.Value)+Sum(Fields!ID05Appt.Value)+Sum(Fields!ID06Appt.Value)+Sum(Fields!ID07Appt.Value)+Sum(Fields!ID08Appt.Value))/
+(Sum(Fields!TKtEnrolled.Value)+Sum(Fields!KtEnrolled.Value)+Sum(Fields!ID01tEnrolled.Value)+Sum(Fields!ID02tEnrolled.Value)+Sum(Fields!ID03tEnrolled.Value)+Sum(Fields!ID04tEnrolled.Value)+Sum(Fields!ID05tEnrolled.Value)+Sum(Fields!ID06tEnrolled.Value)+Sum(Fields!ID07tEnrolled.Value)+Sum(Fields!ID08tEnrolled.Value))</Value>
                                   <Style>
                                     <Format>0.00%</Format>
                                   </Style>
@@ -6198,76 +6214,8 @@ where (c.summerSchool = 0 or c.summerSchool is null) and convert(date,getdate())
             </TablixColumnHierarchy>
             <TablixRowHierarchy>
               <TablixMembers>
-                <TablixMember>
-                  <TablixHeader>
-                    <Size>0.89583in</Size>
-                    <CellContents>
-                      <Textbox Name="Hide1">
-                        <CanGrow>true</CanGrow>
-                        <KeepTogether>true</KeepTogether>
-                        <Paragraphs>
-                          <Paragraph>
-                            <TextRuns>
-                              <TextRun>
-                                <Value />
-                                <Style />
-                              </TextRun>
-                            </TextRuns>
-                            <Style />
-                          </Paragraph>
-                        </Paragraphs>
-                        <Style>
-                          <Border>
-                            <Color>LightGrey</Color>
-                            <Style>Solid</Style>
-                          </Border>
-                          <PaddingLeft>2pt</PaddingLeft>
-                          <PaddingRight>2pt</PaddingRight>
-                          <PaddingTop>2pt</PaddingTop>
-                          <PaddingBottom>2pt</PaddingBottom>
-                        </Style>
-                      </Textbox>
-                    </CellContents>
-                  </TablixHeader>
-                  <KeepWithGroup>After</KeepWithGroup>
-                </TablixMember>
-                <TablixMember>
-                  <TablixHeader>
-                    <Size>0.89583in</Size>
-                    <CellContents>
-                      <Textbox Name="Textbox94">
-                        <CanGrow>true</CanGrow>
-                        <KeepTogether>true</KeepTogether>
-                        <Paragraphs>
-                          <Paragraph>
-                            <TextRuns>
-                              <TextRun>
-                                <Value>Sites</Value>
-                                <Style />
-                              </TextRun>
-                            </TextRuns>
-                            <Style />
-                          </Paragraph>
-                        </Paragraphs>
-                        <rd:DefaultName>Textbox94</rd:DefaultName>
-                        <Style>
-                          <Border>
-                            <Color>LightGrey</Color>
-                            <Style>Solid</Style>
-                          </Border>
-                          <PaddingLeft>2pt</PaddingLeft>
-                          <PaddingRight>2pt</PaddingRight>
-                          <PaddingTop>2pt</PaddingTop>
-                          <PaddingBottom>2pt</PaddingBottom>
-                        </Style>
-                      </Textbox>
-                    </CellContents>
-                  </TablixHeader>
-                  <TablixMembers>
-                    <TablixMember />
-                  </TablixMembers>
-                  <KeepWithGroup>After</KeepWithGroup>
-                </TablixMember>
+                <TablixMember />
+                <TablixMember />
                 <TablixMember>
                   <Group Name="sort">
                     <GroupExpressions>
@@ -6279,85 +6227,26 @@ where (c.summerSchool = 0 or c.summerSchool is null) and convert(date,getdate())
                       <Value>=Fields!sort.Value</Value>
                     </SortExpression>
                   </SortExpressions>
-                  <TablixHeader>
-                    <Size>0.89583in</Size>
-                    <CellContents>
-                      <Textbox Name="sort">
-                        <CanGrow>true</CanGrow>
-                        <KeepTogether>true</KeepTogether>
-                        <Paragraphs>
-                          <Paragraph>
-                            <TextRuns>
-                              <TextRun>
-                                <Value>=IIF(Fields!sort.Value &lt;= 19,"Elementary","Intermediate")</Value>
-                                <Style />
-                              </TextRun>
-                            </TextRuns>
-                            <Style />
-                          </Paragraph>
-                        </Paragraphs>
-                        <rd:DefaultName>sort</rd:DefaultName>
-                        <Style>
-                          <Border>
-                            <Color>LightGrey</Color>
-                            <Style>Solid</Style>
-                          </Border>
-                          <PaddingLeft>2pt</PaddingLeft>
-                          <PaddingRight>2pt</PaddingRight>
-                          <PaddingTop>2pt</PaddingTop>
-                          <PaddingBottom>2pt</PaddingBottom>
-                        </Style>
-                      </Textbox>
-                    </CellContents>
-                  </TablixHeader>
                   <TablixMembers>
                     <TablixMember>
                       <Group Name="Details" />
                     </TablixMember>
                     <TablixMember>
+                      <Visibility>
+                        <Hidden>true</Hidden>
+                      </Visibility>
                       <KeepWithGroup>Before</KeepWithGroup>
                     </TablixMember>
                   </TablixMembers>
                 </TablixMember>
                 <TablixMember>
-                  <TablixHeader>
-                    <Size>0.89583in</Size>
-                    <CellContents>
-                      <Textbox Name="Textbox228">
-                        <CanGrow>true</CanGrow>
-                        <KeepTogether>true</KeepTogether>
-                        <Paragraphs>
-                          <Paragraph>
-                            <TextRuns>
-                              <TextRun>
-                                <Value>Total</Value>
-                                <Style />
-                              </TextRun>
-                            </TextRuns>
-                            <Style />
-                          </Paragraph>
-                        </Paragraphs>
-                        <rd:DefaultName>Textbox228</rd:DefaultName>
-                        <Style>
-                          <Border>
-                            <Color>LightGrey</Color>
-                            <Style>Solid</Style>
-                          </Border>
-                          <PaddingLeft>2pt</PaddingLeft>
-                          <PaddingRight>2pt</PaddingRight>
-                          <PaddingTop>2pt</PaddingTop>
-                          <PaddingBottom>2pt</PaddingBottom>
-                        </Style>
-                      </Textbox>
-                    </CellContents>
-                  </TablixHeader>
                   <KeepWithGroup>Before</KeepWithGroup>
                 </TablixMember>
               </TablixMembers>
             </TablixRowHierarchy>
             <DataSetName>Count</DataSetName>
             <Height>1.25in</Height>
-            <Width>23.15in</Width>
+            <Width>22.25417in</Width>
             <Style>
               <Border>
                 <Style>None</Style>
@@ -6465,7 +6354,7 @@ where (c.summerSchool = 0 or c.summerSchool is null) and convert(date,getdate())
       <DataType>String</DataType>
       <DefaultValue>
         <Values>
-          <Value>=2022</Value>
+          <Value>=2023</Value>
         </Values>
       </DefaultValue>
       <Prompt>End Year:</Prompt>
@@ -6538,7 +6427,7 @@ where (c.summerSchool = 0 or c.summerSchool is null) and convert(date,getdate())
       <DataType>String</DataType>
       <DefaultValue>
         <Values>
-          <Value>=67.05</Value>
+          <Value>=78.49</Value>
         </Values>
       </DefaultValue>
       <Prompt>ADA Per Day Amount:</Prompt>

@@ -50,7 +50,7 @@ from person p
 join [identity] i on i.personID = p.personID and i.identityID = p.currentIdentityID
 join Enrollment e on e.personID = p.personID and (e.noShow = 0 or e.noShow is null)
 and (e.endDate &gt;= @date or e.endDate is null) and e.active in (0,1)
-join calendar ca on ca.calendarID = e.calendarID and @date between ca.startDate and ca.endDate and (ca.summerSchool = 0 or ca.summerSchool is null) and ca.name not like '%private%'
+join calendar ca on ca.calendarID = e.calendarID and @date between ca.startDate and ca.endDate and (ca.summerSchool = 0 or ca.summerSchool is null) and (ca.name not like '%private%' and ca.name not like '%test%')
 join School sc on sc.schoolID = ca.schoolID
 left join CustomStudent cs on cs.personID = p.personID and cs.enrollmentID = e.enrollmentID and cs.attributeID = 123
 left join ProgramParticipation pp on pp.personID = p.personID and pp.programID = 83 and pp.endDate is null and pp.eligibilityEndDate is null

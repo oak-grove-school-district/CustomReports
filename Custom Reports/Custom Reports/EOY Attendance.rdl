@@ -13,8 +13,8 @@
       <Query>
         <DataSourceName>DataSource1</DataSourceName>
         <QueryParameters>
-          <QueryParameter Name="@calendarID">
-            <Value>=Parameters!calendarID.Value</Value>
+          <QueryParameter Name="@endyear">
+            <Value>=Parameters!endyear.Value</Value>
           </QueryParameter>
         </QueryParameters>
         <CommandText>with Races (studentNumber, rn, name) as (
@@ -26,9 +26,11 @@ join RaceEthnicity re on re.raceID = ire.raceID
 where p.studentNumber is not null)
 
 select x.studentNumber, x.stateID, x.lastName, x.firstName, x.birthdate, x.grade, x.[Race(s)], isnull(x.MKV,'') as MKV, isnull(x.Foster,'') as Foster, isnull(x.IEP,'') as IEP, isnull(x.Migrant,'') as [Migrant], x.[EL Status], x.FRL, x.name
+	,max(case when ca.AbsPercent &gt;= 10 then 'X' else '' end) as [Chronic Absentee]
 	,sum(case when x.[Att Code] = 'A' then 1 else 0 end) as [A]
 	,sum(case when x.[Att Code] = 'ACT' then 1 else 0 end) as [ACT]
 	,sum(case when x.[Att Code] = 'AEX' then 1 else 0 end) as [AEX]
+	,sum(case when x.[Att Code] = 'COV' then 1 else 0 end) as [COV]
 	,sum(case when x.[Att Code] = 'CUT' then 1 else 0 end) as [CUT]
 	,sum(case when x.[Att Code] = 'ECO' then 1 else 0 end) as [ECO]
 	,sum(case when x.[Att Code] = 'ILL' then 1 else 0 end) as [ILL]
@@ -48,7 +50,7 @@ select x.studentNumber, x.stateID, x.lastName, x.firstName, x.birthdate, x.grade
 	,sum(case when x.[Att Code] = 'TDU' then 1 else 0 end) as [TDU]
 	,sum(case when x.[Att Code] = 'UNV' then 1 else 0 end) as [UNV]
 	,sum(case when x.[Att Code] = 'VP' then 1 else 0 end) as [VP]
-	,sum(case when x.[Att Code] in ('VP','A','ACT','AEX','CUT','ECO','ILL','IS1','IS2','ISC','ISN','LPU','NCL','OTX','PA','SUS','SUS1','T','TD30','TDE','TDU','UNV') then 1 else 0 end) as [Total Attendance Marks]
+	,sum(case when x.[Att Code] in ('VP','A','ACT','AEX','CUT','ECO','ILL','IS1','IS2','ISC','ISN','LPU','NCL','OTX','PA','SUS','SUS1','T','TD30','TDE','TDU','UNV','COV') then 1 else 0 end) as [Total Attendance Marks]
 from
 (
 	select y.studentNumber, y.stateID, y.lastName, y.firstName, y.birthdate, y.grade, y.name, y.date, y.[Att Code], y.[Race(s)]
@@ -75,15 +77,17 @@ from
 			join Enrollment e on e.personID = p.personID
 				and e.active = 1
 			join Calendar c on c.calendarID = e.calendarID
-				AND (e.startDate &lt;= c.endDate 
-AND (e.endDate &gt;= c.startDate OR e.endDate IS NULL))
+				and c.endYear = @endyear
+				AND (e.startDate &lt;= c.endDate
+				AND (e.endDate &gt;= c.startDate OR e.endDate IS NULL))
+				and (c.summerSchool = 0 or c.summerSchool is null)
 			JOIN Attendance a ON a.personID = p.personID
 				AND a.date BETWEEN c.startDate AND c.endDate
 				and a.calendarID = c.calendarID
 			LEFT JOIN AttendanceExcuse ae ON ae.excuseID = a.excuseID
 				and ae.calendarID = c.calendarID
 			left join Races ra on ra.StudentNumber = p.studentNumber
-		where c.calendarID in (@calendarID)
+		--where c.calendarID in (@calendarID)
 		group by p.studentNumber, i.lastName, i.firstName, i.birthdate, e.grade, c.name, a.date, ae.code, a.status, a.excuseID, p.personID, p.stateID
 	) y
 	left join ProgramParticipation pp on pp.personID = y.personID
@@ -92,6 +96,34 @@ AND (e.endDate &gt;= c.startDate OR e.endDate IS NULL))
 	left join cust_og_programMatrix cpm on cpm.personID = y.personID
 	group by y.studentNumber, y.lastName, y.firstName, y.birthdate, y.grade, y.name, y.date, y.[Att Code], y.[Race(s)], pp.programID, cpm.[EL Status], y.stateID, cpm.FRL
 ) x
+left join
+(
+	select enr.studentNumber
+		, cast((((isnull(ad.excused,0) + isnull(ad.unexcused,0)) / enr.enrDays) * 100) as decimal(5,2)) as [AbsPercent]
+	from(
+		select p.studentNumber
+			, sum(dbo.cust_fn_TotalInstDays(isnull(e.endDate,getdate()),e.startDate)) as [enrDays]
+		from Person p
+			join Enrollment e on e.personID = p.personID
+				and e.endYear = 2023
+				and e.startDate &lt;= getdate()
+			join Calendar cal on cal.calendarID = e.calendarID
+				and (cal.summerSchool = 0 or cal.summerSchool is null)
+				and cal.name not like '%eval%'
+				and cal.name not like '%public%'
+				and cal.name not like '%test%'
+		group by p.studentNumber
+				) enr
+		left join (
+			select cas.student
+				, sum(case when cas.excuse = 'E' then 1 else 0 end) as [excused]
+				, sum(case when cas.excuse = 'U' or cas.excuse is null then 1 else 0 end) as [unexcused]
+			from cust_og_AttendanceSource(2023) cas
+				left join cust_og_attdays coa on coa.studentNumber = cas.student
+			where cas.fullDayAbsence = 'x'
+			group by cas.student
+			) ad on ad.student = enr.studentNumber
+) ca on ca.studentNumber = x.studentNumber
 group by x.studentNumber, x.lastName, x.firstName, x.birthdate, x.grade, x.name, x.[Race(s)], x.MKV, x.Foster, x.IEP, x.Migrant, x.[EL Status], x.stateID, x.FRL
 order by x.name, x.grade, x.lastName</CommandText>
       </Query>
@@ -152,6 +184,10 @@ order by x.name, x.grade, x.lastName</CommandText>
           <DataField>FRL</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
+        <Field Name="Chronic_Absentee">
+          <DataField>Chronic Absentee</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
         <Field Name="A">
           <DataField>A</DataField>
           <rd:TypeName>System.Int32</rd:TypeName>
@@ -166,6 +202,10 @@ order by x.name, x.grade, x.lastName</CommandText>
         </Field>
         <Field Name="CUT">
           <DataField>CUT</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="COV">
+          <DataField>COV</DataField>
           <rd:TypeName>System.Int32</rd:TypeName>
         </Field>
         <Field Name="ECO">
@@ -391,6 +431,9 @@ END</CommandText>
                   <Width>1.96875in</Width>
                 </TablixColumn>
                 <TablixColumn>
+                  <Width>1.13542in</Width>
+                </TablixColumn>
+                <TablixColumn>
                   <Width>0.33333in</Width>
                 </TablixColumn>
                 <TablixColumn>
@@ -398,6 +441,9 @@ END</CommandText>
                 </TablixColumn>
                 <TablixColumn>
                   <Width>0.375in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>0.38542in</Width>
                 </TablixColumn>
                 <TablixColumn>
                   <Width>0.36458in</Width>
@@ -868,6 +914,38 @@ END</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
+                        <Textbox Name="Textbox22">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Chronic Absentee</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox22</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
                         <Textbox Name="Textbox11">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
@@ -879,7 +957,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox11</rd:DefaultName>
@@ -909,7 +989,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox13</rd:DefaultName>
@@ -939,10 +1021,44 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox15</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox20">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>COV</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox20</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -969,7 +1085,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox17</rd:DefaultName>
@@ -999,7 +1117,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox19</rd:DefaultName>
@@ -1029,7 +1149,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox21</rd:DefaultName>
@@ -1059,7 +1181,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox23</rd:DefaultName>
@@ -1089,7 +1213,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox25</rd:DefaultName>
@@ -1119,7 +1245,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox27</rd:DefaultName>
@@ -1149,7 +1277,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox29</rd:DefaultName>
@@ -1179,7 +1309,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox31</rd:DefaultName>
@@ -1209,7 +1341,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox33</rd:DefaultName>
@@ -1239,7 +1373,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox35</rd:DefaultName>
@@ -1269,7 +1405,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox14</rd:DefaultName>
@@ -1299,7 +1437,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox37</rd:DefaultName>
@@ -1329,7 +1469,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox39</rd:DefaultName>
@@ -1359,7 +1501,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox41</rd:DefaultName>
@@ -1389,7 +1533,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox43</rd:DefaultName>
@@ -1419,7 +1565,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox45</rd:DefaultName>
@@ -1449,7 +1597,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox47</rd:DefaultName>
@@ -1479,7 +1629,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox49</rd:DefaultName>
@@ -1509,7 +1661,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox51</rd:DefaultName>
@@ -1539,7 +1693,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox24</rd:DefaultName>
@@ -1973,6 +2129,38 @@ END</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
+                        <Textbox Name="Chronic_Absentee">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!Chronic_Absentee.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Chronic_Absentee</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
                         <Textbox Name="A">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
@@ -1984,7 +2172,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>A</rd:DefaultName>
@@ -2014,7 +2204,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>ACT</rd:DefaultName>
@@ -2044,10 +2236,44 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>AEX</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="COV">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!COV.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>COV</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -2074,7 +2300,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>CUT</rd:DefaultName>
@@ -2104,7 +2332,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>ECO</rd:DefaultName>
@@ -2134,7 +2364,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>ILL</rd:DefaultName>
@@ -2164,7 +2396,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>IS1</rd:DefaultName>
@@ -2194,7 +2428,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>IS2</rd:DefaultName>
@@ -2224,7 +2460,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>ISC</rd:DefaultName>
@@ -2254,7 +2492,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>ISN</rd:DefaultName>
@@ -2284,7 +2524,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>LPU</rd:DefaultName>
@@ -2314,7 +2556,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>NCL</rd:DefaultName>
@@ -2344,7 +2588,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>OTX</rd:DefaultName>
@@ -2374,7 +2620,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>PA</rd:DefaultName>
@@ -2404,7 +2652,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>SUS</rd:DefaultName>
@@ -2434,7 +2684,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>SUS1</rd:DefaultName>
@@ -2464,7 +2716,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>T</rd:DefaultName>
@@ -2494,7 +2748,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>TD30</rd:DefaultName>
@@ -2524,7 +2780,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>TDE</rd:DefaultName>
@@ -2554,7 +2812,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>TDU</rd:DefaultName>
@@ -2584,7 +2844,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>UNV</rd:DefaultName>
@@ -2614,7 +2876,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>VP</rd:DefaultName>
@@ -2644,7 +2908,9 @@ END</CommandText>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
-                              <Style />
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Total_Attendance_Marks</rd:DefaultName>
@@ -2703,6 +2969,8 @@ END</CommandText>
                 <TablixMember />
                 <TablixMember />
                 <TablixMember />
+                <TablixMember />
+                <TablixMember />
               </TablixMembers>
             </TablixColumnHierarchy>
             <TablixRowHierarchy>
@@ -2717,7 +2985,7 @@ END</CommandText>
             </TablixRowHierarchy>
             <DataSetName>Attendance</DataSetName>
             <Height>0.5in</Height>
-            <Width>22.94794in</Width>
+            <Width>24.46878in</Width>
             <Style>
               <Border>
                 <Style>None</Style>
@@ -2728,7 +2996,7 @@ END</CommandText>
         <Height>0.5in</Height>
         <Style />
       </Body>
-      <Width>22.94794in</Width>
+      <Width>24.46878in</Width>
       <Page>
         <LeftMargin>1in</LeftMargin>
         <RightMargin>1in</RightMargin>
@@ -2821,11 +3089,28 @@ END</CommandText>
       <Prompt>contextIDType</Prompt>
       <Hidden>true</Hidden>
     </ReportParameter>
+    <ReportParameter Name="endyear">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <Values>
+          <Value>=2023</Value>
+        </Values>
+      </DefaultValue>
+      <Prompt>endyear</Prompt>
+      <Hidden>true</Hidden>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>SchoolYears</DataSetName>
+          <ValueField>endyear</ValueField>
+          <LabelField>label</LabelField>
+        </DataSetReference>
+      </ValidValues>
+    </ReportParameter>
   </ReportParameters>
   <ReportParametersLayout>
     <GridLayoutDefinition>
       <NumberOfColumns>1</NumberOfColumns>
-      <NumberOfRows>9</NumberOfRows>
+      <NumberOfRows>10</NumberOfRows>
       <CellDefinitions>
         <CellDefinition>
           <ColumnIndex>0</ColumnIndex>
@@ -2866,6 +3151,11 @@ END</CommandText>
           <ColumnIndex>0</ColumnIndex>
           <RowIndex>8</RowIndex>
           <ParameterName>contextIDType</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>0</ColumnIndex>
+          <RowIndex>9</RowIndex>
+          <ParameterName>endyear</ParameterName>
         </CellDefinition>
       </CellDefinitions>
     </GridLayoutDefinition>

@@ -31,7 +31,8 @@ select p.studentNumber, p.stateID, c.name as [calendarName]
 				+ coalesce(max(case when i.hispanicEthnicity like 'Y' and ra.rn = 1 then ra.name end)
 				, max(case when i.hispanicEthnicity not like 'Y' and ra.rn = 2 then ', ' + ra.name end), '')
 				+ coalesce(max(case when i.hispanicEthnicity like 'Y' and ra.rn = 2 then ', ' + ra.name end)
-				, max(case when i.hispanicEthnicity not like 'Y' and ra.rn = 3 then ', ' + ra.name end), '') as [Race(s)]
+				, max(case when i.hispanicEthnicity not like 'Y' and ra.rn = 3 then ', ' + ra.name end), '')
++ COALESCE (MAX(CASE WHEN i.hispanicEthnicity LIKE 'Y' AND ra.rn = 3 THEN ', ' + ra.name END), MAX(CASE WHEN i.hispanicEthnicity NOT LIKE 'Y' AND ra.rn = 4 THEN ', ' + ra.name END), '') as [Race(s)]
 , max(case when ad.postOfficeBox = 1 then 'PO Box ' + ad.number else ad.number + ' ' + ISNULL(ad.dir + ' ','') + ad.street + ' ' + ISNULL(ad.tag + ' ','') + ISNULL('#' + ad.apt, '') end) as [Line 1]
 , max(ad.city + ', ' + ad.state + ' ' + ad.zip) as [Line 2]
 , hs.phone as [HHPhone]

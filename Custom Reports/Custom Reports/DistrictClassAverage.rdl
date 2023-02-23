@@ -18,30 +18,31 @@
             <Value>=Parameters!asOfDate.Value</Value>
           </QueryParameter>
         </QueryParameters>
-        <CommandText>select avg(x.classSize) as [Average Class Size], x.school
-from (
-	select count(p.studentNumber) as classSize, cs.name, sec.sectionID, cal.name as school
-	from Person p
-		join Enrollment e on e.personID = p.personID
-			and e.active = 1
-			and e.startDate &lt;= @asOfDate
-			and (e.endDate is null or e.endDate &gt;= @asOfDate)
-		join Calendar cal on cal.calendarID = e.calendarID
-			and cal.endYear = e.endYear
-		join SchoolYear sy on sy.endYear = cal.endYear
-			and sy.active = 1
-		join Course cs on cs.calendarID = cal.calendarID
-		join Section sec on sec.courseID = cs.courseID
-		join Roster ros on ros.sectionID = sec.sectionID
-			and ros.personID = p.personID
-			and (ros.startDate is null or ros.startDate &lt;= @asOfDate)
-			and (ros.endDate is null or ros.endDate &gt;= @asOfDate)
-	where (cal.name not like '%bernal%' and cal.name not like '%davis%' and cal.name not like '%herman%' and cal.name not like '%academy%' and cal.name not like '%hospital%')
-		and (cs.name like '%TK%' or cs.name like '%00%' or cs.name like '%00/01%' or cs.name like '%01%' or cs.name like '%01/02%' or cs.name like '%02%' or cs.name like '%02/03%' or cs.name like '%03%' or cs.name like '%03/04%')
-	group by cs.name, sec.sectionID, cal.name
-	--order by cal.name
-	) x
-group by x.school</CommandText>
+        <CommandText>SELECT        AVG(classSize) AS [Average Class Size], school
+FROM            (SELECT        COUNT(p.studentNumber) AS classSize, cs.name, sec.sectionID, cal.name AS school
+                          FROM            Person AS p INNER JOIN
+                                                    Enrollment AS e ON e.personID = p.personID AND e.active = 1 AND e.startDate &lt;= @asOfDate AND (e.endDate IS NULL OR
+                                                    e.endDate &gt;= @asOfDate) INNER JOIN
+                                                    Calendar AS cal ON cal.calendarID = e.calendarID AND cal.endYear = e.endYear INNER JOIN
+                                                    SchoolYear AS sy ON sy.endYear = cal.endYear AND sy.active = 1 INNER JOIN
+                                                    Course AS cs ON cs.calendarID = cal.calendarID INNER JOIN
+                                                    Section AS sec ON sec.courseID = cs.courseID INNER JOIN
+                                                    Roster AS ros ON ros.sectionID = sec.sectionID AND ros.personID = p.personID AND (ros.startDate IS NULL OR
+                                                    ros.startDate &lt;= @asOfDate) AND (ros.endDate IS NULL OR
+                                                    ros.endDate &gt;= @asOfDate)
+                          WHERE        (cal.name NOT LIKE '%bernal%') AND (cal.name NOT LIKE '%davis%') AND (cal.name NOT LIKE '%herman%') AND (cal.name NOT LIKE '%academy%') AND (cal.name NOT LIKE '%hospital%') AND 
+                                                    (cs.name LIKE '%TK%' OR
+                                                    cs.name LIKE '%TK/00%' OR
+                                                    cs.name LIKE '%00%' OR
+                                                    cs.name LIKE '%00/01%' OR
+                                                    cs.name LIKE '%01%' OR
+                                                    cs.name LIKE '%01/02%' OR
+                                                    cs.name LIKE '%02%' OR
+                                                    cs.name LIKE '%02/03%' OR
+                                                    cs.name LIKE '%03%' OR
+                                                    cs.name LIKE '%03/04%')
+                          GROUP BY cs.name, sec.sectionID, cal.name) AS x
+GROUP BY school</CommandText>
       </Query>
       <Fields>
         <Field Name="Average_Class_Size">

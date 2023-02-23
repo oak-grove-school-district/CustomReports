@@ -9,7 +9,8 @@ WHERE        p.studentNumber IS NOT NULL)
      FROM            (SELECT        cal.name, p.studentNumber, i.gender, i.lastName, i.firstName, /*sec.teacherDisplay,*/ e.grade, COALESCE (MAX(CASE WHEN i.hispanicEthnicity LIKE 'Y' AND ra.rn IS NOT NULL 
                                                          THEN 'Hispanic, ' WHEN i.hispanicEthnicity LIKE 'Y' AND ra.rn IS NULL THEN 'Hispanic' ELSE NULL END), MAX(CASE WHEN i.hispanicEthnicity NOT LIKE 'Y' AND ra.rn = 1 THEN ra.name END)) 
                                                          + COALESCE (MAX(CASE WHEN i.hispanicEthnicity LIKE 'Y' AND ra.rn = 1 THEN ra.name END), MAX(CASE WHEN i.hispanicEthnicity NOT LIKE 'Y' AND ra.rn = 2 THEN ', ' + ra.name END), '') 
-                                                         + COALESCE (MAX(CASE WHEN i.hispanicEthnicity LIKE 'Y' AND ra.rn = 2 THEN ', ' + ra.name END), MAX(CASE WHEN i.hispanicEthnicity NOT LIKE 'Y' AND ra.rn = 3 THEN ', ' + ra.name END), '') AS [Race(s)], 
+                                                         + COALESCE (MAX(CASE WHEN i.hispanicEthnicity LIKE 'Y' AND ra.rn = 2 THEN ', ' + ra.name END), MAX(CASE WHEN i.hispanicEthnicity NOT LIKE 'Y' AND ra.rn = 3 THEN ', ' + ra.name END), '')
+                                                         + COALESCE (MAX(CASE WHEN i.hispanicEthnicity LIKE 'Y' AND ra.rn = 3 THEN ', ' + ra.name END), MAX(CASE WHEN i.hispanicEthnicity NOT LIKE 'Y' AND ra.rn = 4 THEN ', ' + ra.name END), '') AS [Race(s)], 
                                                          y.[Household Name], y.householdPhone, y.addressLine1, y.addressLine2, y.gln, y.gfn, y.relationship, y.cellPhone, y.email
                                FROM            Person AS p INNER JOIN
                                                          [Identity] AS i ON i.identityID = p.currentIdentityID AND i.personID = p.personID INNER JOIN
