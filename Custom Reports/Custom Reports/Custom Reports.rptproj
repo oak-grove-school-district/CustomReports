@@ -104,6 +104,7 @@
     <Report Include="MKV.rdl" />
     <Report Include="MonthlyAttendance.rdl" />
     <Report Include="MonthlyBehavior.rdl" />
+    <Report Include="OLR New.rdl" />
     <Report Include="OLR.rdl" />
     <Report Include="Parent Contact Information.rdl" />
     <Report Include="PBIS_Avg.rdl" />
