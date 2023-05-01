@@ -178,6 +178,11 @@ order by x.NSchool, x.CEndDate, x.lastName, x.firstName</CommandText>
     <DataSet Name="CurrentSchools">
       <Query>
         <DataSourceName>campus</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@endYear">
+            <Value>=Parameters!endYear.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
         <CommandText>select isnull(x.calendarID,'') as calendarID, isnull(x.[cSchool],'') as [calName]
 from (
 select
@@ -187,9 +192,12 @@ from Person p
 join [Identity] i on i.personID = p.personID and i.identityID = p.currentIdentityID
 left join Enrollment e on e.personID = p.personID and e.active = 1
 left join Calendar c on c.calendarID = e.calendarID
-join SchoolYear sy on (sy.endYear = e.endYear and sy.active = 1) or (sy.active = 1 and sy.endYear - 1 = e.endYear)
+and (c.summerSchool = 0 or c.summerSchool is null)
+and c.endYear = e.endYear
+join SchoolYear sy on sy.endYear = c.endYear
 where p.studentNumber is not null
-and (c.name not like '%private%' and c.name not like '%evaluation%')
+and (c.name not like '%private%' and c.name not like '%evaluation%' and c.name not like '%test%')
+and sy.endYear = @endYear
 group by c.calendarID
 ) x
 group by x.calendarID, x.[cSchool]
@@ -320,6 +328,28 @@ order by es.Label</CommandText>
         <Field Name="Label">
           <DataField>Label</DataField>
           <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="schoolYear">
+      <Query>
+        <DataSourceName>campus</DataSourceName>
+        <CommandText>select sy.label, sy.endYear, sy.active
+from SchoolYear sy
+order by sy.endYear desc</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="label">
+          <DataField>label</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="endYear">
+          <DataField>endYear</DataField>
+          <rd:TypeName>System.Int16</rd:TypeName>
+        </Field>
+        <Field Name="active">
+          <DataField>active</DataField>
+          <rd:TypeName>System.Boolean</rd:TypeName>
         </Field>
       </Fields>
     </DataSet>
@@ -1927,6 +1957,22 @@ order by es.Label</CommandText>
     </ReportSection>
   </ReportSections>
   <ReportParameters>
+    <ReportParameter Name="endYear">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <Values>
+          <Value>=2023</Value>
+        </Values>
+      </DefaultValue>
+      <Prompt>School Year</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>schoolYear</DataSetName>
+          <ValueField>endYear</ValueField>
+          <LabelField>label</LabelField>
+        </DataSetReference>
+      </ValidValues>
+    </ReportParameter>
     <ReportParameter Name="nodeID">
       <DataType>String</DataType>
       <DefaultValue>
@@ -2080,55 +2126,60 @@ order by es.Label</CommandText>
         <CellDefinition>
           <ColumnIndex>0</ColumnIndex>
           <RowIndex>0</RowIndex>
-          <ParameterName>nodeID</ParameterName>
+          <ParameterName>endYear</ParameterName>
         </CellDefinition>
         <CellDefinition>
           <ColumnIndex>1</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>nodeID</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>2</ColumnIndex>
           <RowIndex>0</RowIndex>
           <ParameterName>personID</ParameterName>
         </CellDefinition>
         <CellDefinition>
-          <ColumnIndex>2</ColumnIndex>
+          <ColumnIndex>3</ColumnIndex>
           <RowIndex>0</RowIndex>
           <ParameterName>userID</ParameterName>
         </CellDefinition>
         <CellDefinition>
-          <ColumnIndex>3</ColumnIndex>
-          <RowIndex>0</RowIndex>
-          <ParameterName>username</ParameterName>
-        </CellDefinition>
-        <CellDefinition>
           <ColumnIndex>0</ColumnIndex>
           <RowIndex>1</RowIndex>
-          <ParameterName>calendarID</ParameterName>
+          <ParameterName>username</ParameterName>
         </CellDefinition>
         <CellDefinition>
           <ColumnIndex>1</ColumnIndex>
           <RowIndex>1</RowIndex>
-          <ParameterName>sectionID</ParameterName>
+          <ParameterName>calendarID</ParameterName>
         </CellDefinition>
         <CellDefinition>
           <ColumnIndex>2</ColumnIndex>
+          <RowIndex>1</RowIndex>
+          <ParameterName>sectionID</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>3</ColumnIndex>
           <RowIndex>1</RowIndex>
           <ParameterName>contextID</ParameterName>
         </CellDefinition>
         <CellDefinition>
-          <ColumnIndex>3</ColumnIndex>
-          <RowIndex>1</RowIndex>
+          <ColumnIndex>2</ColumnIndex>
+          <RowIndex>2</RowIndex>
           <ParameterName>contextIDType</ParameterName>
         </CellDefinition>
         <CellDefinition>
-          <ColumnIndex>2</ColumnIndex>
+          <ColumnIndex>3</ColumnIndex>
           <RowIndex>2</RowIndex>
           <ParameterName>nextSchool</ParameterName>
         </CellDefinition>
         <CellDefinition>
-          <ColumnIndex>3</ColumnIndex>
-          <RowIndex>2</RowIndex>
+          <ColumnIndex>0</ColumnIndex>
+          <RowIndex>3</RowIndex>
           <ParameterName>cGrade</ParameterName>
         </CellDefinition>
         <CellDefinition>
-          <ColumnIndex>0</ColumnIndex>
+          <ColumnIndex>1</ColumnIndex>
           <RowIndex>3</RowIndex>
           <ParameterName>CAPC</ParameterName>
         </CellDefinition>

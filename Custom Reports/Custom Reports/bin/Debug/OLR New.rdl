@@ -91,17 +91,17 @@
 , null as [Migrant]
 , max(case when oso.retained = 'Y' then 'x' end) as [Retained]
 , max(case when oso.plan504 = 'Y' then 'x' end) as [504]
-, max(case when ohc.code = 'Diabetes' then 'x' end) as [Diabetes]
-, max(case when ohc.comments like '%epilepsy%' then 'x' end) as [Epilepsy]
-, max(case when ohc.code = 'ADHD' then 'x' end) as [ADHD]
-, max(case when ohc.code = 'Vision' then 'x' end) as [Vision]
-, max(case when ohc.code = 'Hearing Impairment' then 'x' end) as [Hearing]
-, max(case when ohc.code = 'Asthma' then 'x' end) as [Asthma]
+, max(case when ohc.code in ('T1D','T2D') then 'x' end) as [Diabetes]
+, max(case when ohc.code = 'SEIZE' then 'x' end) as [Epilepsy]
+, max(case when ohc.code = 'AD/HD' then 'x' end) as [ADHD]
+, max(case when ohc.code in ('VIS','GLASS') then 'x' end) as [Vision]
+, max(case when ohc.code in ('HAID','HEAR') then 'x' end) as [Hearing]
+, max(case when ohc.code = 'ASTH' then 'x' end) as [Asthma]
 , max(case when ohc.comments like '%epi%pen%' then 'x' end) as [Epipen]
-, max(case when ohc.code = 'Allergies' then 'x' end) as [AllergyCheck]
-, max(case when ohc.code = 'Allergies' then ohc.comments end) as [AllergyComments]
-, max(case when ohc.code = 'Other' then 'x'end) as [OtherCheck]
-, max(case when ohc.code = 'Other' then ohc.comments end) as [OtherComments]
+, max(case when ohc.code in ('ASEAS','AFOOD','ALLER','AOTHE') then 'x' end) as [AllergyCheck]
+, max(case when ohc.code in ('ASEAS','AFOOD','ALLER','AOTHE') then ohc.comments end) as [AllergyComments]
+, max(case when ohc.code in ('OTHR','ANXIE','AUTOIM','CA','DEPRE','ECZEM','FEVER','EARS','NOSE','HA','HEART','SEIZF','SEIZ','SEIZO','DERM','STOMA') then 'x'end) as [OtherCheck]
+, max(case when ohc.code in ('OTHR','ANXIE','AUTOIM','CA','DEPRE','ECZEM','FEVER','EARS','NOSE','HA','HEART','SEIZF','SEIZ','SEIZO','DERM','STOMA') then ohc.comments end) as [OtherComments]
 , max(case when op2.personTypeValue = 'emergency contact' and [or].rn = 1 then op2.lastName end) as [ec1lastName]
 , max(case when op2.personTypeValue = 'emergency contact' and [or].rn = 1 then op2.firstName end) as [ec1firstName]
 , max(case when op2.personTypeValue = 'emergency contact' and [or].rn = 1 then [or].olr_relationship end) as [ec1relationship]
@@ -278,7 +278,7 @@ from(
 				left join olr_configList ocl on ocl.olr_configListID = ocb.olr_configListID
 				left join olr_configGroup  ocg on ocg.olr_configGroupID = ocl.olr_configGroupID
 			where ocb.disabled = 0
-				and ocb.displayName in ('Home Primary Language (Identity)','Primary Language')
+				and ocb.displayName in ('Primary Language')
 			group by ocb.olr_customBuilderID, ocb.displayName, ocg.olr_configGroupID
 			) x
 			left join (
@@ -288,7 +288,7 @@ from(
 				left join olr_customBuilder ocb on ocb.olr_configListID = ocl.olr_configListID
 			where ocg.olr_configGroupID = @configGroupID
 				and ocb.disabled = 0
-			and ocb.displayName in ('Home Primary Language (Identity)','Primary Language')
+			and ocb.displayName in ('Primary Language')
 			group by ocb.olr_customBuilderID, ocg.olr_configGroupID, ocb.displayName
 			) y on y.olr_configGroupID = x.olr_configGroupID
 		group by y.olr_customBuilderID, y.olr_customBuilderID, x.displayName
