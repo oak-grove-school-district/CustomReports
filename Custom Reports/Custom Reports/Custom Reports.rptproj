@@ -106,6 +106,7 @@
     <Report Include="MonthlyBehavior.rdl" />
     <Report Include="OLR New.rdl" />
     <Report Include="OLR.rdl" />
+    <Report Include="OralHealthAssesment.rdl" />
     <Report Include="Parent Contact Information.rdl" />
     <Report Include="PBIS_Avg.rdl" />
     <Report Include="PBIS_Ethnicity.rdl" />

@@ -23,6 +23,9 @@
           <QueryParameter Name="@CAPC">
             <Value>=Parameters!CAPC.Value</Value>
           </QueryParameter>
+          <QueryParameter Name="@nextSchool">
+            <Value>=Parameters!nextSchool.Value</Value>
+          </QueryParameter>
         </QueryParameters>
         <CommandText>select * from (
 select p.studentNumber
@@ -100,7 +103,7 @@ left join [Address] ad on ad.addressID = hs.addressID
 where isnull(es.cGrade,'') in (@cGrade) and isnull(es.cAPC,'') in (@CAPC)
 group by p.studentNumber, i.lastName, i.firstName, es.cGrade, es.cEndDate, es.cEndComments, es.cEndCode, es.cAPC, es.cSchool, es.nGrade, es.nSchool, es.nAPC
 ) x
---where isnull(x.[NSchool],'') in (@nextSchool)
+where isnull(x.[NSchool],'') in (@nextSchool)
 order by x.NSchool, x.CEndDate, x.lastName, x.firstName</CommandText>
         <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
       </Query>
@@ -232,6 +235,7 @@ from Person p
 join [Identity] i on i.personID = p.personID and i.identityID = p.currentIdentityID
 left join Enrollment e on e.personID = p.personID 
 left join Calendar c on c.calendarID = e.calendarID
+and (c.summerSchool = 0 or c.summerSchool is null)
 join SchoolYear sy on (sy.endYear = e.endYear and sy.active = 1) or (sy.active = 1 and sy.endYear + 1 = e.endYear) or (sy.active = 1 and sy.endYear - 1 = e.endYear)
 where p.studentNumber is not null and e.active = 1
 group by p.personID

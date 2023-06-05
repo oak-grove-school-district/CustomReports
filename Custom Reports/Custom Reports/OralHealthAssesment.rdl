@@ -1,0 +1,414 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report MustUnderstand="df" xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:df="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition/defaultfontfamily">
+  <df:DefaultFontFamily>Segoe UI</df:DefaultFontFamily>
+  <AutoRefresh>0</AutoRefresh>
+  <DataSources>
+    <DataSource Name="DataSource1">
+      <DataSourceReference>campus</DataSourceReference>
+      <rd:SecurityType>None</rd:SecurityType>
+      <rd:DataSourceID>443c6080-5778-47e8-aa58-9c9a18b325eb</rd:DataSourceID>
+    </DataSource>
+  </DataSources>
+  <DataSets>
+    <DataSet Name="userCalendar">
+      <Query>
+        <DataSourceName>DataSource1</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@userID">
+            <Value>=Parameters!userID.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>DECLARE @allCalendars bit
+SELECT @allCalendars = u.allCalendars FROM dbo.UserAccount u WHERE u.userID = @userID
+
+IF @allCalendars = 1
+BEGIN
+
+	SELECT c.districtID, c.schoolID, c.calendarID, c.name + ' - ' + s.name as Calendar, 1 as ModifyRights, 1 as ownerRights
+	FROM dbo.Calendar c
+	INNER JOIN school s on s.schoolID = c.schoolID
+	order by calendarID desc
+
+END
+
+ELSE
+BEGIN
+
+	SELECT c.districtID, c.schoolID, c.calendarID, c.name + ' - ' + s.name as calendar , mr.modifyRights, mr.ownerRights
+	FROM dbo.UserAccount ua
+	LEFT OUTER JOIN dbo.UserSchoolYearRights mr on mr.userID = ua.userID
+	INNER JOIN dbo.Calendar c on (mr.districtID = c.districtID)
+					AND ((c.endYear = mr.endYear AND c.schoolID = mr.schoolID AND mr.calendarID IS NULL)
+					OR (c.endYear = mr.endYear AND mr.schoolID IS NULL)
+					OR (c.schoolID = mr.schoolID AND mr.endYear IS NULL)
+					OR (c.calendarID = mr.calendarID)
+					OR (mr.endYear IS NULL AND mr.schoolID IS NULL))
+	INNER JOIN school s on s.schoolID = c.schoolID
+	WHERE ua.userID = @userID
+	UNION
+	SELECT c2.districtID, c2.schoolID, c2.calendarID, c2.name + ' - ' + s2.name as calendar, mr2.modifyRights, mr2.ownerRights
+	FROM dbo.UserGroupSchoolYearRights mr2
+	INNER JOIN dbo.Calendar c2 on mr2.districtID = c2.districtID
+					AND ((c2.endYear = mr2.endYear AND c2.schoolID = mr2.schoolID AND mr2.calendarID IS NULL)
+					OR (c2.endYear = mr2.endYear AND mr2.schoolID IS NULL)
+					OR (c2.schoolID = mr2.schoolID AND mr2.endYear IS NULL)
+					OR (c2.calendarID = mr2.calendarID)
+					OR (mr2.endYear IS NULL AND mr2.schoolID IS NULL))
+	INNER JOIN UserGroupMember gm2 on gm2.groupID = mr2.groupID
+	INNER JOIN school s2 on s2.schoolID = c2.schoolID
+	WHERE gm2.userID = @userID
+	ORDER BY calendarID DESC
+
+END</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="districtID">
+          <DataField>districtID</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="schoolID">
+          <DataField>schoolID</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="calendarID">
+          <DataField>calendarID</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="Calendar">
+          <DataField>Calendar</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="ModifyRights">
+          <DataField>ModifyRights</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="ownerRights">
+          <DataField>ownerRights</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="data">
+      <Query>
+        <DataSourceName>DataSource1</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@asOfDate">
+            <Value>=Parameters!asOfDate.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@endYear">
+            <Value>=Parameters!endYear.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@startDate">
+            <Value>=Parameters!startDate.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@endDate">
+            <Value>=Parameters!endDate.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@calendarID">
+            <Value>=Parameters!calendarID.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>select dst.name
+	, sum(case when dst.name is not null then 1 else 0 end) as [1: Total Number of Students]
+	, sum(case when dst.date is not null and dst.dentalWaiverDate is null then 0 else 1 end) as [2: Proof of Assessment]
+	, sum(case when dst.dentalWaiverDate is not null and dst.dentalWaiverReason in ('UF','1') then 1 else 0 end) as [3: Unable to find Dental Office]
+	, sum(case when dst.dentalWaiverDate is not null and dst.dentalWaiverReason in ('CA','2') then 1 else 0 end) as [4: Financial Burden]
+	, sum(case when dst.dentalWaiverDate is not null and dst.dentalWaiverReason in ('3') then 1 else 0 end) as [5: Office Hours]
+	, sum(case when dst.dentalWaiverDate is not null and dst.dentalWaiverReason in ('4') then 1 else 0 end) as [6: Lack Transportation]
+	, sum(case when dst.dentalWaiverDate is not null and dst.dentalWaiverReason in ('5','NW') then 1 else 0 end) as [7: Non-consent]
+	, sum(case when dst.dentalWaiverDate is not null and dst.dentalWaiverReason in ('6','NC','NI') then 1 else 0 end) as [8: Other]
+	, sum(case when dst.date is null and dst.dentalWaiverDate is null then 1 else 0 end) as [9: No Assesment or Waiver]
+	, sum(case when dst.untreatedDecay = 'Y' then 1 else 0 end) as [11: Untreated Decay]
+	, sum(case when dst.cariesExperience = 'Y' then 1 else 0 end) as [12: Caries Experience]
+	, sum(case when dst.urgentTreatment in ('N','NP') then 1 else 0 end) as [12a: No Obvious Problems]
+	, sum(case when dst.urgentTreatment in ('EC') then 1 else 0 end) as [12b: Early Dental Care Recommended]
+	, sum(case when dst.urgentTreatment in ('Y','UN') then 1 else 0 end) as [12c: Urgent Care Needed]
+	, sum(case when dst.followUpToUrgent in ('Y') then 1 else 0 end) as [14a: Receive Urgent Treatment Yes]
+	, sum(case when dst.followUpToUrgent in ('N') then 1 else 0 end) as [14b: Receive Urgent Treatment No]
+	, sum(case when dst.followUpToUrgent in ('IDK') then 1 else 0 end) as [14c: Receive Urgent Treatment IDK]
+from
+(
+	select cal.name, p.studentNumber, i.lastName, i.firstName, e.grade, ds.*
+	from Person p
+		join [Identity] i on i.identityID = p.currentIdentityID
+		join Enrollment e on e.personID = p.personID
+			and e.startDate &lt;= @asOfDate
+			and (e.endDate is null or e.endDate &gt;= @asOfDate)
+		join Calendar cal on cal.calendarID = e.calendarID
+			and cal.endYear = e.endyear
+			and cal.endYear = @endYear
+		left join (
+			select *
+			from(
+				select hs.personID
+					, hs.date
+					, hsd.dentalWaiverDate
+					, hsd.dentalWaiverReason
+					, hsd.untreatedCaries as [untreatedDecay]
+					, hsd.carieHistory [cariesExperience]
+					, hsd.dentalUrgent as [urgentTreatment]
+					, hsd.dRefDate as [ReferalDate]
+					, hsd.dentalErosion as [followUpToUrgent]
+					, ROW_NUMBER() over(PARTITION by hs.personID order by hs.screeningID desc) as rn
+				from HealthScreening hs
+					join HealthScreeningDental hsd on hsd.screeningID = hs.screeningID
+				where hs.type = 'Dental'
+					and hs.date between @startDate and @endDate
+				) x
+			where x.rn = 1
+			) ds on ds.personID = p.personID
+	where (e.grade = '00' or 
+	(e.grade = '01' and e.localStartStatusTypeID = 18))
+	and cal.calendarID = @calendarID
+	) dst
+group by dst.name</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="name">
+          <DataField>name</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="ID1__Total_Number_of_Students">
+          <DataField>1: Total Number of Students</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="ID2__Proof_of_Assessment">
+          <DataField>2: Proof of Assessment</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="ID3__Unable_to_find_Dental_Office">
+          <DataField>3: Unable to find Dental Office</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="ID4__Financial_Burden">
+          <DataField>4: Financial Burden</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="ID5__Office_Hours">
+          <DataField>5: Office Hours</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="ID6__Lack_Transportation">
+          <DataField>6: Lack Transportation</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="ID7__Non_consent">
+          <DataField>7: Non-consent</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="ID8__Other">
+          <DataField>8: Other</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="ID9__No_Assesment_or_Waiver">
+          <DataField>9: No Assesment or Waiver</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="ID11__Untreated_Decay">
+          <DataField>11: Untreated Decay</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="ID12__Caries_Experience">
+          <DataField>12: Caries Experience</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="ID12a__No_Obvious_Problems">
+          <DataField>12a: No Obvious Problems</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="ID12b__Early_Dental_Care_Recommended">
+          <DataField>12b: Early Dental Care Recommended</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="ID12c__Urgent_Care_Needed">
+          <DataField>12c: Urgent Care Needed</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="ID14a__Receive_Urgent_Treatment_Yes">
+          <DataField>14a: Receive Urgent Treatment Yes</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="ID14b__Receive_Urgent_Treatment_No">
+          <DataField>14b: Receive Urgent Treatment No</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="ID14c__Receive_Urgent_Treatment_IDK">
+          <DataField>14c: Receive Urgent Treatment IDK</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+      </Fields>
+    </DataSet>
+  </DataSets>
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <Height>2in</Height>
+        <Style />
+      </Body>
+      <Width>6.5in</Width>
+      <Page>
+        <LeftMargin>1in</LeftMargin>
+        <RightMargin>1in</RightMargin>
+        <TopMargin>1in</TopMargin>
+        <BottomMargin>1in</BottomMargin>
+        <Style />
+      </Page>
+    </ReportSection>
+  </ReportSections>
+  <ReportParameters>
+    <ReportParameter Name="nodeID">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <Values>
+          <Value>1</Value>
+        </Values>
+      </DefaultValue>
+      <Prompt>nodeID</Prompt>
+      <Hidden>true</Hidden>
+    </ReportParameter>
+    <ReportParameter Name="personID">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <Values>
+          <Value>1</Value>
+        </Values>
+      </DefaultValue>
+      <Prompt>personID</Prompt>
+      <Hidden>true</Hidden>
+    </ReportParameter>
+    <ReportParameter Name="userID">
+      <DataType>String</DataType>
+      <Prompt>user ID</Prompt>
+    </ReportParameter>
+    <ReportParameter Name="username">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <Values>
+          <Value>1</Value>
+        </Values>
+      </DefaultValue>
+      <Prompt>username</Prompt>
+      <Hidden>true</Hidden>
+    </ReportParameter>
+    <ReportParameter Name="calendarID">
+      <DataType>String</DataType>
+      <Prompt>calendar ID</Prompt>
+    </ReportParameter>
+    <ReportParameter Name="sectionID">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <Values>
+          <Value>1</Value>
+        </Values>
+      </DefaultValue>
+      <Prompt>sectionID</Prompt>
+      <Hidden>true</Hidden>
+    </ReportParameter>
+    <ReportParameter Name="contextID">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <Values>
+          <Value>1</Value>
+        </Values>
+      </DefaultValue>
+      <Prompt>contextID</Prompt>
+      <Hidden>true</Hidden>
+    </ReportParameter>
+    <ReportParameter Name="contextIDType">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <Values>
+          <Value>1</Value>
+        </Values>
+      </DefaultValue>
+      <Prompt>contextIDType</Prompt>
+      <Hidden>true</Hidden>
+    </ReportParameter>
+    <ReportParameter Name="endYear">
+      <DataType>String</DataType>
+      <Prompt>end Year</Prompt>
+    </ReportParameter>
+    <ReportParameter Name="asOfDate">
+      <DataType>String</DataType>
+      <Prompt>as Of Date</Prompt>
+    </ReportParameter>
+    <ReportParameter Name="startDate">
+      <DataType>String</DataType>
+      <Prompt>start Date</Prompt>
+    </ReportParameter>
+    <ReportParameter Name="endDate">
+      <DataType>String</DataType>
+      <Prompt>end Date</Prompt>
+    </ReportParameter>
+  </ReportParameters>
+  <ReportParametersLayout>
+    <GridLayoutDefinition>
+      <NumberOfColumns>4</NumberOfColumns>
+      <NumberOfRows>3</NumberOfRows>
+      <CellDefinitions>
+        <CellDefinition>
+          <ColumnIndex>0</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>nodeID</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>1</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>personID</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>2</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>userID</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>3</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>username</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>0</ColumnIndex>
+          <RowIndex>1</RowIndex>
+          <ParameterName>calendarID</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>1</ColumnIndex>
+          <RowIndex>1</RowIndex>
+          <ParameterName>sectionID</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>2</ColumnIndex>
+          <RowIndex>1</RowIndex>
+          <ParameterName>contextID</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>3</ColumnIndex>
+          <RowIndex>1</RowIndex>
+          <ParameterName>contextIDType</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>0</ColumnIndex>
+          <RowIndex>2</RowIndex>
+          <ParameterName>endYear</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>1</ColumnIndex>
+          <RowIndex>2</RowIndex>
+          <ParameterName>asOfDate</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>2</ColumnIndex>
+          <RowIndex>2</RowIndex>
+          <ParameterName>startDate</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>3</ColumnIndex>
+          <RowIndex>2</RowIndex>
+          <ParameterName>endDate</ParameterName>
+        </CellDefinition>
+      </CellDefinitions>
+    </GridLayoutDefinition>
+  </ReportParametersLayout>
+  <rd:ReportUnitType>Inch</rd:ReportUnitType>
+  <rd:ReportID>8e396dac-29de-4c53-9366-70520e5e2b25</rd:ReportID>
+</Report>
