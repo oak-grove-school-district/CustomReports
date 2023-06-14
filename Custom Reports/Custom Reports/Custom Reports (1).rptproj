@@ -53,6 +53,7 @@
   </ItemGroup>
   <ItemGroup>
     <Report Include="AbsencesDateRange.rdl" />
+    <Report Include="AbsenceTardyByClass.rdl" />
     <Report Include="AllStudents.rdl" />
     <Report Include="AnalyticChanges.rdl" />
     <Report Include="AtoZ.rdl" />
@@ -60,11 +61,15 @@
     <Report Include="AttendanceFactor.rdl" />
     <Report Include="AttendanceLetters-TheAcademy.rdl" />
     <Report Include="AttendanceLetters.rdl" />
+    <Report Include="AttendancePercentageByDay.rdl" />
     <Report Include="AttendanceThing.rdl" />
+    <Report Include="AttendanceTrends.rdl" />
+    <Report Include="CDEParticipation.rdl" />
     <Report Include="Certified.rdl" />
     <Report Include="CI_AtoZ.rdl" />
     <Report Include="ClassSizePenalties.rdl" />
     <Report Include="CustomGPAAddendum.rdl" />
+    <Report Include="DistanceLearningPLP.rdl" />
     <Report Include="DistrictClassAverage.rdl" />
     <Report Include="EmergencyCard.rdl" />
     <Report Include="EnrolledBetween.rdl" />
@@ -82,6 +87,7 @@
     <Report Include="HPL Filtered.rdl" />
     <Report Include="IC Analytic Compare.rdl" />
     <Report Include="Intermediate Semester Grades.rdl" />
+    <Report Include="Intradistrict Backup.rdl" />
     <Report Include="Intradistrict.rdl" />
     <Report Include="IntraList.rdl" />
     <Report Include="Language Survey.rdl" />
@@ -91,10 +97,19 @@
     <Report Include="MonthlyBehavior.rdl" />
     <Report Include="OLR.rdl" />
     <Report Include="Parent Contact Information.rdl" />
+    <Report Include="PBIS_Avg.rdl" />
+    <Report Include="PBIS_Ethnicity.rdl" />
+    <Report Include="PBIS_Event.rdl" />
+    <Report Include="PBIS_Gender.rdl" />
+    <Report Include="PBIS_Grade.rdl" />
+    <Report Include="PBIS_Location.rdl" />
+    <Report Include="PBIS_Tiered.rdl" />
+    <Report Include="PBIS_Time.rdl" />
     <Report Include="Perfect Attendance Elementary.rdl" />
     <Report Include="Perfect Attendance Intermediate.rdl" />
     <Report Include="PKCheck.rdl" />
     <Report Include="PortalAccounts.rdl" />
+    <Report Include="PreRolloverCheck.rdl" />
     <Report Include="RolloverCheck.rdl" />
     <Report Include="SARBDates.rdl" />
     <Report Include="Schedule Groups.rdl" />
@@ -107,6 +122,8 @@
     <Report Include="StudentDetails.rdl" />
     <Report Include="StudentRaceEthnicity.rdl" />
     <Report Include="SuspensionForm2.rdl" />
+    <Report Include="TBTest.rdl" />
+    <Report Include="WeeklyAttByGrade.rdl" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Reporting Services\Microsoft.ReportingServices.MSBuilder.targets" />
 </Project>

@@ -40,79 +40,79 @@
 BEGIN
 select *
 from (
-		select p.studentNumber as [Student#]
-		, i.lastName as [Last]
-		, i.firstName as [First]
-		, max(case when ad.postOfficeBox = 1 then 'PO Box ' + ad.number else ad.number + ' ' + ISNULL(ad.dir + ' ','') + ad.street + ' ' + ISNULL(ad.tag + ' ','') + ISNULL('#' + ad.apt, '') end) as [Line 1]
-		, max(ad.city + ', ' + ad.state + ' ' + ad.zip) as [Line 2]
-		, isnull(di.name,'') as [District]
-		, coalesce(max(case when hs.bn = 1 and hs.schID &lt;= 16 then sc.name end),'') + coalesce(', ' + max(case when hs.bn = 2 and hs.schID &lt;= 16 then sc.name end),'') as [Home Elementary]
-		, coalesce(max(case when ((hs.bn = 2 and hs.schID &gt;= 17) or (hs.bn = 3 and hs.schID &gt;= 17)) then sc.name end),'') + coalesce(', ' + max(case when hs.bn = 4 and hs.schID &gt;= 17 then sc.name else null end),'') as [Home Jr. High]
-		, isnull(cc.name,'') as [CSchool]
-		, ec.grade as [CGrade]
-		, rc.name as [RSchool]
-		, sca.gradeLevel as [RGrade]
-		, cn.name as [NSchool]
-		, isnull(max(case when ar.rn = 1 then ar.name end),'') + isnull(max(case when ar.rn = 2 then ', ' + ar.name end),'') as [IntraType]
-		, isnull(cd2.name,'') as [ApplicationStatus]
-		, convert(varchar(10),sca.applicationDate, 101) as [ApplicationDate]
-		, convert(varchar(10),sca.processedDate, 101) as [ProcessedDate]
-		, convert(varchar(10),sca.acceptanceDate, 101) as [AcceptanceDate]
-		, cd1.name as [AcceptanceStatus]
-		, sca.comments as [Comments]
-		, sca.priority as [Choice #]
-		from Person p
-		join [Identity] i on i.personID = p.personID and i.identityID = p.currentIdentityID
-		join SchoolChoiceApplication sca on sca.personID = p.personID
+select p.studentNumber as [Student#]
+, i.lastName as [Last]
+, i.firstName as [First]
+, max(case when ad.postOfficeBox = 1 then 'PO Box ' + ad.number else ad.number + ' ' + ISNULL(ad.dir + ' ','') + ad.street + ' ' + ISNULL(ad.tag + ' ','') + ISNULL('#' + ad.apt, '') end) as [Line 1]
+, max(ad.city + ', ' + ad.state + ' ' + ad.zip) as [Line 2]
+, isnull(di.name,'') as [District]
+, coalesce(max(case when hs.bn = 1 and hs.schID &lt;= 16 then sc.name end),'') + coalesce(', ' + max(case when hs.bn = 2 and hs.schID &lt;= 16 then sc.name end),'') as [Home Elementary]
+, coalesce(max(case when ((hs.bn = 2 and hs.schID &gt;= 17) or (hs.bn = 3 and hs.schID &gt;= 17)) then sc.name end),'') + coalesce(', ' + max(case when hs.bn = 4 and hs.schID &gt;= 17 then sc.name else null end),'') as [Home Jr. High]
+, isnull(cc.name,'') as [CSchool]
+, ec.grade as [CGrade]
+, rc.name as [RSchool]
+, sca.gradeLevel as [RGrade]
+, cn.name as [NSchool]
+, isnull(max(case when ar.rn = 1 then ar.name end),'') + isnull(max(case when ar.rn = 2 then ', ' + ar.name end),'') as [IntraType]
+, isnull(cd2.name,'') as [ApplicationStatus]
+, convert(varchar(10),sca.applicationDate, 101) as [ApplicationDate]
+, convert(varchar(10),sca.processedDate, 101) as [ProcessedDate]
+, convert(varchar(10),sca.acceptanceDate, 101) as [AcceptanceDate]
+, cd1.name as [AcceptanceStatus]
+, sca.comments as [Comments]
+, sca.priority as [Choice #]
+from Person p
+join [Identity] i on i.personID = p.personID and i.identityID = p.currentIdentityID
+join SchoolChoiceApplication sca on sca.personID = p.personID
 --subquery to get IntraTypes
-		left join (
-				select sca.personID, sca.applicationID, sca.calendarID, case when sca.gradeLevel = 'TK' then 'Transitional Kinder' else isnull(scr.name,'4: Choice') end as [name], ROW_NUMBER() over(PARTITION by sca.personID order by scar.ruleID) as rn
-				from SchoolChoiceApplication sca
-				left join SchoolChoiceApplicationRule scar on scar.applicationID = sca.applicationID and (scar.ruleID between 4 and 17 or scar.ruleID in (27,28))
-				left join SchoolChoiceRule scr on scr.ruleID = scar.ruleID
-				where sca.calendarID = @appCalendarID
-		) ar on ar.personID = sca.personID and ar.applicationID = sca.applicationID
-		join Calendar rc on rc.calendarID = sca.calendarID and rc.calendarID = @appCalendarID
-		left join CampusDictionary cd1 on cd1.code = sca.acceptanceStatus and cd1.attributeID = 304
-		left join CampusDictionary cd2 on cd2.code = sca.approvalStatus and cd2.attributeID = 305
-		left join (
-				select e.personID, MAX(e.startDate) as maxStartDate
-				from Enrollment e
-				where e.endYear = @cSchoolYear
-				group by e.personID
-				) me on me.personID = p.personID
-		left join Enrollment ec on ec.personID = me.personID
-		--and ec.startDate = me.maxStartDate
-		and ec.endYear = @cSchoolYear
-		left join Calendar cc on cc.calendarID = ec.calendarID and (cc.summerSchool = 0 or cc.summerSchool is null) and cc.endYear = @cSchoolYear
-		left join (
-					select p.personID, hl.addressID, sb.schoolID as schID, ROW_NUMBER() over(PARTITION by p.personID order by sb.schoolID) as bn
-					from Person p
-					join HouseholdMember hm on hm.personID = p.personID and hm.secondary = 0 and hm.endDate is null
-					join HouseholdLocation hl on hl.householdID = hm.householdID and hl.secondary = 0 and hl.endDate is null
-					left join SchoolBoundary sb on sb.addressID = hl.addressID
-					where sb.startDate = '03/08/2018' or sb.startDate is null
-					) hs on hs.personID = p.personID
-		left join School sc on sc.schoolID = hs.schID
-		left join [Address] ad on ad.addressID = hs.addressID
-		left join District di on di.districtID = ad.districtID
-		left join Enrollment en on en.personID = p.personID and en.endDate is null and (en.endYear = @nSchoolYear)
-		left join Calendar cn on cn.calendarID = en.calendarID and (cn.endYear = @nSchoolYear)
-	where isnull(cd2.name,'') in (@ApplicationStatus)
-	group by p.studentNumber, i.lastName, i.firstName
-		, di.name
-		, cc.name, ec.grade
-		, rc.name
-		, sca.gradeLevel
-		, sca.applicationDate
-		, sca.processedDate
-		, cd1.name
-		, sca.acceptanceDate
-		, cd2.name
-		, sca.comments
-		, cn.name
-		, sca.priority
-	) x
+left join (
+select sca.personID, sca.applicationID, sca.calendarID, scr.name, ROW_NUMBER() over(PARTITION by sca.personID order by scar.ruleID) as rn
+from SchoolChoiceApplication sca
+left join SchoolChoiceApplicationRule scar on scar.applicationID = sca.applicationID and (scar.ruleID between 4 and 17 or scar.ruleID in (27,28))
+left join SchoolChoiceRule scr on scr.ruleID = scar.ruleID
+where sca.calendarID = @appCalendarID
+) ar on ar.personID = sca.personID and ar.applicationID = sca.applicationID
+join Calendar rc on rc.calendarID = sca.calendarID and rc.calendarID = @appCalendarID
+left join CampusDictionary cd1 on cd1.code = sca.acceptanceStatus and cd1.attributeID = 304
+left join CampusDictionary cd2 on cd2.code = sca.approvalStatus and cd2.attributeID = 305
+left join (
+select e.personID, MAX(e.startDate) as maxStartDate
+from Enrollment e
+where e.endYear = @cSchoolYear
+group by e.personID
+) me on me.personID = p.personID
+left join Enrollment ec on ec.personID = me.personID
+--and ec.startDate = me.maxStartDate
+and ec.endYear = @cSchoolYear
+left join Calendar cc on cc.calendarID = ec.calendarID and (cc.summerSchool = 0 or cc.summerSchool is null) and cc.endYear = @cSchoolYear
+left join (
+select p.personID, hl.addressID, sb.schoolID as schID, ROW_NUMBER() over(PARTITION by p.personID order by sb.schoolID) as bn
+from Person p
+join HouseholdMember hm on hm.personID = p.personID and hm.secondary = 0 and hm.endDate is null
+join HouseholdLocation hl on hl.householdID = hm.householdID and hl.secondary = 0 and hl.endDate is null
+left join SchoolBoundary sb on sb.addressID = hl.addressID
+where sb.startDate = '03/08/2018'
+) hs on hs.personID = p.personID
+left join School sc on sc.schoolID = hs.schID
+left join [Address] ad on ad.addressID = hs.addressID
+left join District di on di.districtID = ad.districtID
+left join Enrollment en on en.personID = p.personID and en.endDate is null and (en.endYear = @nSchoolYear)
+left join Calendar cn on cn.calendarID = en.calendarID and (cn.endYear = @nSchoolYear)
+where isnull(cd2.name,'') in (@ApplicationStatus)
+group by p.studentNumber, i.lastName, i.firstName
+, di.name
+, cc.name, ec.grade
+, rc.name
+, sca.gradeLevel
+, sca.applicationDate
+, sca.processedDate
+, cd1.name
+, sca.acceptanceDate
+, cd2.name
+, sca.comments
+, cn.name
+, sca.priority
+) x
 order by 
 x.ApplicationStatus, x.[CGrade], x.[RGrade], x.[CSchool],
 x.last, x.first
@@ -122,76 +122,76 @@ IF @choices = 'false'
 BEGIN
 select *
 from (
-	select p.studentNumber as [Student#]
-	, i.lastName as [Last]
-	, i.firstName as [First]
-	, max(ad.number + ' ' + ISNULL(ad.dir + ' ','') + ad.street + ' ' + ISNULL(ad.tag + ' ','') + ISNULL('#' + ad.apt, '')) as [Line 1]
-	, max(ad.city + ', ' + ad.state + ' ' + ad.zip) as [Line 2]
-	, isnull(di.name,'') as [District]
-	, coalesce(max(case when hs.bn = 1 and hs.schID &lt;= 16 then sc.name end),'') + coalesce(', ' + max(case when hs.bn = 2 and hs.schID &lt;= 16 then sc.name end),'') as [Home Elementary]
-	, coalesce(max(case when ((hs.bn = 2 and hs.schID &gt;= 17) or (hs.bn = 3 and hs.schID &gt;= 17)) then sc.name end),'') + coalesce(', ' + max(case when hs.bn = 4 and hs.schID &gt;= 17 then sc.name else null end),'') as [Home Jr. High]
-	, isnull(cc.name,'') as [CSchool]
-	, ec.grade as [CGrade]
-	, rc.name as [RSchool]
-	, sca.gradeLevel as [RGrade]
-	, cn.name as [NSchool]
-	, isnull(max(case when ar.rn = 1 then ar.name end),'') + isnull(max(case when ar.rn = 2 then ', ' + ar.name end),'') as [IntraType]
-	, isnull(cd2.name,'') as [ApplicationStatus]
-	, convert(varchar(10),sca.applicationDate, 101) as [ApplicationDate]
-	, convert(varchar(10),sca.processedDate, 101) as [ProcessedDate]
-	, convert(varchar(10),sca.acceptanceDate, 101) as [AcceptanceDate]
-	, cd1.name as [AcceptanceStatus]
-	, sca.comments as [Comments]
-	, sca.priority as [Choice #]
-	from Person p
-	join [Identity] i on i.personID = p.personID and i.identityID = p.currentIdentityID
-	join SchoolChoiceApplication sca on sca.personID = p.personID
-	--subquery to get IntraTypes
-	left join (
-			select sca.personID, sca.applicationID, sca.calendarID, case when sca.gradeLevel = 'TK' then 'Transitional Kinder' else isnull(scr.name,'4: Choice') end as [name], ROW_NUMBER() over(PARTITION by sca.personID order by scar.ruleID) as rn
-			from SchoolChoiceApplication sca
-			left join SchoolChoiceApplicationRule scar on scar.applicationID = sca.applicationID and scar.ruleID between 4 and 17
-			left join SchoolChoiceRule scr on scr.ruleID = scar.ruleID
-			where sca.calendarID = @appCalendarID
-	) ar on ar.personID = sca.personID and ar.applicationID = sca.applicationID
-	join Calendar rc on rc.calendarID = sca.calendarID and rc.endYear = @AppYear
-	left join CampusDictionary cd1 on cd1.code = sca.acceptanceStatus and cd1.attributeID = 304
-	left join CampusDictionary cd2 on cd2.code = sca.approvalStatus and cd2.attributeID = 305
-	left join (
-			select e.personID, MAX(e.startDate) as maxStartDate
-			from Enrollment e
-			where e.endYear = @cSchoolYear
-			group by e.personID
-	) me on me.personID = p.personID
-	left join Enrollment ec on ec.personID = me.personID and ec.startDate = me.maxStartDate and ec.endYear = @cSchoolYear
-	left join Calendar cc on cc.calendarID = ec.calendarID and (cc.summerSchool = 0 or cc.summerSchool is null) and cc.endYear = @cSchoolYear
-	left join (
-			select p.personID, hl.addressID, sb.schoolID as schID, ROW_NUMBER() over(PARTITION by p.personID order by sb.schoolID) as bn
-			from Person p
-			join HouseholdMember hm on hm.personID = p.personID and hm.secondary = 0 and hm.endDate is null
-			join HouseholdLocation hl on hl.householdID = hm.householdID and hl.secondary = 0 and hl.endDate is null
-			left join SchoolBoundary sb on sb.addressID = hl.addressID
-			where sb.startDate = '03/08/2018' or sb.startDate is null
-	) hs on hs.personID = p.personID
-	left join School sc on sc.schoolID = hs.schID
-	left join [Address] ad on ad.addressID = hs.addressID
-	left join District di on di.districtID = ad.districtID
-	left join Enrollment en on en.personID = p.personID and en.endDate is null and en.endYear = @nSchoolYear
-	left join Calendar cn on cn.calendarID = en.calendarID and cn.endYear = @nSchoolYear
-	where (rc.name not like '%' + @checkName + '%') and
-	isnull(cd2.name,'') in (@ApplicationStatus)
-	group by p.studentNumber, i.lastName, i.firstName, di.name, cc.name, ec.grade
-		, rc.name
-		, sca.gradeLevel
-		, sca.applicationDate
-		, sca.processedDate
-		, cd1.name
-		, sca.acceptanceDate
-		, cd2.name
-		, sca.comments
-		, cn.name
-		, sca.priority
-	) x
+select p.studentNumber as [Student#]
+, i.lastName as [Last]
+, i.firstName as [First]
+, max(ad.number + ' ' + ISNULL(ad.dir + ' ','') + ad.street + ' ' + ISNULL(ad.tag + ' ','') + ISNULL('#' + ad.apt, '')) as [Line 1]
+, max(ad.city + ', ' + ad.state + ' ' + ad.zip) as [Line 2]
+, isnull(di.name,'') as [District]
+, coalesce(max(case when hs.bn = 1 and hs.schID &lt;= 16 then sc.name end),'') + coalesce(', ' + max(case when hs.bn = 2 and hs.schID &lt;= 16 then sc.name end),'') as [Home Elementary]
+, coalesce(max(case when ((hs.bn = 2 and hs.schID &gt;= 17) or (hs.bn = 3 and hs.schID &gt;= 17)) then sc.name end),'') + coalesce(', ' + max(case when hs.bn = 4 and hs.schID &gt;= 17 then sc.name else null end),'') as [Home Jr. High]
+, isnull(cc.name,'') as [CSchool]
+, ec.grade as [CGrade]
+, rc.name as [RSchool]
+, sca.gradeLevel as [RGrade]
+, cn.name as [NSchool]
+, isnull(max(case when ar.rn = 1 then ar.name end),'') + isnull(max(case when ar.rn = 2 then ', ' + ar.name end),'') as [IntraType]
+, isnull(cd2.name,'') as [ApplicationStatus]
+, convert(varchar(10),sca.applicationDate, 101) as [ApplicationDate]
+, convert(varchar(10),sca.processedDate, 101) as [ProcessedDate]
+, convert(varchar(10),sca.acceptanceDate, 101) as [AcceptanceDate]
+, cd1.name as [AcceptanceStatus]
+, sca.comments as [Comments]
+, sca.priority as [Choice #]
+from Person p
+join [Identity] i on i.personID = p.personID and i.identityID = p.currentIdentityID
+join SchoolChoiceApplication sca on sca.personID = p.personID
+--subquery to get IntraTypes
+left join (
+select sca.personID, sca.applicationID, sca.calendarID, scr.name, ROW_NUMBER() over(PARTITION by sca.personID order by scar.ruleID) as rn
+from SchoolChoiceApplication sca
+left join SchoolChoiceApplicationRule scar on scar.applicationID = sca.applicationID and scar.ruleID between 4 and 17
+left join SchoolChoiceRule scr on scr.ruleID = scar.ruleID
+where sca.calendarID = @appCalendarID
+) ar on ar.personID = sca.personID and ar.applicationID = sca.applicationID
+join Calendar rc on rc.calendarID = sca.calendarID and rc.endYear = @AppYear
+left join CampusDictionary cd1 on cd1.code = sca.acceptanceStatus and cd1.attributeID = 304
+left join CampusDictionary cd2 on cd2.code = sca.approvalStatus and cd2.attributeID = 305
+left join (
+select e.personID, MAX(e.startDate) as maxStartDate
+from Enrollment e
+where e.endYear = @cSchoolYear
+group by e.personID
+) me on me.personID = p.personID
+left join Enrollment ec on ec.personID = me.personID and ec.startDate = me.maxStartDate and ec.enddate is null and ec.endYear = @cSchoolYear
+left join Calendar cc on cc.calendarID = ec.calendarID and (cc.summerSchool = 0 or cc.summerSchool is null) and cc.endYear = @cSchoolYear
+left join (
+select p.personID, hl.addressID, sb.schoolID as schID, ROW_NUMBER() over(PARTITION by p.personID order by sb.schoolID) as bn
+from Person p
+join HouseholdMember hm on hm.personID = p.personID and hm.secondary = 0 and hm.endDate is null
+join HouseholdLocation hl on hl.householdID = hm.householdID and hl.secondary = 0 and hl.endDate is null
+left join SchoolBoundary sb on sb.addressID = hl.addressID
+where sb.startDate = '03/08/2018'
+) hs on hs.personID = p.personID
+left join School sc on sc.schoolID = hs.schID
+left join [Address] ad on ad.addressID = hs.addressID
+left join District di on di.districtID = ad.districtID
+left join Enrollment en on en.personID = p.personID and en.endDate is null and en.endYear = @nSchoolYear
+left join Calendar cn on cn.calendarID = en.calendarID and cn.endYear = @nSchoolYear
+where (rc.name not like '%' + @checkName + '%') and
+isnull(cd2.name,'') in (@ApplicationStatus)
+group by p.studentNumber, i.lastName, i.firstName, di.name, cc.name, ec.grade
+, rc.name
+, sca.gradeLevel
+, sca.applicationDate
+, sca.processedDate
+, cd1.name
+, sca.acceptanceDate
+, cd2.name
+, sca.comments
+, cn.name
+, sca.priority
+) x
 where (x.[Home Elementary] like '%' + @checkName + '%' and x.CSchool like '') or ((x.RGrade = '07' or x.RGrade = '08') and x.[Home Jr. High] like '%' + @checkName + '%')
 or (x.CSchool like '%' + @checkName + '%')
 order by 

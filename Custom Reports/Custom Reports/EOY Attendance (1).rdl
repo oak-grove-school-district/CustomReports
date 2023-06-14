@@ -25,7 +25,7 @@ join IdentityRaceEthnicity ire on ire.identityID = i.identityID
 join RaceEthnicity re on re.raceID = ire.raceID
 where p.studentNumber is not null)
 
-select x.studentNumber, x.lastName, x.firstName, x.birthdate, x.grade, x.[Race(s)], isnull(x.MKV,'') as MKV, isnull(x.Foster,'') as Foster, x.name
+select x.studentNumber, x.lastName, x.firstName, x.birthdate, x.grade, x.[Race(s)], isnull(x.MKV,'') as MKV, isnull(x.Foster,'') as Foster, isnull(x.IEP,'') as IEP, isnull(x.Migrant,'') as [Migrant], x.[EL Status], x.name
 	,sum(case when x.[Att Code] = 'A' then 1 else 0 end) as [A]
 	,sum(case when x.[Att Code] = 'ACT' then 1 else 0 end) as [ACT]
 	,sum(case when x.[Att Code] = 'AEX' then 1 else 0 end) as [AEX]
@@ -39,6 +39,7 @@ select x.studentNumber, x.lastName, x.firstName, x.birthdate, x.grade, x.[Race(s
 	,sum(case when x.[Att Code] = 'LPU' then 1 else 0 end) as [LPU]
 	,sum(case when x.[Att Code] = 'NCL' then 1 else 0 end) as [NCL]
 	,sum(case when x.[Att Code] = 'OTX' then 1 else 0 end) as [OTX]
+	,sum(case when x.[Att Code] = 'PA' then 1 else 0 end) as [PA]
 	,sum(case when x.[Att Code] = 'SUS' then 1 else 0 end) as [SUS]
 	,sum(case when x.[Att Code] = 'SUS1' then 1 else 0 end) as [SUS1]
 	,sum(case when x.[Att Code] = 'T' then 1 else 0 end) as [T]
@@ -52,6 +53,9 @@ from
 	select y.studentNumber, y.lastName, y.firstName, y.birthdate, y.grade, y.name, y.date, y.[Att Code], y.[Race(s)]
 		, case when pp.programID = '105' then 'MKV' end as [MKV]
 		, case when pp.programID = '96' then 'Foster' end as [Foster]
+		, case when pp.programID = '53' then 'IEP' end as [IEP]
+		, case when pp.programID = '44' then 'Migrant' end as [Migrant]
+		, cpm.[EL Status]
 	from
 	(
 		SELECT p.studentNumber, p.personID, i.lastName, i.firstName, CONVERT(varchar(10), cast(i.birthdate as date),101) as birthdate, e.grade, c.name, a.date
@@ -81,11 +85,12 @@ from
 		group by p.studentNumber, i.lastName, i.firstName, i.birthdate, e.grade, c.name, a.date, ae.code, a.status, a.excuseID, p.personID
 	) y
 	left join ProgramParticipation pp on pp.personID = y.personID
-		and pp.programID in ('105','96')
+		and pp.programID in ('105','96','53','44')
 		and (pp.eligibilityEndDate is null or pp.eligibilityEndDate &gt;= getdate())
-	group by y.studentNumber, y.lastName, y.firstName, y.birthdate, y.grade, y.name, y.date, y.[Att Code], y.[Race(s)], pp.programID
+	left join cust_og_programMatrix cpm on cpm.personID = y.personID
+	group by y.studentNumber, y.lastName, y.firstName, y.birthdate, y.grade, y.name, y.date, y.[Att Code], y.[Race(s)], pp.programID, cpm.[EL Status]
 ) x
-group by x.studentNumber, x.lastName, x.firstName, x.birthdate, x.grade, x.name, x.[Race(s)], x.MKV, x.Foster
+group by x.studentNumber, x.lastName, x.firstName, x.birthdate, x.grade, x.name, x.[Race(s)], x.MKV, x.Foster, x.IEP, x.Migrant, x.[EL Status]
 order by x.name, x.grade, x.lastName</CommandText>
       </Query>
       <Fields>
@@ -123,6 +128,18 @@ order by x.name, x.grade, x.lastName</CommandText>
         </Field>
         <Field Name="Foster">
           <DataField>Foster</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="IEP">
+          <DataField>IEP</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Migrant">
+          <DataField>Migrant</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="EL_Status">
+          <DataField>EL Status</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
         <Field Name="A">
@@ -175,6 +192,10 @@ order by x.name, x.grade, x.lastName</CommandText>
         </Field>
         <Field Name="OTX">
           <DataField>OTX</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="PA">
+          <DataField>PA</DataField>
           <rd:TypeName>System.Int32</rd:TypeName>
         </Field>
         <Field Name="SUS">
@@ -251,10 +272,19 @@ order by sy.endyear desc</CommandText>
                   <Width>0.66667in</Width>
                 </TablixColumn>
                 <TablixColumn>
+                  <Width>0.44792in</Width>
+                </TablixColumn>
+                <TablixColumn>
                   <Width>0.38542in</Width>
                 </TablixColumn>
                 <TablixColumn>
                   <Width>0.46875in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>0.65625in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>0.78125in</Width>
                 </TablixColumn>
                 <TablixColumn>
                   <Width>2.20833in</Width>
@@ -300,6 +330,9 @@ order by sy.endyear desc</CommandText>
                 </TablixColumn>
                 <TablixColumn>
                   <Width>0.375in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>0.32292in</Width>
                 </TablixColumn>
                 <TablixColumn>
                   <Width>0.38542in</Width>
@@ -452,6 +485,38 @@ order by sy.endyear desc</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
+                        <Textbox Name="Textbox6">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>IEP</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox6</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
                         <Textbox Name="Textbox5">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
@@ -501,6 +566,70 @@ order by sy.endyear desc</CommandText>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox8</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox10">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Migrant</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox10</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox12">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>EL Status</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox12</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -966,6 +1095,36 @@ order by sy.endyear desc</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
+                        <Textbox Name="Textbox14">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>PA</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox14</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
                         <Textbox Name="Textbox37">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
@@ -1339,6 +1498,38 @@ order by sy.endyear desc</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
+                        <Textbox Name="IEP">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!IEP.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>IEP</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
                         <Textbox Name="MKV">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
@@ -1388,6 +1579,70 @@ order by sy.endyear desc</CommandText>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Foster</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Migrant">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!Migrant.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Migrant</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="EL_Status">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!EL_Status.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>EL_Status</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -1853,6 +2108,36 @@ order by sy.endyear desc</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
+                        <Textbox Name="PA">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!PA.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>PA</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
                         <Textbox Name="SUS">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
@@ -2126,6 +2411,10 @@ order by sy.endyear desc</CommandText>
                 <TablixMember />
                 <TablixMember />
                 <TablixMember />
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
               </TablixMembers>
             </TablixColumnHierarchy>
             <TablixRowHierarchy>
@@ -2140,7 +2429,7 @@ order by sy.endyear desc</CommandText>
             </TablixRowHierarchy>
             <DataSetName>Attendance</DataSetName>
             <Height>0.5in</Height>
-            <Width>17.5521in</Width>
+            <Width>19.76044in</Width>
             <Style>
               <Border>
                 <Style>None</Style>
@@ -2151,7 +2440,7 @@ order by sy.endyear desc</CommandText>
         <Height>0.5in</Height>
         <Style />
       </Body>
-      <Width>18.08335in</Width>
+      <Width>19.76044in</Width>
       <Page>
         <LeftMargin>1in</LeftMargin>
         <RightMargin>1in</RightMargin>
