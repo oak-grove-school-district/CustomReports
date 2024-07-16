@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Report MustUnderstand="df" xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:df="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition/defaultfontfamily">
+<Report MustUnderstand="df" xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:df="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition/defaultfontfamily" xmlns:am="http://schemas.microsoft.com/sqlserver/reporting/authoringmetadata">
+  <am:AuthoringMetadata>
+    <am:CreatedBy>
+      <am:Name>SSDTRS</am:Name>
+      <am:Version>17.6.33801.468</am:Version>
+    </am:CreatedBy>
+    <am:UpdatedBy>
+      <am:Name>SSDTRS</am:Name>
+      <am:Version>17.6.33801.468</am:Version>
+    </am:UpdatedBy>
+    <am:LastModifiedTimestamp>2023-12-08T22:54:18.7716337Z</am:LastModifiedTimestamp>
+  </am:AuthoringMetadata>
   <df:DefaultFontFamily>Segoe UI</df:DefaultFontFamily>
   <AutoRefresh>0</AutoRefresh>
   <DataSources>
@@ -121,7 +132,7 @@ FROM            (SELECT        p.studentNumber, i.lastName, i.firstName, e.grade
 			LEFT JOIN District dis ON dis.districtID = ad.districtID
 			) sb ON sb.addressID = hl.addressID 
 				AND (hl.secondary = 0 OR hl.secondary IS NULL) AND (hm.secondary = 0 OR hm.secondary IS NULL)
-		left join cust_og_SchoolChoiceApps(2023) csa on csa.personID = p.personID
+		left join cust_og_SchoolChoiceApps(@endYear -1) csa on csa.personID = p.personID
 	GROUP BY p.studentNumber, i.lastName, i.firstName, cal.name, cal2.name, e.endDate, e.grade, e.nextGrade, e.nextCalendar, cal.calendarID, sb.[New Home Elementary], sb.[New Home Jr. High], sb.District, cal2.calendarID
 	, csa.[2]
 		, csa.[3]
@@ -2314,7 +2325,6 @@ ORDER BY nSchool, nCalID</CommandText>
                             <PaddingBottom>2pt</PaddingBottom>
                           </Style>
                         </Textbox>
-                        <rd:Selected>true</rd:Selected>
                       </CellContents>
                     </TablixCell>
                     <TablixCell>
@@ -2812,7 +2822,7 @@ ORDER BY nSchool, nCalID</CommandText>
             </TablixRowHierarchy>
             <DataSetName>preRollover</DataSetName>
             <Height>1in</Height>
-            <Width>15.96875in</Width>
+            <Width>15.96873in</Width>
             <Style>
               <Border>
                 <Style>None</Style>
@@ -2838,7 +2848,7 @@ ORDER BY nSchool, nCalID</CommandText>
       <DataType>String</DataType>
       <DefaultValue>
         <Values>
-          <Value>=2023</Value>
+          <Value>=2024</Value>
         </Values>
       </DefaultValue>
       <Prompt>end Year</Prompt>

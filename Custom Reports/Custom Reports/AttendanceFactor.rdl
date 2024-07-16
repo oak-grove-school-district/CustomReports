@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:cl="http://schemas.microsoft.com/sqlserver/reporting/2010/01/componentdefinition">
+<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:cl="http://schemas.microsoft.com/sqlserver/reporting/2010/01/componentdefinition" xmlns:am="http://schemas.microsoft.com/sqlserver/reporting/authoringmetadata">
+  <am:AuthoringMetadata>
+    <am:CreatedBy>
+      <am:Name>SSDTRS</am:Name>
+      <am:Version>17.6.33801.468</am:Version>
+    </am:CreatedBy>
+    <am:UpdatedBy>
+      <am:Name>SSDTRS</am:Name>
+      <am:Version>17.6.33801.468</am:Version>
+    </am:UpdatedBy>
+    <am:LastModifiedTimestamp>2023-12-13T16:41:19.2137995Z</am:LastModifiedTimestamp>
+  </am:AuthoringMetadata>
   <AutoRefresh>0</AutoRefresh>
   <DataSources>
     <DataSource Name="campus">
@@ -137,7 +148,7 @@ from (
 				having count(at.periodID) = np.tPeriods
 			) ab on ab.personID = e.personID and ab.calendarID = e.calendarID
 			where e.endYear = @endYear and (e.startDate &lt;= @mEndDate) and (e.endDate &gt;= @mStartDate or e.endDate is null) and e.serviceType = 'P'
-			and i.birthdate &lt;= '02/02/2018'
+			and i.birthdate &lt;= '04/02/2019'
 			group by c.name, e.personID, p.studentNumber, i.lastName, i.firstName, e.grade
 		) en
 	) y
@@ -4572,7 +4583,7 @@ where (c.summerSchool = 0 or c.summerSchool is null) and convert(date,getdate())
       <DataType>String</DataType>
       <DefaultValue>
         <Values>
-          <Value>=2023</Value>
+          <Value>=2024</Value>
         </Values>
       </DefaultValue>
       <Prompt>End Year:</Prompt>
@@ -4645,7 +4656,7 @@ where (c.summerSchool = 0 or c.summerSchool is null) and convert(date,getdate())
       <DataType>String</DataType>
       <DefaultValue>
         <Values>
-          <Value>=78.49</Value>
+          <Value>=86.59</Value>
         </Values>
       </DefaultValue>
       <Prompt>ADA Per Day Amount:</Prompt>

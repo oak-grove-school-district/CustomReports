@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?><Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2010/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner"><AutoRefresh>0</AutoRefresh><DataSources><DataSource Name="campus"><DataSourceReference>campus</DataSourceReference><rd:SecurityType>None</rd:SecurityType><rd:DataSourceID>c384e825-ad3a-42a5-8f66-8ffe40fdf94d</rd:DataSourceID></DataSource></DataSources><DataSets><DataSet Name="AllStudents"><Query><DataSourceName>campus</DataSourceName><QueryParameters><QueryParameter Name="@studentOLRpersonID"><Value>=Parameters!studentOLRpersonID.Value</Value></QueryParameter><QueryParameter Name="@ApplicationNumber"><Value>=Parameters!ApplicationNumber.Value</Value></QueryParameter></QueryParameters><CommandText>select 
+﻿<?xml version="1.0" encoding="utf-8"?><Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2010/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner"><am:AuthoringMetadata xmlns:am="http://schemas.microsoft.com/sqlserver/reporting/authoringmetadata"><am:CreatedBy><am:Name>SSDTRS</am:Name><am:Version>17.6.33801.468</am:Version></am:CreatedBy><am:UpdatedBy><am:Name>SSDTRS</am:Name><am:Version>17.6.33801.468</am:Version></am:UpdatedBy><am:LastModifiedTimestamp>2023-10-20T17:27:32.2414657Z</am:LastModifiedTimestamp></am:AuthoringMetadata><AutoRefresh>0</AutoRefresh><DataSources><DataSource Name="campus"><DataSourceReference>campus</DataSourceReference><rd:SecurityType>None</rd:SecurityType><rd:DataSourceID>c384e825-ad3a-42a5-8f66-8ffe40fdf94d</rd:DataSourceID></DataSource></DataSources><DataSets><DataSet Name="AllStudents"><Query><DataSourceName>campus</DataSourceName><QueryParameters><QueryParameter Name="@studentOLRpersonID"><Value>=Parameters!studentOLRpersonID.Value</Value></QueryParameter><QueryParameter Name="@ApplicationNumber"><Value>=Parameters!ApplicationNumber.Value</Value></QueryParameter></QueryParameters><CommandText>select 
   max(sy.label) as [schoolYear]
 , CONVERT(varchar(10),getdate(),101) as [today]
 , max(case when oso.grade in ('TK','00','01','02','03','04','05','06') then REPLACE(sc.name,' School','')
@@ -167,7 +167,7 @@ left join olr_raceEthnicity ore on ore.olr_personID = op.olr_personID
 left join olr_customHouseholdSave och on och.olr_householdID = oh.olr_householdID 
 	and och.olr_customBuilderID in (127)
 left join olr_dictionary od on (od.code = oso.language or od.code = oso.parentLanguage or od.code = oso.homeLanguage or od.code = oso.homePrimaryLanguage) 
-	and od.olr_attributeID = 3
+	and od.olr_attributeID = 319
 left join olr_healthCondition ohc on ohc.olr_personID = op.olr_personID 
 	and ohc.olr_personID = @studentOLRpersonID
 left join School sc on sc.schoolID = oso.chosenSchoolID

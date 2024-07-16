@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Report MustUnderstand="df" xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:df="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition/defaultfontfamily">
+<Report MustUnderstand="df" xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:df="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition/defaultfontfamily" xmlns:am="http://schemas.microsoft.com/sqlserver/reporting/authoringmetadata">
+  <am:AuthoringMetadata>
+    <am:CreatedBy>
+      <am:Name>SSDTRS</am:Name>
+      <am:Version>17.6.33801.468</am:Version>
+    </am:CreatedBy>
+    <am:UpdatedBy>
+      <am:Name>SSDTRS</am:Name>
+      <am:Version>17.6.33801.468</am:Version>
+    </am:UpdatedBy>
+    <am:LastModifiedTimestamp>2024-06-04T22:02:17.9770650Z</am:LastModifiedTimestamp>
+  </am:AuthoringMetadata>
   <df:DefaultFontFamily>Segoe UI</df:DefaultFontFamily>
   <AutoRefresh>0</AutoRefresh>
   <DataSources>
@@ -136,17 +147,17 @@ END</CommandText>
 	, cd.name as homePrimaryLanguage
 	, max(case when lep.programStatus = 'Not LEP' then 'IFEP' else lep.programStatus end) as [Status]
 	, CONVERT(varchar(10), cast(lep.identifiedDate as date),101) as identifiedDate
-	, max(case when ts.testID = 189 and ts.date between '08/01/22' and '06/30/23' then CONVERT(varchar(10), cast(ts.date as date),101) end) as [22-23 Initial Date]
-	, max(case when ts.testID = 189 and ts.date between '08/01/22' and '06/30/23' then ts.result end) as [22-23 iOverall]
-	, max(case when ts.testID = 190 and ts.date between '08/01/22' and '06/30/23' then ts.result end) as [22-23 iOral]
-	, max(case when ts.testID = 191 and ts.date between '08/01/22' and '06/30/23' then ts.result end) as [22-23 iWr]
-	, max(case when ts.testID = 280 and ts.date between '08/01/22' and '06/30/23' then CONVERT(varchar(10), cast(ts.date as date),101) end) as [22-23 Date]
-	, max(case when ts.testID = 280 and ts.date between '08/01/22' and '06/30/23' then ts.result end) as [22-23 Overall]
-	, max(case when ts.testID = 282 and ts.date between '08/01/22' and '06/30/23' then ts.result end) as [22-23 Wr]
-	, max(case when ts.testID = 283 and ts.date between '08/01/22' and '06/30/23' then ts.result end) as [22-23 L]
-	, max(case when ts.testID = 284 and ts.date between '08/01/22' and '06/30/23' then ts.result end) as [22-23 S]
-	, max(case when ts.testID = 285 and ts.date between '08/01/22' and '06/30/23' then ts.result end) as [22-23 R]
-	, max(case when ts.testID = 286 and ts.date between '08/01/22' and '06/30/23' then ts.result end) as [22-23 W]
+	, max(case when ts.testID = 323 and ts.date between '08/01/23' and '06/30/24' then CONVERT(varchar(10), cast(ts.date as date),101) end) as [23-24 Initial Date]
+	, max(case when ts.testID = 323 and ts.date between '08/01/23' and '06/30/24' then ts.result end) as [23-24 iOverall]
+	, max(case when ts.testID = 324 and ts.date between '08/01/23' and '06/30/24' then ts.result end) as [23-24 iOral]
+	, max(case when ts.testID = 325 and ts.date between '08/01/23' and '06/30/24' then ts.result end) as [23-24 iWr]
+	, max(case when ts.testID = 280 and ts.date between '08/01/23' and '06/30/24' then CONVERT(varchar(10), cast(ts.date as date),101) end) as [23-24 Date]
+	, max(case when ts.testID = 280 and ts.date between '08/01/23' and '06/30/24' then ts.result end) as [23-24 Overall]
+	, max(case when ts.testID = 282 and ts.date between '08/01/23' and '06/30/24' then ts.result end) as [23-24 Wr]
+	, max(case when ts.testID = 283 and ts.date between '08/01/23' and '06/30/24' then ts.result end) as [23-24 L]
+	, max(case when ts.testID = 284 and ts.date between '08/01/23' and '06/30/24' then ts.result end) as [23-24 S]
+	, max(case when ts.testID = 285 and ts.date between '08/01/23' and '06/30/24' then ts.result end) as [23-24 R]
+	, max(case when ts.testID = 286 and ts.date between '08/01/23' and '06/30/24' then ts.result end) as [23-24 W]
 from Person p
 	join [Identity] i on i.personID = p.personID
 		and i.identityID = p.currentIdentityID
@@ -178,7 +189,7 @@ from Person p
 	join Lep on lep.personID = p.personID
 		and lep.programStatus in ('LEP','Not LEP','Pending')
 	left join TestScore ts on ts.personID = p.personID
-		and ts.testID in (280,281,282,283,284,285,286,189,190,191)
+		and ts.testID in (280,281,282,283,284,285,286,323,324,325)
 where cal.calendarID = @calendarID
 	and per.name in (@period)
 	and lep.programStatus in (@status)
@@ -245,48 +256,48 @@ order by i.lastName, i.firstName</CommandText>
           <DataField>identifiedDate</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="ID22_23_Initial_Date">
-          <DataField>22-23 Initial Date</DataField>
+        <Field Name="ID23_24_Initial_Date">
+          <DataField>23-24 Initial Date</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="ID22_23_iOverall">
-          <DataField>22-23 iOverall</DataField>
+        <Field Name="ID23_24_iOverall">
+          <DataField>23-24 iOverall</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="ID22_23_iOral">
-          <DataField>22-23 iOral</DataField>
+        <Field Name="ID23_24_iOral">
+          <DataField>23-24 iOral</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="ID22_23_iWr">
-          <DataField>22-23 iWr</DataField>
+        <Field Name="ID23_24_iWr">
+          <DataField>23-24 iWr</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="ID22_23_Date">
-          <DataField>22-23 Date</DataField>
+        <Field Name="ID23_24_Date">
+          <DataField>23-24 Date</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="ID22_23_Overall">
-          <DataField>22-23 Overall</DataField>
+        <Field Name="ID23_24_Overall">
+          <DataField>23-24 Overall</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="ID22_23_Wr">
-          <DataField>22-23 Wr</DataField>
+        <Field Name="ID23_24_Wr">
+          <DataField>23-24 Wr</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="ID22_23_L">
-          <DataField>22-23 L</DataField>
+        <Field Name="ID23_24_L">
+          <DataField>23-24 L</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="ID22_23_S">
-          <DataField>22-23 S</DataField>
+        <Field Name="ID23_24_S">
+          <DataField>23-24 S</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="ID22_23_R">
-          <DataField>22-23 R</DataField>
+        <Field Name="ID23_24_R">
+          <DataField>23-24 R</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="ID22_23_W">
-          <DataField>22-23 W</DataField>
+        <Field Name="ID23_24_W">
+          <DataField>23-24 W</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
       </Fields>
@@ -471,7 +482,7 @@ group by per.name</CommandText>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>2022--2023 ELPAC Initial</Value>
+                                  <Value>2023--2024 ELPAC Initial</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -529,7 +540,7 @@ group by per.name</CommandText>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>2022-2023 ELPAC</Value>
+                                  <Value>2023-2024 ELPAC</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -2230,14 +2241,14 @@ group by per.name</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="ID22_23_Initial_Date">
+                        <Textbox Name="ID23_24_Initial_Date">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!ID22_23_Initial_Date.Value</Value>
+                                  <Value>=Fields!ID23_24_Initial_Date.Value</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -2248,7 +2259,7 @@ group by per.name</CommandText>
                               </Style>
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>ID22_23_Initial_Date</rd:DefaultName>
+                          <rd:DefaultName>ID23_24_Initial_Date</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -2265,14 +2276,14 @@ group by per.name</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="ID22_23_iOverall">
+                        <Textbox Name="ID23_24_iOverall">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!ID22_23_iOverall.Value</Value>
+                                  <Value>=Fields!ID23_24_iOverall.Value</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -2283,7 +2294,7 @@ group by per.name</CommandText>
                               </Style>
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>ID22_23_iOverall</rd:DefaultName>
+                          <rd:DefaultName>ID23_24_iOverall</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -2300,14 +2311,14 @@ group by per.name</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="ID22_23_iOral">
+                        <Textbox Name="ID23_24_iOral">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!ID22_23_iOral.Value</Value>
+                                  <Value>=Fields!ID23_24_iOral.Value</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -2318,7 +2329,7 @@ group by per.name</CommandText>
                               </Style>
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>ID22_23_iOral</rd:DefaultName>
+                          <rd:DefaultName>ID23_24_iOral</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -2335,14 +2346,14 @@ group by per.name</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="ID22_23_iWr">
+                        <Textbox Name="ID23_24_iWr">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!ID22_23_iWr.Value</Value>
+                                  <Value>=Fields!ID23_24_iWr.Value</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -2353,7 +2364,7 @@ group by per.name</CommandText>
                               </Style>
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>ID22_23_iWr</rd:DefaultName>
+                          <rd:DefaultName>ID23_24_iWr</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -2370,14 +2381,14 @@ group by per.name</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="ID22_23_Date">
+                        <Textbox Name="ID23_24_Date">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!ID22_23_Date.Value</Value>
+                                  <Value>=Fields!ID23_24_Date.Value</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -2388,7 +2399,7 @@ group by per.name</CommandText>
                               </Style>
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>ID22_23_Date</rd:DefaultName>
+                          <rd:DefaultName>ID23_24_Date</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -2405,14 +2416,14 @@ group by per.name</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="ID22_23_Overall">
+                        <Textbox Name="ID23_24_Overall">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!ID22_23_Overall.Value</Value>
+                                  <Value>=Fields!ID23_24_Overall.Value</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -2423,7 +2434,7 @@ group by per.name</CommandText>
                               </Style>
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>ID22_23_Overall</rd:DefaultName>
+                          <rd:DefaultName>ID23_24_Overall</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -2440,14 +2451,14 @@ group by per.name</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="ID22_23_Wr">
+                        <Textbox Name="ID23_24_Wr">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!ID22_23_Wr.Value</Value>
+                                  <Value>=Fields!ID23_24_Wr.Value</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -2458,7 +2469,7 @@ group by per.name</CommandText>
                               </Style>
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>ID22_23_Wr</rd:DefaultName>
+                          <rd:DefaultName>ID23_24_Wr</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -2475,14 +2486,14 @@ group by per.name</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="ID22_23_L">
+                        <Textbox Name="ID23_24_L">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!ID22_23_L.Value</Value>
+                                  <Value>=Fields!ID23_24_L.Value</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -2493,7 +2504,7 @@ group by per.name</CommandText>
                               </Style>
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>ID22_23_L</rd:DefaultName>
+                          <rd:DefaultName>ID23_24_L</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -2510,14 +2521,14 @@ group by per.name</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="ID22_23_S">
+                        <Textbox Name="ID23_24_S">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!ID22_23_S.Value</Value>
+                                  <Value>=Fields!ID23_24_S.Value</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -2528,7 +2539,7 @@ group by per.name</CommandText>
                               </Style>
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>ID22_23_S</rd:DefaultName>
+                          <rd:DefaultName>ID23_24_S</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -2545,14 +2556,14 @@ group by per.name</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="ID22_23_R">
+                        <Textbox Name="ID23_24_R">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!ID22_23_R.Value</Value>
+                                  <Value>=Fields!ID23_24_R.Value</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -2563,7 +2574,7 @@ group by per.name</CommandText>
                               </Style>
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>ID22_23_R</rd:DefaultName>
+                          <rd:DefaultName>ID23_24_R</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -2580,14 +2591,14 @@ group by per.name</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="ID22_23_W">
+                        <Textbox Name="ID23_24_W">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!ID22_23_W.Value</Value>
+                                  <Value>=Fields!ID23_24_W.Value</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -2598,7 +2609,7 @@ group by per.name</CommandText>
                               </Style>
                             </Paragraph>
                           </Paragraphs>
-                          <rd:DefaultName>ID22_23_W</rd:DefaultName>
+                          <rd:DefaultName>ID23_24_W</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>

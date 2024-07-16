@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner">
+<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:am="http://schemas.microsoft.com/sqlserver/reporting/authoringmetadata">
+  <am:AuthoringMetadata>
+    <am:CreatedBy>
+      <am:Name>SSDTRS</am:Name>
+      <am:Version>17.6.33801.468</am:Version>
+    </am:CreatedBy>
+    <am:UpdatedBy>
+      <am:Name>SSDTRS</am:Name>
+      <am:Version>17.6.33801.468</am:Version>
+    </am:UpdatedBy>
+    <am:LastModifiedTimestamp>2024-06-18T22:29:38.5672217Z</am:LastModifiedTimestamp>
+  </am:AuthoringMetadata>
   <AutoRefresh>0</AutoRefresh>
   <DataSources>
     <DataSource Name="campus">
@@ -35,7 +46,7 @@ select c.name, p.studentNumber, i.lastName, i.firstName, e.grade
 from Person p
 join [Identity] i on i.personID = p.personID and p.currentIdentityID = i.identityID
 join Enrollment e on e.personID = p.personID and e.startDate &lt;= @date and (e.endDate &gt;= @date or e.endDate is null)
-join SchoolYear sy on sy.endYear = e.endYear and sy.active = 1
+--join SchoolYear sy on sy.endYear = e.endYear and sy.active = 1
 join calendar c on c.calendarID = e.calendarID
 left join ProgramParticipation pp on pp.personID = p.personID and pp.programID in (98,99,100,101,105,106) 
 and ((pp.startDate &lt;= @date and (pp.endDate &gt;= @date or pp.endDate is null)) or (pp.eligibilityStartDate &lt;= @date and (pp.eligibilityEndDate &gt;= @date or pp.eligibilityEndDate is null)))
@@ -226,7 +237,7 @@ select c.name, p.studentNumber, i.lastName, i.firstName
 from Person p
 join [Identity] i on i.personID = p.personID and p.currentIdentityID = i.identityID
 join Enrollment e on e.personID = p.personID and e.startDate &lt;= @date and (e.endDate &gt;= @date or e.endDate is null)
-join SchoolYear sy on sy.endYear = e.endYear and sy.active = 1
+--join SchoolYear sy on sy.endYear = e.endYear and sy.active = 1
 join calendar c on c.calendarID = e.calendarID
 left join ProgramParticipation pp on pp.personID = p.personID and pp.programID in (98,99,100,101,105,106) 
 and ((pp.startDate &lt;= @date and (pp.endDate &gt;= @date or pp.endDate is null)) or (pp.eligibilityStartDate &lt;= @date and (pp.eligibilityEndDate &gt;= @date or pp.eligibilityEndDate is null)))

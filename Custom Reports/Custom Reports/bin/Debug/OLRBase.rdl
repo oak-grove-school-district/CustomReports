@@ -1,0 +1,116 @@
+﻿<?xml version="1.0" encoding="utf-8"?><Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2010/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner"><am:AuthoringMetadata xmlns:am="http://schemas.microsoft.com/sqlserver/reporting/authoringmetadata"><am:CreatedBy><am:Name>SSDTRS</am:Name><am:Version>17.6.33801.468</am:Version></am:CreatedBy><am:UpdatedBy><am:Name>SSDTRS</am:Name><am:Version>17.6.33801.468</am:Version></am:UpdatedBy><am:LastModifiedTimestamp>2024-06-04T20:42:06.1865389Z</am:LastModifiedTimestamp></am:AuthoringMetadata><AutoRefresh>0</AutoRefresh><DataSources><DataSource Name="DataSource1"><DataSourceReference>campus</DataSourceReference><rd:SecurityType>None</rd:SecurityType><rd:DataSourceID>1318f809-2841-4f67-bc84-9ebb733cc133</rd:DataSourceID></DataSource></DataSources><DataSets><DataSet Name="data"><Query><DataSourceName>DataSource1</DataSourceName><QueryParameters><QueryParameter Name="@configGroupID"><Value>=Parameters!configGroupID.Value</Value></QueryParameter><QueryParameter Name="@base"><Value>=Parameters!base.Value</Value></QueryParameter><QueryParameter Name="@startDate"><Value>=Parameters!startDate.Value</Value></QueryParameter><QueryParameter Name="@endDate"><Value>=Parameters!endDate.Value</Value></QueryParameter><QueryParameter Name="@calendarID"><Value>=Parameters!calendarID.Value</Value></QueryParameter></QueryParameters><CommandText>select ap.olr_applicationID
+	, op.olr_personID
+	, op.personID
+	, cal.name
+	, CONVERT(varchar(10), cast(e.startDate as date),101) as startDate
+	, p.studentNumber
+	, p.stateID
+	, i.birthdate
+	, i .gender
+	, e.grade
+	, i.lastName
+	, i.firstName
+	, i.middleName
+	, oso.BASE
+from olr_application ap
+join olr_configGroup ocg on ocg.olr_configGroupID = ap.olr_configGroupID
+	and ocg.olr_configGroupID = @configGroupID
+join olr_person op on op.olr_applicationID = ap.olr_applicationID
+join Person p on p.personID = op.personID
+join [Identity] i on i.identityID = p.currentIdentityID
+join Enrollment e on e.personID = p.personID
+join Calendar cal on cal.calendarID = e.calendarID
+	and cal.endYear = e.endYear
+join SchoolYear sy on sy.endYear = cal.endYear
+	and sy.endYear = ocg.endYear
+left join (
+		select css.olr_personID, op.olr_applicationID, oso.chosenSchoolID, oso.grade
+			, max(case when css.olr_customBuilderID = @base then css.value end) as [BASE]
+		from olr_customStudentSave css
+			join olr_customBuilder cb on cb.olr_customBuilderID = css.olr_customBuilderID
+			join olr_studentOther oso on oso.olr_personID = css.olr_personID
+			join olr_person op on op.olr_personID = css.olr_personID
+		group by css.olr_personID, op.olr_applicationID, oso.chosenSchoolID, oso.grade
+		) oso on oso.olr_personID = op.olr_personID 
+		and [oso].olr_applicationID = ap.olr_applicationID 
+		and oso.olr_personID = op.olr_personID
+where (ap.submissionDate between @startDate and @endDate)
+	and (ap.approveddate  between @startDate and @endDate)
+	and op.personTypeValue = 'student'
+	and e.grade &lt;&gt; 'PK'
+	and cal.calendarID in (@calendarID)
+	and oso.BASE = 'Y'
+group by ap.olr_applicationID
+	, op.olr_personID
+	, op.personID
+	, cal.name
+	, p.studentNumber
+	, p.stateID
+	, i.lastName
+	, i.firstName
+	, i.middleName
+	, i.birthdate
+	, i .gender
+	, e.grade
+	, e.startDate
+	, oso.BASE</CommandText></Query><Fields><Field Name="olr_applicationID"><DataField>olr_applicationID</DataField><rd:TypeName>System.Int32</rd:TypeName></Field><Field Name="olr_personID"><DataField>olr_personID</DataField><rd:TypeName>System.Int32</rd:TypeName></Field><Field Name="personID"><DataField>personID</DataField><rd:TypeName>System.Int32</rd:TypeName></Field><Field Name="name"><DataField>name</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="startDate"><DataField>startDate</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="studentNumber"><DataField>studentNumber</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="stateID"><DataField>stateID</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="birthdate"><DataField>birthdate</DataField><rd:TypeName>System.DateTime</rd:TypeName></Field><Field Name="gender"><DataField>gender</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="grade"><DataField>grade</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="lastName"><DataField>lastName</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="firstName"><DataField>firstName</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="middleName"><DataField>middleName</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="BASE"><DataField>BASE</DataField><rd:TypeName>System.String</rd:TypeName></Field></Fields></DataSet><DataSet Name="appYear"><Query><DataSourceName>DataSource1</DataSourceName><CommandText>select olr_configGroupID, displayName, endYear
+from olr_configGroup
+order by endYear desc</CommandText></Query><Fields><Field Name="olr_configGroupID"><DataField>olr_configGroupID</DataField><rd:TypeName>System.Int32</rd:TypeName></Field><Field Name="displayName"><DataField>displayName</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="endYear"><DataField>endYear</DataField><rd:TypeName>System.Int16</rd:TypeName></Field></Fields></DataSet><DataSet Name="base"><Query><DataSourceName>DataSource1</DataSourceName><QueryParameters><QueryParameter Name="@configGroupID"><Value>=Parameters!configGroupID.Value</Value></QueryParameter></QueryParameters><CommandText>SELECT        att.olr_customBuilderID, att.displayName
+FROM            (SELECT        z.olr_customBuilderID, z.displayName, row_number() OVER (partition BY z.displayName
+                          ORDER BY z.olr_customBuilderID DESC) AS [rn]
+FROM            (SELECT        CASE WHEN y.olr_customBuilderID IS NULL THEN 0 ELSE y.olr_customBuilderID END AS olr_customBuilderID, x.displayName
+                          FROM            (SELECT        ocb.olr_customBuilderID, ocg.olr_configGroupID, ocb.displayName
+                                                    FROM            olr_customBuilder ocb LEFT JOIN
+                                                                              olr_configList ocl ON ocl.olr_configListID = ocb.olr_configListID LEFT JOIN
+                                                                              olr_configGroup ocg ON ocg.olr_configGroupID = ocl.olr_configGroupID
+                                                    WHERE        ocb.disabled = 0 AND ocb.displayName IN ('BASE')
+                                                    GROUP BY ocb.olr_customBuilderID, ocb.displayName, ocg.olr_configGroupID) x LEFT JOIN
+                                                        (SELECT        ocb.olr_customBuilderID, ocg.olr_configGroupID, ocb.displayName
+                                                          FROM            olr_configGroup ocg LEFT JOIN
+                                                                                    olr_configList ocl ON ocl.olr_configGroupID = ocg.olr_configGroupID LEFT JOIN
+                                                                                    olr_customBuilder ocb ON ocb.olr_configListID = ocl.olr_configListID
+                                                          WHERE        ocg.olr_configGroupID = @configGroupID AND ocb.disabled = 0 AND ocb.displayName IN ('BASE')
+                                                          GROUP BY ocb.olr_customBuilderID, ocg.olr_configGroupID, ocb.displayName) y ON y.olr_configGroupID = x.olr_configGroupID
+                          GROUP BY y.olr_customBuilderID, y.olr_customBuilderID, x.displayName) z) att
+WHERE        att.rn = 1</CommandText></Query><Fields><Field Name="olr_customBuilderID"><DataField>olr_customBuilderID</DataField><rd:TypeName>System.Int32</rd:TypeName></Field><Field Name="displayName"><DataField>displayName</DataField><rd:TypeName>System.String</rd:TypeName></Field></Fields></DataSet><DataSet Name="userCalendar"><Query><DataSourceName>DataSource1</DataSourceName><QueryParameters><QueryParameter Name="@userID"><Value>=Parameters!userID.Value</Value></QueryParameter></QueryParameters><CommandText>DECLARE @allCalendars bit
+SELECT @allCalendars = u.allCalendars FROM dbo.UserAccount u WHERE u.userID = @userID
+
+IF @allCalendars = 1
+BEGIN
+
+	SELECT c.districtID, c.schoolID, c.calendarID, c.name + ' - ' + s.name as Calendar, 1 as ModifyRights, 1 as ownerRights
+	FROM dbo.Calendar c
+	INNER JOIN school s on s.schoolID = c.schoolID
+	order by calendarID desc
+
+END
+
+ELSE
+BEGIN
+
+	SELECT c.districtID, c.schoolID, c.calendarID, c.name + ' - ' + s.name as calendar , mr.modifyRights, mr.ownerRights
+	FROM dbo.UserAccount ua
+	LEFT OUTER JOIN dbo.UserSchoolYearRights mr on mr.userID = ua.userID
+	INNER JOIN dbo.Calendar c on (mr.districtID = c.districtID)
+					AND ((c.endYear = mr.endYear AND c.schoolID = mr.schoolID AND mr.calendarID IS NULL)
+					OR (c.endYear = mr.endYear AND mr.schoolID IS NULL)
+					OR (c.schoolID = mr.schoolID AND mr.endYear IS NULL)
+					OR (c.calendarID = mr.calendarID)
+					OR (mr.endYear IS NULL AND mr.schoolID IS NULL))
+	INNER JOIN school s on s.schoolID = c.schoolID
+	WHERE ua.userID = @userID
+	UNION
+	SELECT c2.districtID, c2.schoolID, c2.calendarID, c2.name + ' - ' + s2.name as calendar, mr2.modifyRights, mr2.ownerRights
+	FROM dbo.UserGroupSchoolYearRights mr2
+	INNER JOIN dbo.Calendar c2 on mr2.districtID = c2.districtID
+					AND ((c2.endYear = mr2.endYear AND c2.schoolID = mr2.schoolID AND mr2.calendarID IS NULL)
+					OR (c2.endYear = mr2.endYear AND mr2.schoolID IS NULL)
+					OR (c2.schoolID = mr2.schoolID AND mr2.endYear IS NULL)
+					OR (c2.calendarID = mr2.calendarID)
+					OR (mr2.endYear IS NULL AND mr2.schoolID IS NULL))
+	INNER JOIN UserGroupMember gm2 on gm2.groupID = mr2.groupID
+	INNER JOIN school s2 on s2.schoolID = c2.schoolID
+	WHERE gm2.userID = @userID
+	ORDER BY calendarID DESC
+
+END</CommandText></Query><Fields><Field Name="districtID"><DataField>districtID</DataField><rd:TypeName>System.Int32</rd:TypeName></Field><Field Name="schoolID"><DataField>schoolID</DataField><rd:TypeName>System.Int32</rd:TypeName></Field><Field Name="calendarID"><DataField>calendarID</DataField><rd:TypeName>System.Int32</rd:TypeName></Field><Field Name="Calendar"><DataField>Calendar</DataField><rd:TypeName>System.String</rd:TypeName></Field><Field Name="ModifyRights"><DataField>ModifyRights</DataField><rd:TypeName>System.Int32</rd:TypeName></Field><Field Name="ownerRights"><DataField>ownerRights</DataField><rd:TypeName>System.Int32</rd:TypeName></Field></Fields></DataSet></DataSets><ReportSections><ReportSection><Body><ReportItems><Tablix Name="Tablix1"><TablixBody><TablixColumns><TablixColumn><Width>1.17708in</Width></TablixColumn><TablixColumn><Width>1.83333in</Width></TablixColumn><TablixColumn><Width>1.17708in</Width></TablixColumn><TablixColumn><Width>2in</Width></TablixColumn><TablixColumn><Width>1.53125in</Width></TablixColumn><TablixColumn><Width>0.625in</Width></TablixColumn></TablixColumns><TablixRows><TablixRow><Height>0.25in</Height><TablixCells><TablixCell><CellContents><Textbox Name="Textbox2"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Application #</Value><Style><FontFamily>Segoe UI</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox2</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox4"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>School</Value><Style><FontFamily>Segoe UI</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox4</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox6"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Student Number</Value><Style><FontFamily>Segoe UI</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox6</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox8"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Last Name</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox8</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox10"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Ffirst Name</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox10</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="Textbox12"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>Grade</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>Textbox12</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell></TablixCells></TablixRow><TablixRow><Height>0.25in</Height><TablixCells><TablixCell><CellContents><Textbox Name="olr_applicationID"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!olr_applicationID.Value</Value><Style><FontFamily>Segoe UI</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>olr_applicationID</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="name"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!name.Value</Value><Style><FontFamily>Segoe UI</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>name</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="studentNumber"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!studentNumber.Value</Value><Style><FontFamily>Segoe UI</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>studentNumber</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="lastName"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!lastName.Value</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>lastName</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="firstName"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!firstName.Value</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>firstName</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell><TablixCell><CellContents><Textbox Name="grade"><CanGrow>true</CanGrow><KeepTogether>true</KeepTogether><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!grade.Value</Value><Style><FontFamily>Arial</FontFamily></Style></TextRun></TextRuns><Style /></Paragraph></Paragraphs><rd:DefaultName>grade</rd:DefaultName><Style><Border><Color>LightGrey</Color><Style>Solid</Style></Border><PaddingLeft>2pt</PaddingLeft><PaddingRight>2pt</PaddingRight><PaddingTop>2pt</PaddingTop><PaddingBottom>2pt</PaddingBottom></Style></Textbox></CellContents></TablixCell></TablixCells></TablixRow></TablixRows></TablixBody><TablixColumnHierarchy><TablixMembers><TablixMember /><TablixMember /><TablixMember /><TablixMember /><TablixMember /><TablixMember /></TablixMembers></TablixColumnHierarchy><TablixRowHierarchy><TablixMembers><TablixMember><KeepWithGroup>After</KeepWithGroup></TablixMember><TablixMember><Group Name="Details" /></TablixMember></TablixMembers></TablixRowHierarchy><DataSetName>data</DataSetName><Height>0.5in</Height><Width>8.34375in</Width><Style><Border><Style>None</Style></Border></Style></Tablix></ReportItems><Height>0.5in</Height><Style /></Body><Width>8.34375in</Width><Page><LeftMargin>1in</LeftMargin><RightMargin>1in</RightMargin><TopMargin>1in</TopMargin><BottomMargin>1in</BottomMargin><Style /></Page></ReportSection></ReportSections><ReportParameters><ReportParameter Name="configGroupID"><DataType>String</DataType><DefaultValue><Values><Value>=11</Value></Values></DefaultValue><Prompt>Applilcation Year</Prompt><ValidValues><DataSetReference><DataSetName>appYear</DataSetName><ValueField>olr_configGroupID</ValueField><LabelField>displayName</LabelField></DataSetReference></ValidValues></ReportParameter><ReportParameter Name="nodeID"><DataType>String</DataType><DefaultValue><Values><Value>1</Value></Values></DefaultValue><Prompt>nodeID</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="personID"><DataType>String</DataType><DefaultValue><Values><Value>1</Value></Values></DefaultValue><Prompt>personID</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="userID"><DataType>String</DataType><DefaultValue><Values><Value>1</Value></Values></DefaultValue><Prompt>user ID</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="username"><DataType>String</DataType><DefaultValue><Values><Value>1</Value></Values></DefaultValue><Prompt>username</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="calendarID"><DataType>String</DataType><Prompt>School</Prompt><ValidValues><DataSetReference><DataSetName>userCalendar</DataSetName><ValueField>calendarID</ValueField><LabelField>Calendar</LabelField></DataSetReference></ValidValues></ReportParameter><ReportParameter Name="sectionID"><DataType>String</DataType><DefaultValue><Values><Value>1</Value></Values></DefaultValue><Prompt>sectionID</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="contextID"><DataType>String</DataType><DefaultValue><Values><Value>1</Value></Values></DefaultValue><Prompt>contextID</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="contextIDtype"><DataType>String</DataType><DefaultValue><Values><Value>1</Value></Values></DefaultValue><Prompt>contextIDtype</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="base"><DataType>String</DataType><DefaultValue><DataSetReference><DataSetName>base</DataSetName><ValueField>olr_customBuilderID</ValueField></DataSetReference></DefaultValue><Prompt>base</Prompt><Hidden>true</Hidden></ReportParameter><ReportParameter Name="startDate"><DataType>DateTime</DataType><DefaultValue><Values><Value>03/01/2023 00:00:00</Value></Values></DefaultValue><Prompt>App Start Date</Prompt></ReportParameter><ReportParameter Name="endDate"><DataType>DateTime</DataType><DefaultValue><Values><Value>=Today()</Value></Values></DefaultValue><Prompt>App End Date</Prompt></ReportParameter></ReportParameters><rd:ReportUnitType>Inch</rd:ReportUnitType><rd:ReportID>6b462eab-07d5-4bd2-86aa-350af4ba785b</rd:ReportID></Report>

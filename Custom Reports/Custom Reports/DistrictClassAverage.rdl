@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Report MustUnderstand="df" xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:df="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition/defaultfontfamily">
+<Report MustUnderstand="df" xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:df="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition/defaultfontfamily" xmlns:am="http://schemas.microsoft.com/sqlserver/reporting/authoringmetadata">
+  <am:AuthoringMetadata>
+    <am:CreatedBy>
+      <am:Name>SSDTRS</am:Name>
+      <am:Version>17.6.33801.468</am:Version>
+    </am:CreatedBy>
+    <am:UpdatedBy>
+      <am:Name>SSDTRS</am:Name>
+      <am:Version>17.6.33801.468</am:Version>
+    </am:UpdatedBy>
+    <am:LastModifiedTimestamp>2024-06-26T15:54:18.6283580Z</am:LastModifiedTimestamp>
+  </am:AuthoringMetadata>
   <df:DefaultFontFamily>Segoe UI</df:DefaultFontFamily>
   <AutoRefresh>0</AutoRefresh>
   <DataSources>
@@ -29,7 +40,7 @@ from (
 		join Calendar cal on cal.calendarID = e.calendarID
 			and cal.endYear = e.endYear
 		join SchoolYear sy on sy.endYear = cal.endYear
-			and sy.active = 1
+			--and sy.active = 1
 		join Course cs on cs.calendarID = cal.calendarID
 		join Section sec on sec.courseID = cs.courseID
 		join Roster ros on ros.sectionID = sec.sectionID
@@ -37,7 +48,7 @@ from (
 			and (ros.startDate is null or ros.startDate &lt;= @asOfDate)
 			and (ros.endDate is null or ros.endDate &gt;= @asOfDate)
 	where (cal.name not like '%bernal%' and cal.name not like '%davis%' and cal.name not like '%herman%' and cal.name not like '%academy%' and cal.name not like '%hospital%')
-		and (cs.name like '%TK%' or cs.name like '%TK/00%' or cs.name like '%00%' or cs.name like '%00/01%' or cs.name like '%01%' or cs.name like '%01/02%' or cs.name like '%02%' or cs.name like '%02/03%' or cs.name like '%03%' or cs.name like '%03/04%')
+		and(cs.name like 'TK Homeroom' or cs.name like 'TK/00 Homeroom' or cs.name like '00 Homeroom' or cs.name like '00/01 Homeroom' or cs.name like '01 Homeroom' or cs.name like '01/02 Homeroom' or cs.name like '02 Homeroom' or cs.name like '02/03 Homeroom' or cs.name like '03 Homeroom' or cs.name like '03/04 Homeroom')
 	group by cs.name, sec.sectionID, cal.name
 	--order by cal.name
 	) x
@@ -202,7 +213,6 @@ group by x.school</CommandText>
                             <PaddingBottom>2pt</PaddingBottom>
                           </Style>
                         </Textbox>
-                        <rd:Selected>true</rd:Selected>
                       </CellContents>
                     </TablixCell>
                   </TablixCells>

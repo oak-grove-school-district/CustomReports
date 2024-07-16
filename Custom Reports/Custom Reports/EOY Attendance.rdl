@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner">
+<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:am="http://schemas.microsoft.com/sqlserver/reporting/authoringmetadata">
+  <am:AuthoringMetadata>
+    <am:CreatedBy>
+      <am:Name>SSDTRS</am:Name>
+      <am:Version>17.6.33801.468</am:Version>
+    </am:CreatedBy>
+    <am:UpdatedBy>
+      <am:Name>SSDTRS</am:Name>
+      <am:Version>17.6.33801.468</am:Version>
+    </am:UpdatedBy>
+    <am:LastModifiedTimestamp>2023-11-16T16:15:09.0224840Z</am:LastModifiedTimestamp>
+  </am:AuthoringMetadata>
   <AutoRefresh>0</AutoRefresh>
   <DataSources>
     <DataSource Name="DataSource1">
@@ -33,6 +44,7 @@ select x.studentNumber, x.stateID, x.lastName, x.firstName, x.birthdate, x.grade
 	,sum(case when x.[Att Code] = 'COV' then 1 else 0 end) as [COV]
 	,sum(case when x.[Att Code] = 'CUT' then 1 else 0 end) as [CUT]
 	,sum(case when x.[Att Code] = 'ECO' then 1 else 0 end) as [ECO]
+	,sum(case when x.[Att Code] = 'EC30' then 1 else 0 end) as [EC30]
 	,sum(case when x.[Att Code] = 'ILL' then 1 else 0 end) as [ILL]
 	,sum(case when x.[Att Code] = 'IS1' then 1 else 0 end) as [IS1]
 	,sum(case when x.[Att Code] = 'IS2' then 1 else 0 end) as [IS2]
@@ -50,7 +62,7 @@ select x.studentNumber, x.stateID, x.lastName, x.firstName, x.birthdate, x.grade
 	,sum(case when x.[Att Code] = 'TDU' then 1 else 0 end) as [TDU]
 	,sum(case when x.[Att Code] = 'UNV' then 1 else 0 end) as [UNV]
 	,sum(case when x.[Att Code] = 'VP' then 1 else 0 end) as [VP]
-	,sum(case when x.[Att Code] in ('VP','A','ACT','AEX','CUT','ECO','ILL','IS1','IS2','ISC','ISN','LPU','NCL','OTX','PA','SUS','SUS1','T','TD30','TDE','TDU','UNV','COV') then 1 else 0 end) as [Total Attendance Marks]
+	,sum(case when x.[Att Code] in ('VP','A','ACT','AEX','CUT','ECO','EC30','ILL','IS1','IS2','ISC','ISN','LPU','NCL','OTX','PA','SUS','SUS1','T','TD30','TDE','TDU','UNV','COV') then 1 else 0 end) as [Total Attendance Marks]
 from
 (
 	select y.studentNumber, y.stateID, y.lastName, y.firstName, y.birthdate, y.grade, y.name, y.date, y.[Att Code], y.[Race(s)]
@@ -99,14 +111,15 @@ from
 left join
 (
 	select enr.studentNumber
-		, cast((((isnull(ad.excused,0) + isnull(ad.unexcused,0)) / enr.enrDays) * 100) as decimal(5,2)) as [AbsPercent]
+		, try_cast((((isnull(ad.excused,0) + isnull(ad.unexcused,0)) / enr.enrDays) * 100) as decimal(5,2)) as [AbsPercent]
 	from(
 		select p.studentNumber
 			, sum(dbo.cust_fn_TotalInstDays(isnull(e.endDate,getdate()),e.startDate)) as [enrDays]
 		from Person p
 			join Enrollment e on e.personID = p.personID
-				and e.endYear = 2023
-				and e.startDate &lt;= getdate()
+				and e.endYear = @endyear
+				--and e.startDate &lt;= getdate()
+				and (e.endDate &lt;&gt; e.startDate or e.endDate is null)
 			join Calendar cal on cal.calendarID = e.calendarID
 				and (cal.summerSchool = 0 or cal.summerSchool is null)
 				and cal.name not like '%eval%'
@@ -118,11 +131,12 @@ left join
 			select cas.student
 				, sum(case when cas.excuse = 'E' then 1 else 0 end) as [excused]
 				, sum(case when cas.excuse = 'U' or cas.excuse is null then 1 else 0 end) as [unexcused]
-			from cust_og_AttendanceSource(2023) cas
+			from cust_og_AttendanceSource(@endyear) cas
 				left join cust_og_attdays coa on coa.studentNumber = cas.student
 			where cas.fullDayAbsence = 'x'
 			group by cas.student
 			) ad on ad.student = enr.studentNumber
+		where enrDays &lt;&gt; 0
 ) ca on ca.studentNumber = x.studentNumber
 group by x.studentNumber, x.lastName, x.firstName, x.birthdate, x.grade, x.name, x.[Race(s)], x.MKV, x.Foster, x.IEP, x.Migrant, x.[EL Status], x.stateID, x.FRL
 order by x.name, x.grade, x.lastName</CommandText>
@@ -144,16 +158,12 @@ order by x.name, x.grade, x.lastName</CommandText>
           <DataField>firstName</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="grade">
-          <DataField>grade</DataField>
-          <rd:TypeName>System.String</rd:TypeName>
-        </Field>
         <Field Name="birthdate">
           <DataField>birthdate</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
-        <Field Name="name">
-          <DataField>name</DataField>
+        <Field Name="grade">
+          <DataField>grade</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
         <Field Name="Race_s_">
@@ -184,6 +194,10 @@ order by x.name, x.grade, x.lastName</CommandText>
           <DataField>FRL</DataField>
           <rd:TypeName>System.String</rd:TypeName>
         </Field>
+        <Field Name="name">
+          <DataField>name</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
         <Field Name="Chronic_Absentee">
           <DataField>Chronic Absentee</DataField>
           <rd:TypeName>System.String</rd:TypeName>
@@ -200,16 +214,20 @@ order by x.name, x.grade, x.lastName</CommandText>
           <DataField>AEX</DataField>
           <rd:TypeName>System.Int32</rd:TypeName>
         </Field>
-        <Field Name="CUT">
-          <DataField>CUT</DataField>
-          <rd:TypeName>System.Int32</rd:TypeName>
-        </Field>
         <Field Name="COV">
           <DataField>COV</DataField>
           <rd:TypeName>System.Int32</rd:TypeName>
         </Field>
+        <Field Name="CUT">
+          <DataField>CUT</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
         <Field Name="ECO">
           <DataField>ECO</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="EC30">
+          <DataField>EC30</DataField>
           <rd:TypeName>System.Int32</rd:TypeName>
         </Field>
         <Field Name="ILL">
@@ -305,81 +323,29 @@ order by sy.endyear desc</CommandText>
         </Field>
       </Fields>
     </DataSet>
-    <DataSet Name="userCalendar">
+    <DataSet Name="calendars">
       <Query>
         <DataSourceName>DataSource1</DataSourceName>
         <QueryParameters>
-          <QueryParameter Name="@userID">
-            <Value>=Parameters!userID.Value</Value>
+          <QueryParameter Name="@endyear">
+            <Value>=Parameters!endyear.Value</Value>
           </QueryParameter>
         </QueryParameters>
-        <CommandText>DECLARE @allCalendars bit
-SELECT @allCalendars = u.allCalendars FROM dbo.UserAccount u WHERE u.userID = @userID
-
-IF @allCalendars = 1
-BEGIN
-
-	SELECT c.districtID, c.schoolID, c.calendarID, c.name + ' - ' + s.name as Calendar, 1 as ModifyRights, 1 as ownerRights
-	FROM dbo.Calendar c
-	INNER JOIN school s on s.schoolID = c.schoolID
-	order by calendarID desc
-
-END
-
-ELSE
-BEGIN
-
-	SELECT c.districtID, c.schoolID, c.calendarID, c.name + ' - ' + s.name as calendar , mr.modifyRights, mr.ownerRights
-	FROM dbo.UserAccount ua
-	LEFT OUTER JOIN dbo.UserSchoolYearRights mr on mr.userID = ua.userID
-	INNER JOIN dbo.Calendar c on (mr.districtID = c.districtID)
-					AND ((c.endYear = mr.endYear AND c.schoolID = mr.schoolID AND mr.calendarID IS NULL)
-					OR (c.endYear = mr.endYear AND mr.schoolID IS NULL)
-					OR (c.schoolID = mr.schoolID AND mr.endYear IS NULL)
-					OR (c.calendarID = mr.calendarID)
-					OR (mr.endYear IS NULL AND mr.schoolID IS NULL))
-	INNER JOIN school s on s.schoolID = c.schoolID
-	WHERE ua.userID = @userID
-	UNION
-	SELECT c2.districtID, c2.schoolID, c2.calendarID, c2.name + ' - ' + s2.name as calendar, mr2.modifyRights, mr2.ownerRights
-	FROM dbo.UserGroupSchoolYearRights mr2
-	INNER JOIN dbo.Calendar c2 on mr2.districtID = c2.districtID
-					AND ((c2.endYear = mr2.endYear AND c2.schoolID = mr2.schoolID AND mr2.calendarID IS NULL)
-					OR (c2.endYear = mr2.endYear AND mr2.schoolID IS NULL)
-					OR (c2.schoolID = mr2.schoolID AND mr2.endYear IS NULL)
-					OR (c2.calendarID = mr2.calendarID)
-					OR (mr2.endYear IS NULL AND mr2.schoolID IS NULL))
-	INNER JOIN UserGroupMember gm2 on gm2.groupID = mr2.groupID
-	INNER JOIN school s2 on s2.schoolID = c2.schoolID
-	WHERE gm2.userID = @userID
-	ORDER BY calendarID DESC
-
-END</CommandText>
+        <CommandText>select cal.calendarID, cal.name
+from Calendar cal
+where cal.endYear = @endyear
+and (cal.name not like '%test%'
+and cal.name not like '%private%'
+and cal.name not like '%public%')</CommandText>
       </Query>
       <Fields>
-        <Field Name="districtID">
-          <DataField>districtID</DataField>
-          <rd:TypeName>System.Int32</rd:TypeName>
-        </Field>
-        <Field Name="schoolID">
-          <DataField>schoolID</DataField>
-          <rd:TypeName>System.Int32</rd:TypeName>
-        </Field>
         <Field Name="calendarID">
           <DataField>calendarID</DataField>
           <rd:TypeName>System.Int32</rd:TypeName>
         </Field>
-        <Field Name="Calendar">
-          <DataField>Calendar</DataField>
+        <Field Name="name">
+          <DataField>name</DataField>
           <rd:TypeName>System.String</rd:TypeName>
-        </Field>
-        <Field Name="ModifyRights">
-          <DataField>ModifyRights</DataField>
-          <rd:TypeName>System.Int32</rd:TypeName>
-        </Field>
-        <Field Name="ownerRights">
-          <DataField>ownerRights</DataField>
-          <rd:TypeName>System.Int32</rd:TypeName>
         </Field>
       </Fields>
     </DataSet>
@@ -450,6 +416,9 @@ END</CommandText>
                 </TablixColumn>
                 <TablixColumn>
                   <Width>0.375in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>0.44792in</Width>
                 </TablixColumn>
                 <TablixColumn>
                   <Width>0.34375in</Width>
@@ -1123,6 +1092,38 @@ END</CommandText>
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox19</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox26">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>EC30</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox26</rd:DefaultName>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -2353,6 +2354,38 @@ END</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
+                        <Textbox Name="EC30">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!EC30.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>EC30</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
                         <Textbox Name="ILL">
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
@@ -2971,6 +3004,7 @@ END</CommandText>
                 <TablixMember />
                 <TablixMember />
                 <TablixMember />
+                <TablixMember />
               </TablixMembers>
             </TablixColumnHierarchy>
             <TablixRowHierarchy>
@@ -2985,7 +3019,7 @@ END</CommandText>
             </TablixRowHierarchy>
             <DataSetName>Attendance</DataSetName>
             <Height>0.5in</Height>
-            <Width>24.46878in</Width>
+            <Width>24.9167in</Width>
             <Style>
               <Border>
                 <Style>None</Style>
@@ -2996,7 +3030,7 @@ END</CommandText>
         <Height>0.5in</Height>
         <Style />
       </Body>
-      <Width>24.46878in</Width>
+      <Width>24.9167in</Width>
       <Page>
         <LeftMargin>1in</LeftMargin>
         <RightMargin>1in</RightMargin>
@@ -3007,97 +3041,14 @@ END</CommandText>
     </ReportSection>
   </ReportSections>
   <ReportParameters>
-    <ReportParameter Name="nodeID">
-      <DataType>String</DataType>
-      <DefaultValue>
-        <Values>
-          <Value>1</Value>
-        </Values>
-      </DefaultValue>
-      <Prompt>nodeID</Prompt>
-      <Hidden>true</Hidden>
-    </ReportParameter>
-    <ReportParameter Name="personID">
-      <DataType>String</DataType>
-      <DefaultValue>
-        <Values>
-          <Value>1</Value>
-        </Values>
-      </DefaultValue>
-      <Prompt>personID</Prompt>
-      <Hidden>true</Hidden>
-    </ReportParameter>
-    <ReportParameter Name="userID">
-      <DataType>String</DataType>
-      <DefaultValue>
-        <Values>
-          <Value>1</Value>
-        </Values>
-      </DefaultValue>
-      <Prompt>user ID</Prompt>
-      <Hidden>true</Hidden>
-    </ReportParameter>
-    <ReportParameter Name="username">
-      <DataType>String</DataType>
-      <DefaultValue>
-        <Values>
-          <Value>1</Value>
-        </Values>
-      </DefaultValue>
-      <Prompt>username</Prompt>
-      <Hidden>true</Hidden>
-    </ReportParameter>
-    <ReportParameter Name="calendarID">
-      <DataType>String</DataType>
-      <Prompt>Calendar</Prompt>
-      <ValidValues>
-        <DataSetReference>
-          <DataSetName>userCalendar</DataSetName>
-          <ValueField>calendarID</ValueField>
-          <LabelField>Calendar</LabelField>
-        </DataSetReference>
-      </ValidValues>
-      <MultiValue>true</MultiValue>
-    </ReportParameter>
-    <ReportParameter Name="sectionID">
-      <DataType>String</DataType>
-      <DefaultValue>
-        <Values>
-          <Value>1</Value>
-        </Values>
-      </DefaultValue>
-      <Prompt>sectionID</Prompt>
-      <Hidden>true</Hidden>
-    </ReportParameter>
-    <ReportParameter Name="contextID">
-      <DataType>String</DataType>
-      <DefaultValue>
-        <Values>
-          <Value>1</Value>
-        </Values>
-      </DefaultValue>
-      <Prompt>contextID</Prompt>
-      <Hidden>true</Hidden>
-    </ReportParameter>
-    <ReportParameter Name="contextIDType">
-      <DataType>String</DataType>
-      <DefaultValue>
-        <Values>
-          <Value>1</Value>
-        </Values>
-      </DefaultValue>
-      <Prompt>contextIDType</Prompt>
-      <Hidden>true</Hidden>
-    </ReportParameter>
     <ReportParameter Name="endyear">
       <DataType>String</DataType>
       <DefaultValue>
         <Values>
-          <Value>=2023</Value>
+          <Value>=2024</Value>
         </Values>
       </DefaultValue>
       <Prompt>endyear</Prompt>
-      <Hidden>true</Hidden>
       <ValidValues>
         <DataSetReference>
           <DataSetName>SchoolYears</DataSetName>
@@ -3105,6 +3056,18 @@ END</CommandText>
           <LabelField>label</LabelField>
         </DataSetReference>
       </ValidValues>
+    </ReportParameter>
+    <ReportParameter Name="calendarID">
+      <DataType>String</DataType>
+      <Prompt>Calendar</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>calendars</DataSetName>
+          <ValueField>calendarID</ValueField>
+          <LabelField>name</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
     </ReportParameter>
   </ReportParameters>
   <ReportParametersLayout>
@@ -3115,47 +3078,12 @@ END</CommandText>
         <CellDefinition>
           <ColumnIndex>0</ColumnIndex>
           <RowIndex>1</RowIndex>
-          <ParameterName>nodeID</ParameterName>
-        </CellDefinition>
-        <CellDefinition>
-          <ColumnIndex>0</ColumnIndex>
-          <RowIndex>2</RowIndex>
-          <ParameterName>personID</ParameterName>
-        </CellDefinition>
-        <CellDefinition>
-          <ColumnIndex>0</ColumnIndex>
-          <RowIndex>3</RowIndex>
-          <ParameterName>userID</ParameterName>
-        </CellDefinition>
-        <CellDefinition>
-          <ColumnIndex>0</ColumnIndex>
-          <RowIndex>4</RowIndex>
-          <ParameterName>username</ParameterName>
-        </CellDefinition>
-        <CellDefinition>
-          <ColumnIndex>0</ColumnIndex>
-          <RowIndex>5</RowIndex>
-          <ParameterName>calendarID</ParameterName>
+          <ParameterName>endyear</ParameterName>
         </CellDefinition>
         <CellDefinition>
           <ColumnIndex>0</ColumnIndex>
           <RowIndex>6</RowIndex>
-          <ParameterName>sectionID</ParameterName>
-        </CellDefinition>
-        <CellDefinition>
-          <ColumnIndex>0</ColumnIndex>
-          <RowIndex>7</RowIndex>
-          <ParameterName>contextID</ParameterName>
-        </CellDefinition>
-        <CellDefinition>
-          <ColumnIndex>0</ColumnIndex>
-          <RowIndex>8</RowIndex>
-          <ParameterName>contextIDType</ParameterName>
-        </CellDefinition>
-        <CellDefinition>
-          <ColumnIndex>0</ColumnIndex>
-          <RowIndex>9</RowIndex>
-          <ParameterName>endyear</ParameterName>
+          <ParameterName>calendarID</ParameterName>
         </CellDefinition>
       </CellDefinitions>
     </GridLayoutDefinition>

@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Report MustUnderstand="df" xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:df="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition/defaultfontfamily">
+<Report MustUnderstand="df" xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:df="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition/defaultfontfamily" xmlns:am="http://schemas.microsoft.com/sqlserver/reporting/authoringmetadata">
+  <am:AuthoringMetadata>
+    <am:CreatedBy>
+      <am:Name>SSDTRS</am:Name>
+      <am:Version>17.6.33801.468</am:Version>
+    </am:CreatedBy>
+    <am:UpdatedBy>
+      <am:Name>SSDTRS</am:Name>
+      <am:Version>17.6.33801.468</am:Version>
+    </am:UpdatedBy>
+    <am:LastModifiedTimestamp>2023-08-08T22:56:25.8150271Z</am:LastModifiedTimestamp>
+  </am:AuthoringMetadata>
   <df:DefaultFontFamily>Segoe UI</df:DefaultFontFamily>
   <AutoRefresh>0</AutoRefresh>
   <DataSources>
@@ -23,7 +34,6 @@ from Person p
 	join [Identity] i on i.personID = p.personID
 		and i.identityID = p.currentIdentityID
 	join Enrollment e on e.personID = p.personID
-		and e.startDate &lt;= getdate()
 	join RelatedPair rp on rp.personID1 = p.personID
 	join Person p2 on p2.personID = rp.personID2
 		and rp.guardian = 1
@@ -55,6 +65,9 @@ order by p.studentNumber</CommandText>
           <QueryParameter Name="@parents">
             <Value>=Parameters!parents.Value</Value>
           </QueryParameter>
+          <QueryParameter Name="@studentnumber">
+            <Value>=Parameters!studentnumber.Value</Value>
+          </QueryParameter>
         </QueryParameters>
         <CommandText>select p2.studentNumber, i2.firstName + ' ' + i2.lastName as [Student Name], i.firstName + ' ' + i.lastName as [Parent Name], p.personGUID
 from Person p
@@ -66,11 +79,10 @@ from Person p
 	join [Identity] i2 on i2.personID = p2.personID
 		and i2.identityID = p2.currentIdentityID
 	join Enrollment e on e.personID = p2.personID
-                                     and (e.endDate is null or e.endDate &gt;= getdate())
                   join Calendar cal on cal.calendarID = e.calendarID
                   join SchoolYear sy on sy.endYear = cal.endYear
                                      and sy.active = 1
-where p.personID = @parents
+where p.personID = @parents and p2.studentNumber = @studentnumber
 group by p2.studentNumber, i2.firstName, i2.lastName, i.firstName, i.lastName, p.personGUID</CommandText>
       </Query>
       <Fields>

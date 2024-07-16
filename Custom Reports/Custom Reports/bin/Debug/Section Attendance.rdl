@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?><Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2010/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner"><AutoRefresh>0</AutoRefresh><DataSources><DataSource Name="DataSource"><DataSourceReference>campus</DataSourceReference><rd:SecurityType>None</rd:SecurityType><rd:DataSourceID>ce2b4ff9-72eb-41be-839d-02bb8341278b</rd:DataSourceID></DataSource></DataSources><DataSets><DataSet Name="userCalendar"><Query><DataSourceName>DataSource</DataSourceName><QueryParameters><QueryParameter Name="@userID"><Value>=Parameters!userID.Value</Value></QueryParameter></QueryParameters><CommandText>DECLARE @allCalendars bit
+﻿<?xml version="1.0" encoding="utf-8"?><Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2010/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner"><am:AuthoringMetadata xmlns:am="http://schemas.microsoft.com/sqlserver/reporting/authoringmetadata"><am:CreatedBy><am:Name>SSDTRS</am:Name><am:Version>17.6.33801.468</am:Version></am:CreatedBy><am:UpdatedBy><am:Name>SSDTRS</am:Name><am:Version>17.6.33801.468</am:Version></am:UpdatedBy><am:LastModifiedTimestamp>2023-10-30T15:30:48.3426628Z</am:LastModifiedTimestamp></am:AuthoringMetadata><AutoRefresh>0</AutoRefresh><DataSources><DataSource Name="DataSource"><DataSourceReference>campus</DataSourceReference><rd:SecurityType>None</rd:SecurityType><rd:DataSourceID>ce2b4ff9-72eb-41be-839d-02bb8341278b</rd:DataSourceID></DataSource></DataSources><DataSets><DataSet Name="userCalendar"><Query><DataSourceName>DataSource</DataSourceName><QueryParameters><QueryParameter Name="@userID"><Value>=Parameters!userID.Value</Value></QueryParameter></QueryParameters><CommandText>DECLARE @allCalendars bit
 SELECT @allCalendars = u.allCalendars FROM dbo.UserAccount u WHERE u.userID = @userID
 
 IF @allCalendars = 1
@@ -64,17 +64,19 @@ FROM Person as p
 	join Section sec on sec.sectionID = r.sectionID
 	join Course cor on cor.courseID = sec.courseID
 		and cor.calendarID = e.calendarID
-	--join SectionPlacement sp on sp.sectionID = sec.sectionID
+		and cor.attendance = 1
+	join SectionPlacement sp on sp.sectionID = sec.sectionID
 	--join Trial tr on tr.trialID = sp.trialID
 	--	and tr.trialID = r.trialID
 	--	and tr.trialID = sec.trialID
 	--	and tr.active = 1
-	--join Period per on per.periodID = sp.periodID
+	join Period per on per.periodID = sp.periodID
 	--join Term ter on ter.termID = sp.termID
 	--	and ter.
 	left JOIN Attendance a ON a.personID = p.personID
 		and a.calendarID = e.calendarID
 		and a.date between @startdate and @enddate
+		and a.periodID = per.periodID
 	LEFT JOIN AttendanceExcuse ae ON ae.excuseID = a.excuseID
 WHERE c.calendarID in (@calendarID)
 group by p.studentNumber, i.lastName, i.firstName, e.grade, c.name, cor.number, sec.number, sec.teacherDisplay

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?><Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2010/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner"><AutoRefresh>0</AutoRefresh><DataSources><DataSource Name="campus"><DataSourceReference>campus</DataSourceReference><rd:SecurityType>None</rd:SecurityType><rd:DataSourceID>abcfca1a-b51b-4e46-8653-1d90fd145020</rd:DataSourceID></DataSource></DataSources><DataSets><DataSet Name="AllStudents"><Query><DataSourceName>campus</DataSourceName><QueryParameters><QueryParameter Name="@date"><Value>=Parameters!date.Value</Value></QueryParameter></QueryParameters><CommandText>select * from (
+﻿<?xml version="1.0" encoding="utf-8"?><Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2010/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner"><am:AuthoringMetadata xmlns:am="http://schemas.microsoft.com/sqlserver/reporting/authoringmetadata"><am:CreatedBy><am:Name>SSDTRS</am:Name><am:Version>17.6.33801.468</am:Version></am:CreatedBy><am:UpdatedBy><am:Name>SSDTRS</am:Name><am:Version>17.6.33801.468</am:Version></am:UpdatedBy><am:LastModifiedTimestamp>2024-06-18T22:29:38.5672217Z</am:LastModifiedTimestamp></am:AuthoringMetadata><AutoRefresh>0</AutoRefresh><DataSources><DataSource Name="campus"><DataSourceReference>campus</DataSourceReference><rd:SecurityType>None</rd:SecurityType><rd:DataSourceID>abcfca1a-b51b-4e46-8653-1d90fd145020</rd:DataSourceID></DataSource></DataSources><DataSets><DataSet Name="AllStudents"><Query><DataSourceName>campus</DataSourceName><QueryParameters><QueryParameter Name="@date"><Value>=Parameters!date.Value</Value></QueryParameter></QueryParameters><CommandText>select * from (
 select c.name, p.studentNumber, i.lastName, i.firstName, e.grade
 , max(case when ccsl.cellPhone is not null then ccsl.cellPhone else NULL end) as [cellPhone]
 , max(case when ccsl.householdPhone is not null then ccsl.householdPhone else NULL end) as [householdPhone]
@@ -16,7 +16,7 @@ select c.name, p.studentNumber, i.lastName, i.firstName, e.grade
 from Person p
 join [Identity] i on i.personID = p.personID and p.currentIdentityID = i.identityID
 join Enrollment e on e.personID = p.personID and e.startDate &lt;= @date and (e.endDate &gt;= @date or e.endDate is null)
-join SchoolYear sy on sy.endYear = e.endYear and sy.active = 1
+--join SchoolYear sy on sy.endYear = e.endYear and sy.active = 1
 join calendar c on c.calendarID = e.calendarID
 left join ProgramParticipation pp on pp.personID = p.personID and pp.programID in (98,99,100,101,105,106) 
 and ((pp.startDate &lt;= @date and (pp.endDate &gt;= @date or pp.endDate is null)) or (pp.eligibilityStartDate &lt;= @date and (pp.eligibilityEndDate &gt;= @date or pp.eligibilityEndDate is null)))
@@ -83,7 +83,7 @@ select c.name, p.studentNumber, i.lastName, i.firstName
 from Person p
 join [Identity] i on i.personID = p.personID and p.currentIdentityID = i.identityID
 join Enrollment e on e.personID = p.personID and e.startDate &lt;= @date and (e.endDate &gt;= @date or e.endDate is null)
-join SchoolYear sy on sy.endYear = e.endYear and sy.active = 1
+--join SchoolYear sy on sy.endYear = e.endYear and sy.active = 1
 join calendar c on c.calendarID = e.calendarID
 left join ProgramParticipation pp on pp.personID = p.personID and pp.programID in (98,99,100,101,105,106) 
 and ((pp.startDate &lt;= @date and (pp.endDate &gt;= @date or pp.endDate is null)) or (pp.eligibilityStartDate &lt;= @date and (pp.eligibilityEndDate &gt;= @date or pp.eligibilityEndDate is null)))

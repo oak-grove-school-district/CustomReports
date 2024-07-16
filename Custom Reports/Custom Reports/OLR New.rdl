@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner">
+<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:am="http://schemas.microsoft.com/sqlserver/reporting/authoringmetadata">
+  <am:AuthoringMetadata>
+    <am:CreatedBy>
+      <am:Name>SSDTRS</am:Name>
+      <am:Version>17.6.33801.468</am:Version>
+    </am:CreatedBy>
+    <am:UpdatedBy>
+      <am:Name>SSDTRS</am:Name>
+      <am:Version>17.6.33801.468</am:Version>
+    </am:UpdatedBy>
+    <am:LastModifiedTimestamp>2024-04-23T20:09:05.1069516Z</am:LastModifiedTimestamp>
+  </am:AuthoringMetadata>
   <AutoRefresh>0</AutoRefresh>
   <DataSources>
     <DataSource Name="campus">
@@ -160,9 +171,9 @@
 , max(case when oso.homeLanguage = od.code then od.value end) as [HomeLanguage]
 , max(case when oso.language = od.code then od.value end) as [ToStudentLanguage]
 , max(case when oso.parentLanguage = od.code then od.value end) as [ByAdultsLanguage]
-, max(case when oso.corrLang = 'en_US' then '*' end) as [CLEnglish]
-, max(case when oso.corrLang = 'es_MX' then '*' end) as [CLSpanish]
-, max(case when oso.corrLang = 'vi_VI' then '*' end) as [CLVietnamese]
+, max(case when oso.corrLang not in ('spa') then '*' end) as [CLEnglish]
+, max(case when oso.corrLang = 'spa' then '*' end) as [CLSpanish]
+, max(case when oso.corrLang = 'vie' then '*' end) as [CLVietnamese]
 , max(oso.previousSchool) as [previousSchool]
 , max(oso.prevDistrict) as [previousDistrict]
 , max(oso.previousCity) as [previousCity]
@@ -264,7 +275,7 @@ left join (
 left join olr_raceEthnicity ore on ore.olr_personID = op.olr_personID 
 	and ore.olr_personID = @studentOLRpersonID
 left join olr_dictionary od on (od.code = oso.language or od.code = oso.parentLanguage or od.code = oso.homeLanguage or od.code = oso.homePrimaryLanguage) 
-	and od.olr_attributeID = 3
+	and od.olr_attributeID = 319
 left join olr_healthCondition ohc on ohc.olr_personID = op.olr_personID 
 	and ohc.olr_personID = @studentOLRpersonID
 left join School sc on sc.schoolID = oso.chosenSchoolID

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <FullPath>Debug</FullPath>
     <OutputPath>bin\Debug</OutputPath>
@@ -74,12 +74,14 @@
     <Report Include="ChildTeenCheckup.rdl" />
     <Report Include="CI_AtoZ.rdl" />
     <Report Include="ClassSizePenalties.rdl" />
+    <Report Include="CounslorFlags.rdl" />
     <Report Include="covidcontact.rdl" />
     <Report Include="CustomGPAAddendum.rdl" />
     <Report Include="DentalScreening.rdl" />
     <Report Include="DistanceLearningPLP.rdl" />
     <Report Include="DistrictClassAverage.rdl" />
     <Report Include="EmergencyCard.rdl" />
+    <Report Include="EmergencyCardSPA.rdl" />
     <Report Include="EnrolledBetween.rdl" />
     <Report Include="EnrollmentCount.rdl" />
     <Report Include="EOY Attendance.rdl" />
@@ -88,6 +90,8 @@
     <Report Include="Flags.rdl" />
     <Report Include="GATE.rdl" />
     <Report Include="GPA Report.rdl" />
+    <Report Include="HearingScreening.rdl" />
+    <Report Include="HHIncome.rdl" />
     <Report Include="HighSchool.rdl" />
     <Report Include="Home Primary Language.rdl" />
     <Report Include="HonorsNight.rdl" />
@@ -104,8 +108,12 @@
     <Report Include="MKV.rdl" />
     <Report Include="MonthlyAttendance.rdl" />
     <Report Include="MonthlyBehavior.rdl" />
+    <Report Include="NewToOGSD.rdl" />
     <Report Include="OLR New.rdl" />
     <Report Include="OLR.rdl" />
+    <Report Include="OLRBase.rdl" />
+    <Report Include="OLRHousing.rdl" />
+    <Report Include="OLRLang.rdl" />
     <Report Include="OralHealthAssesment.rdl" />
     <Report Include="Parent Contact Information.rdl" />
     <Report Include="PBIS_Avg.rdl" />
@@ -124,6 +132,7 @@
     <Report Include="RolloverCheck.rdl" />
     <Report Include="SARBDates.rdl" />
     <Report Include="Schedule Groups.rdl" />
+    <Report Include="SDCClasses.rdl" />
     <Report Include="SeatCount.rdl" />
     <Report Include="Section Attendance.rdl" />
     <Report Include="Section GATE Report.rdl" />

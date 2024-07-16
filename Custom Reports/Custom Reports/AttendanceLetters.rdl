@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner">
+<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:am="http://schemas.microsoft.com/sqlserver/reporting/authoringmetadata">
+  <am:AuthoringMetadata>
+    <am:CreatedBy>
+      <am:Name>SSDTRS</am:Name>
+      <am:Version>17.6.33801.468</am:Version>
+    </am:CreatedBy>
+    <am:UpdatedBy>
+      <am:Name>SSDTRS</am:Name>
+      <am:Version>17.6.33801.468</am:Version>
+    </am:UpdatedBy>
+    <am:LastModifiedTimestamp>2023-08-31T19:46:59.3328118Z</am:LastModifiedTimestamp>
+  </am:AuthoringMetadata>
   <AutoRefresh>0</AutoRefresh>
   <DataSources>
     <DataSource Name="campus">
@@ -70,7 +81,7 @@ where (r.startDate &lt;= np.date or r.startDate is null) and (r.endDate &gt;= np
 group by c.calendarID, c.name, r.personID, p.studentNumber, i.lastName, i.firstName, e.grade, cd.name, np.date, np.code, np.pAbsent, np.comments
 having (np.code in (@attendanceCodes) and np.pAbsent = count(sp.periodID)) or (np.code = 'TD30')
 ) x
-left join enrollment ec on ec.calendarID = x.calendarID and ec.endDate is null
+left join enrollment ec on ec.calendarID = x.calendarID and (ec.endDate is null or ec.endDate &lt;= @choiceDate)
 where ec.calendarID = @calendarID
 group by x.calendarName, x.personID, x.studentNumber, x.lastName, x.firstName, x.grade, x.CorrLang
 , x.date, x.[Code/Contact Mode], x.comments, x.minDate
@@ -85,7 +96,7 @@ select ab.personID, ab.calendarName, ab.studentNumber, ab.lastName, ab.firstName
 , null
 , cl.dateTimeStamp as [Date], cl.contactMode as [Code/Contact Mode], cl.[text] as [Comments]
 from ab
-join ContactLog cl on cl.personID = ab.personID and cl.module = 'PLP' and (convert(date,cl.dateTimeStamp) between @startDate and @choiceDate)
+join ContactLog cl on cl.personID = ab.personID and cl.module = 'Attendance' and (convert(date,cl.dateTimeStamp) between @startDate and @choiceDate)
 order by ab.lastName, ab.firstName, ab.date</CommandText>
         <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
       </Query>
@@ -255,7 +266,7 @@ ORDER BY gl.seq</CommandText>
         </QueryParameters>
         <CommandText>select case
 when @letterName like 'Excessive Illness%' then 'ILL' 
-else 'OTX,UNV,TD30,CUT' end as [code]</CommandText>
+else 'OTX,UNV,TD30,CUT,EC30' end as [code]</CommandText>
         <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
       </Query>
       <Fields>
@@ -302,9 +313,15 @@ from
     <DataSet Name="EndYear">
       <Query>
         <DataSourceName>campus</DataSourceName>
-        <CommandText>SELECT        endYear
+        <QueryParameters>
+          <QueryParameter Name="@calendarID">
+            <Value>=Parameters!calendarID.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>SELECT        sy.endYear
 FROM            SchoolYear AS sy
-WHERE        (active = 1)</CommandText>
+JOIN Calendar cal on cal.endYear = sy.endYear
+WHERE cal.calendarID = @calendarID</CommandText>
         <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
       </Query>
       <Fields>

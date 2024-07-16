@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner">
+<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:am="http://schemas.microsoft.com/sqlserver/reporting/authoringmetadata">
+  <am:AuthoringMetadata>
+    <am:CreatedBy>
+      <am:Name>SSDTRS</am:Name>
+      <am:Version>17.6.33801.468</am:Version>
+    </am:CreatedBy>
+    <am:UpdatedBy>
+      <am:Name>SSDTRS</am:Name>
+      <am:Version>17.6.33801.468</am:Version>
+    </am:UpdatedBy>
+    <am:LastModifiedTimestamp>2024-05-28T19:20:21.7341568Z</am:LastModifiedTimestamp>
+  </am:AuthoringMetadata>
   <AutoRefresh>0</AutoRefresh>
   <DataSources>
     <DataSource Name="campus">
@@ -97,7 +108,7 @@ from (
 		left join [Address] ad on ad.addressID = hs.addressID
 		left join District di on di.districtID = ad.districtID
 		left join Enrollment en on en.personID = p.personID and en.endDate is null and (en.endYear = @nSchoolYear)
-		left join Calendar cn on cn.calendarID = en.calendarID and (cn.endYear = @nSchoolYear)
+		left join Calendar cn on cn.calendarID = en.calendarID and (cn.endYear = @nSchoolYear) and (cn.summerSchool = 0 or cn.summerSchool is null)
 	where isnull(cd2.name,'') in (@ApplicationStatus)
 	group by p.studentNumber, i.lastName, i.firstName
 		, di.name

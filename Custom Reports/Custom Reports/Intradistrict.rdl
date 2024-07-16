@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner">
+<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:am="http://schemas.microsoft.com/sqlserver/reporting/authoringmetadata">
+  <am:AuthoringMetadata>
+    <am:CreatedBy>
+      <am:Name>SSDTRS</am:Name>
+      <am:Version>17.6.33801.468</am:Version>
+    </am:CreatedBy>
+    <am:UpdatedBy>
+      <am:Name>SSDTRS</am:Name>
+      <am:Version>17.6.33801.468</am:Version>
+    </am:UpdatedBy>
+    <am:LastModifiedTimestamp>2024-05-28T19:19:09.2528648Z</am:LastModifiedTimestamp>
+  </am:AuthoringMetadata>
   <AutoRefresh>0</AutoRefresh>
   <DataSources>
     <DataSource Name="campus">
@@ -112,6 +123,7 @@ left join [Address] ad on ad.addressID = hs.addressID
 left join District di on di.districtID = ad.districtID
 left join Enrollment en on en.personID = p.personID and (en.endYear = (@currentEndYear + 1))
 left join Calendar cn on cn.calendarID = en.calendarID and (cn.endYear = (@currentEndYear + 1))
+and (cn.summerSchool = 0 or cn.summerSchool is null)
 left join IdentityRaceEthnicity ire on ire.identityID = i.identityID
 left join RaceEthnicity re on re.raceID = ire.raceID
 left join CampusDictionary cd3 on cd3.code = i.homePrimaryLanguage and cd3.attributeID = 642
