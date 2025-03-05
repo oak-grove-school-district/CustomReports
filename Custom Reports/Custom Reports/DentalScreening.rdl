@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Report MustUnderstand="df" xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:df="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition/defaultfontfamily">
+<Report MustUnderstand="df" xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:df="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition/defaultfontfamily" xmlns:am="http://schemas.microsoft.com/sqlserver/reporting/authoringmetadata">
+  <am:AuthoringMetadata>
+    <am:CreatedBy>
+      <am:Name>SSDTRS</am:Name>
+      <am:Version>17.6.33801.468</am:Version>
+    </am:CreatedBy>
+    <am:UpdatedBy>
+      <am:Name>SSDTRS</am:Name>
+      <am:Version>17.6.33801.468</am:Version>
+    </am:UpdatedBy>
+    <am:LastModifiedTimestamp>2025-01-21T20:29:14.3601369Z</am:LastModifiedTimestamp>
+  </am:AuthoringMetadata>
   <df:DefaultFontFamily>Segoe UI</df:DefaultFontFamily>
   <AutoRefresh>0</AutoRefresh>
   <DataSources>
@@ -20,11 +31,17 @@
           <QueryParameter Name="@calendarID">
             <Value>=Parameters!calendarID.Value</Value>
           </QueryParameter>
+          <QueryParameter Name="@endYear">
+            <Value>=Parameters!endYear.Value</Value>
+          </QueryParameter>
         </QueryParameters>
         <CommandText>select scr.studentNumber, scr.lastName, scr.firstName, CONVERT(varchar(10), cast(scr.birthdate as date),101) as Birthdate, scr.grade, scr.name
 ,CONVERT(varchar(10), cast(scr.date as date),101) as screeningDate
+, scr.startDate, scr.date, DATEADD(year,-1,scr.startDate)
 from(
-	select p.studentNumber, i.lastName, i.firstName, i.birthdate, e.grade, cal.name, hs.date, cal.startDate as calstart, e.startDate, cal.endYear
+	select p.studentNumber, i.lastName, i.firstName, i.birthdate, sl.grade, sl.name
+	, hs.date
+	, cal.startDate as calstart, sl.startDate
 	from Person p
 		join [Identity] i on i.personID = p.personID
 			and i.identityID = p.currentIdentityID
@@ -34,6 +51,18 @@ from(
 		join Calendar cal on cal.calendarID = e.calendarID
 			and cal.endYear = e.endYear
 			and cal.calendarID in (@calendarID)
+		join (
+			select *
+			from (
+				select e.personID, e.grade, e.calendarID, cal.name, e.startDate, e.endDate, ROW_NUMBER() OVER (PARTITION BY e.personID ORDER BY e.startDate asc) AS en
+				from Enrollment e
+					join Calendar cal on cal.calendarID = e.calendarID
+						and cal.summerSchool = 0
+				where e.grade in ('00','TK')
+					and e.endYear in (@endYear,@endYear-1)
+				) fe
+			where fe.en	 = 1
+			) sl on sl.personID = p.personID
 		left join (
 				select hs.personID, hs.date
 					, ROW_NUMBER() over(PARTITION by hs.personID order by hs.screeningID desc) as rn
@@ -42,7 +71,8 @@ from(
 					) hs on hs.personID = p.personID and hs.rn = 1
 	where e.grade in ('00','TK')
 	) scr
-where scr.date &lt; DATEADD(year,-1,scr.startDate) or scr.date &gt; CONCAT('05/31/',right(scr.endYear,2)) or scr.date is null
+where 1 = 1
+and (scr.date &lt; DATEADD(year,-1,scr.startDate) or scr.date is null)
 order by scr.name, scr.lastName</CommandText>
       </Query>
       <Fields>
@@ -73,6 +103,18 @@ order by scr.name, scr.lastName</CommandText>
         <Field Name="screeningDate">
           <DataField>screeningDate</DataField>
           <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="startDate">
+          <DataField>startDate</DataField>
+          <rd:TypeName>System.DateTime</rd:TypeName>
+        </Field>
+        <Field Name="date">
+          <DataField>date</DataField>
+          <rd:TypeName>System.DateTime</rd:TypeName>
+        </Field>
+        <Field Name="ID">
+          <DataField />
+          <rd:TypeName>System.DateTime</rd:TypeName>
         </Field>
       </Fields>
     </DataSet>
@@ -151,6 +193,21 @@ END</CommandText>
         <Field Name="ownerRights">
           <DataField>ownerRights</DataField>
           <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="endYear">
+      <Query>
+        <DataSourceName>DataSource1</DataSourceName>
+        <CommandText>select sy.endYear
+from SchoolYear sy
+where sy.active = 1
+group by  sy.endYear</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="endYear">
+          <DataField>endYear</DataField>
+          <rd:TypeName>System.Int16</rd:TypeName>
         </Field>
       </Fields>
     </DataSet>
@@ -700,6 +757,17 @@ END</CommandText>
       <Prompt>contextIDType</Prompt>
       <Hidden>true</Hidden>
     </ReportParameter>
+    <ReportParameter Name="endYear">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>endYear</DataSetName>
+          <ValueField>endYear</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>end Year</Prompt>
+      <Hidden>true</Hidden>
+    </ReportParameter>
     <ReportParameter Name="asofdate">
       <DataType>DateTime</DataType>
       <DefaultValue>
@@ -757,6 +825,11 @@ END</CommandText>
         </CellDefinition>
         <CellDefinition>
           <ColumnIndex>1</ColumnIndex>
+          <RowIndex>2</RowIndex>
+          <ParameterName>endYear</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>2</ColumnIndex>
           <RowIndex>2</RowIndex>
           <ParameterName>asofdate</ParameterName>
         </CellDefinition>

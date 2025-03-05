@@ -9,7 +9,7 @@
       <am:Name>SSDTRS</am:Name>
       <am:Version>17.6.33801.468</am:Version>
     </am:UpdatedBy>
-    <am:LastModifiedTimestamp>2023-12-13T16:41:19.2137995Z</am:LastModifiedTimestamp>
+    <am:LastModifiedTimestamp>2024-12-13T16:40:55.6904164Z</am:LastModifiedTimestamp>
   </am:AuthoringMetadata>
   <AutoRefresh>0</AutoRefresh>
   <DataSources>
@@ -50,10 +50,10 @@ from (
 	select 
 	cast(max(case 
 	when y.calendarName like '%Anderson%' then '1'
-	when y.calendarName like '%TWBI%' then '2'
-	when y.calendarName like '%Baldwin%' then '3'
-	when y.calendarName like '%Christopher%' then '4'
-	when y.calendarName like '%Del Roble%' then '5'
+	when y.calendarName like '%TWBI%' then '5'
+	when y.calendarName like '%Baldwin%' then '2'
+	when y.calendarName like '%Christopher%' then '3'
+	when y.calendarName like '%Del Roble%' then '4'
 	when y.calendarName like '%Edenvale%' then '6'
 	when y.calendarName like '%Frost%' then '7'
 	when y.calendarName like '%Virtual%' then '20'
@@ -148,7 +148,7 @@ from (
 				having count(at.periodID) = np.tPeriods
 			) ab on ab.personID = e.personID and ab.calendarID = e.calendarID
 			where e.endYear = @endYear and (e.startDate &lt;= @mEndDate) and (e.endDate &gt;= @mStartDate or e.endDate is null) and e.serviceType = 'P'
-			and i.birthdate &lt;= '04/02/2019'
+			and i.birthdate &lt;= '06/02/2020'
 			group by c.name, e.personID, p.studentNumber, i.lastName, i.firstName, e.grade
 		) en
 	) y
@@ -4583,7 +4583,7 @@ where (c.summerSchool = 0 or c.summerSchool is null) and convert(date,getdate())
       <DataType>String</DataType>
       <DefaultValue>
         <Values>
-          <Value>=2024</Value>
+          <Value>=2025</Value>
         </Values>
       </DefaultValue>
       <Prompt>End Year:</Prompt>
@@ -4656,7 +4656,7 @@ where (c.summerSchool = 0 or c.summerSchool is null) and convert(date,getdate())
       <DataType>String</DataType>
       <DefaultValue>
         <Values>
-          <Value>=86.59</Value>
+          <Value>=84.98</Value>
         </Values>
       </DefaultValue>
       <Prompt>ADA Per Day Amount:</Prompt>

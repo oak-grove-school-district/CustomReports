@@ -9,7 +9,7 @@
       <am:Name>SSDTRS</am:Name>
       <am:Version>17.6.33801.468</am:Version>
     </am:UpdatedBy>
-    <am:LastModifiedTimestamp>2023-08-07T19:33:18.2752619Z</am:LastModifiedTimestamp>
+    <am:LastModifiedTimestamp>2024-07-31T20:20:13.7407761Z</am:LastModifiedTimestamp>
   </am:AuthoringMetadata>
   <df:DefaultFontFamily>Segoe UI</df:DefaultFontFamily>
   <AutoRefresh>0</AutoRefresh>
@@ -31,6 +31,8 @@
 	, con.email
                   , p.personID
 from Calendar cal
+join SchoolYear sy on sy.endYear = cal.endYear
+and sy.active = 1
 	join Trial tr on tr.calendarID = cal.calendarID
 		and tr.active = 1
 	join Course cs on cs.calendarID = cal.calendarID
@@ -47,7 +49,6 @@ from Calendar cal
 		and (ea.title &lt;&gt; 'Long-Term Sub' and ea.title &lt;&gt; 'Student Teacher')
 		and ea.startDate &lt;= getdate()
 		and (ea.endDate is null or ea.endDate &gt;= getdate())
-where cal.endYear = 2024
 group by cal.name
 	, cs.name
 	, i.lastName

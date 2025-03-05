@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<RptDataSource xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" Name="campusStaging">
+  <ConnectionProperties>
+    <Extension>SQL</Extension>
+    <ConnectString>Data Source=oakgroveca.infinitecampus.org,7771;Initial Catalog=oakgrove_staging</ConnectString>
+  </ConnectionProperties>
+  <DataSourceID>1b74df64-6394-4f58-8f03-ad2fd8c005e7</DataSourceID>
+</RptDataSource>

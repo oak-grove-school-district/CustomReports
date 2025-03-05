@@ -1,0 +1,1656 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report MustUnderstand="df" xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:df="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition/defaultfontfamily" xmlns:am="http://schemas.microsoft.com/sqlserver/reporting/authoringmetadata">
+  <am:AuthoringMetadata>
+    <am:CreatedBy>
+      <am:Name>SSDTRS</am:Name>
+      <am:Version>17.6.33801.468</am:Version>
+    </am:CreatedBy>
+    <am:UpdatedBy>
+      <am:Name>SSDTRS</am:Name>
+      <am:Version>17.6.33801.468</am:Version>
+    </am:UpdatedBy>
+    <am:LastModifiedTimestamp>2025-01-09T18:12:19.1343036Z</am:LastModifiedTimestamp>
+  </am:AuthoringMetadata>
+  <df:DefaultFontFamily>Segoe UI</df:DefaultFontFamily>
+  <AutoRefresh>0</AutoRefresh>
+  <DataSources>
+    <DataSource Name="DataSource1">
+      <DataSourceReference>campus</DataSourceReference>
+      <rd:SecurityType>None</rd:SecurityType>
+      <rd:DataSourceID>7417dd71-2cb9-4775-87f0-f5c5e042dbea</rd:DataSourceID>
+    </DataSource>
+  </DataSources>
+  <DataSets>
+    <DataSet Name="appYear">
+      <Query>
+        <DataSourceName>DataSource1</DataSourceName>
+        <CommandText>select olr_configGroupID, displayName, endYear
+from olr_configGroup
+where archive = 0
+order by endYear desc</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="olr_configGroupID">
+          <DataField>olr_configGroupID</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="displayName">
+          <DataField>displayName</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="endYear">
+          <DataField>endYear</DataField>
+          <rd:TypeName>System.Int16</rd:TypeName>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="data">
+      <Query>
+        <DataSourceName>DataSource1</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@configGroupID">
+            <Value>=Parameters!configGroupID.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@quadBoundary">
+            <Value>=Parameters!quadBoundary.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@delRobleArea">
+            <Value>=Parameters!delRobleArea.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@dualBoundaryMS">
+            <Value>=Parameters!dualBoundaryMS.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@dualBoundaryORT">
+            <Value>=Parameters!dualBoundaryORT.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@olrAttQuad">
+            <Value>=Parameters!olrAttQuad.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@startDate">
+            <Value>=Parameters!startDate.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@olrAttDR">
+            <Value>=Parameters!olrAttDR.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@endDate">
+            <Value>=Parameters!endDate.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@olrAttMS">
+            <Value>=Parameters!olrAttMS.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@mba">
+            <Value>=Parameters!mba.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@olrAttDual">
+            <Value>=Parameters!olrAttDual.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>select ap.olr_applicationID
+	, CONVERT(varchar(10), cast(ap.regstartdate as date),101) as regStartDate
+	, CONVERT(varchar(10), cast(ap.submissionDate as date),101) as submissionDate
+	, ap.status
+	, op.lastName
+	, op.firstName
+	, op.middleName
+	, CONVERT(varchar(10), cast(op.dob as date),101) as birthDate
+	, op.gender
+	, oso.grade
+	, mba.MultiBoundaryArea
+	, max(case when mba.MultiBoundaryArea = 'Del Roble' then
+					case when oso.grade in ('07','08') then 'Herman Intermediate School'
+						else od5.value end
+				when mba.MultiBoundaryArea = 'Dual Boundary' then
+					case when oso.grade in ('07','08') then od9.value else od11.value end
+				when mba.MultiBoundaryArea = 'Quad Boundary' then
+					case when oso.grade in ('07','08') then 'Bernal Intermediate School'
+						else od3.value end
+				end) as SchoolChoice
+	, max(case when oso.quadBoundary = od3.code then od3.value end) as [quadBoundary]
+	, max(case when oso.delRobleArea = od5.code then od5.value end) as [delRobleArea]
+	, max(case when oso.dualBoundaryMS = od9.code then od9.value end) as [dualBoundaryMS]
+	, max(case when oso.dualBoundaryORT = od11.code then od11.value end) as [dualBoundaryORT]
+from olr_application ap
+join olr_configGroup ocg on ocg.olr_configGroupID = ap.olr_configGroupID
+	and ocg.olr_configGroupID = @configGroupID
+join olr_person op on op.olr_applicationID = ap.olr_applicationID
+join olr_address oa on oa.olr_applicationID = ap.olr_applicationID
+join cust_og_MultiBoundaryAddress mba on mba.addressID = oa.addressID
+left join (
+		select css.olr_personID, op.olr_applicationID, oso.chosenSchoolID, oso.grade
+			, max(case when css.olr_customBuilderID = @quadBoundary then css.value end) as quadBoundary
+			, max(case when css.olr_customBuilderID = @delRobleArea then css.value end) as delRobleArea
+			, max(case when css.olr_customBuilderID = @dualBoundaryMS then css.value end) as dualBoundaryMS
+			, max(case when css.olr_customBuilderID = @dualBoundaryORT then css.value end) as dualBoundaryORT
+		from olr_customStudentSave css
+			join olr_customBuilder cb on cb.olr_customBuilderID = css.olr_customBuilderID
+			join olr_studentOther oso on oso.olr_personID = css.olr_personID
+			join olr_person op on op.olr_personID = css.olr_personID
+		group by css.olr_personID, op.olr_applicationID, oso.chosenSchoolID, oso.grade
+		) oso on oso.olr_personID = op.olr_personID 
+		and [oso].olr_applicationID = ap.olr_applicationID 
+		and oso.olr_personID = op.olr_personID
+left join olr_dictionary od3 on (od3.code = oso.quadBoundary) 
+	and od3.olr_attributeID = @olrAttQuad
+left join olr_dictionary od5 on (od5.code = oso.delRobleArea) 
+	and od5.olr_attributeID = @olrAttDR
+left join olr_dictionary od9 on (od9.code = oso.dualBoundaryMS) 
+	and od9.olr_attributeID = @olrAttMS
+left join olr_dictionary od11 on (od11.code = oso.dualBoundaryORT)
+	and od11.olr_attributeID = @olrAttDual
+where 1 = 1 
+and op.personTypeValue = 'student'
+and ap.type = 'New'
+--and (ap.regstartdate between @startDate and @endDate)
+and (ap.submissionDate between @startDate and @endDate)
+--and ap.status like 'Submitted%'
+and mba.MultiBoundaryArea in (@mba)
+and oso.grade not in ('PK')
+group by ap.olr_applicationID
+	, ap.status
+	, op.dob
+	, op.gender
+	, oso.grade
+	, op.lastName
+	, op.firstName
+	, op.middleName
+	, ap.regstartdate
+	, ap.submissionDate
+	, mba.MultiBoundaryArea
+order by olr_applicationID</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="olr_applicationID">
+          <DataField>olr_applicationID</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="regStartDate">
+          <DataField>regStartDate</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="submissionDate">
+          <DataField>submissionDate</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="status">
+          <DataField>status</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="lastName">
+          <DataField>lastName</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="firstName">
+          <DataField>firstName</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="middleName">
+          <DataField>middleName</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="birthDate">
+          <DataField>birthDate</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="gender">
+          <DataField>gender</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="grade">
+          <DataField>grade</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="MultiBoundaryArea">
+          <DataField>MultiBoundaryArea</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="schoolChoice">
+          <DataField>SchoolChoice</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="quadBoundary">
+          <DataField>quadBoundary</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="delRobleArea">
+          <DataField>delRobleArea</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="dualBoundaryMS">
+          <DataField>dualBoundaryMS</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="dualBoundaryORT">
+          <DataField>dualBoundaryORT</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="quadBoundary">
+      <Query>
+        <DataSourceName>DataSource1</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@configGroupID">
+            <Value>=Parameters!configGroupID.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>select att.olr_customBuilderID, att.displayName
+from(
+	select z.olr_customBuilderID, z.displayName, 
+		row_number() over(partition by z.displayName order by z.olr_customBuilderID desc) as [rn]
+	from(
+		select case when y.olr_customBuilderID is null then 0 else y.olr_customBuilderID end as olr_customBuilderID, x.displayName
+		from(
+			select ocb.olr_customBuilderID, ocg.olr_configGroupID, ocb.displayName
+			from olr_customBuilder ocb
+				left join olr_configList ocl on ocl.olr_configListID = ocb.olr_configListID
+				left join olr_configGroup  ocg on ocg.olr_configGroupID = ocl.olr_configGroupID
+			where ocb.disabled = 0
+				and ocb.displayName in ('Quad Boundary')
+			group by ocb.olr_customBuilderID, ocb.displayName, ocg.olr_configGroupID
+			) x
+			left join (
+			select ocb.olr_customBuilderID, ocg.olr_configGroupID, ocb.displayName
+			from olr_configGroup ocg
+				left join olr_configList ocl on ocl.olr_configGroupID = ocg.olr_configGroupID
+				left join olr_customBuilder ocb on ocb.olr_configListID = ocl.olr_configListID
+			where ocg.olr_configGroupID = @configGroupID
+				and ocb.disabled = 0
+			and ocb.displayName in ('Quad Boundary')
+			group by ocb.olr_customBuilderID, ocg.olr_configGroupID, ocb.displayName
+			) y on y.olr_configGroupID = x.olr_configGroupID
+		group by y.olr_customBuilderID, y.olr_customBuilderID, x.displayName
+		) z
+	) att
+where att.rn = 1</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="olr_customBuilderID">
+          <DataField>olr_customBuilderID</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="displayName">
+          <DataField>displayName</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="delRobleArea">
+      <Query>
+        <DataSourceName>DataSource1</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@configGroupID">
+            <Value>=Parameters!configGroupID.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>select att.olr_customBuilderID, att.displayName
+from(
+	select z.olr_customBuilderID, z.displayName, 
+		row_number() over(partition by z.displayName order by z.olr_customBuilderID desc) as [rn]
+	from(
+		select case when y.olr_customBuilderID is null then 0 else y.olr_customBuilderID end as olr_customBuilderID, x.displayName
+		from(
+			select ocb.olr_customBuilderID, ocg.olr_configGroupID, ocb.displayName
+			from olr_customBuilder ocb
+				left join olr_configList ocl on ocl.olr_configListID = ocb.olr_configListID
+				left join olr_configGroup  ocg on ocg.olr_configGroupID = ocl.olr_configGroupID
+			where ocb.disabled = 0
+				and ocb.displayName in ('Del Roble Area')
+			group by ocb.olr_customBuilderID, ocb.displayName, ocg.olr_configGroupID
+			) x
+			left join (
+			select ocb.olr_customBuilderID, ocg.olr_configGroupID, ocb.displayName
+			from olr_configGroup ocg
+				left join olr_configList ocl on ocl.olr_configGroupID = ocg.olr_configGroupID
+				left join olr_customBuilder ocb on ocb.olr_configListID = ocl.olr_configListID
+			where ocg.olr_configGroupID = @configGroupID
+				and ocb.disabled = 0
+			and ocb.displayName in ('Del Roble Area')
+			group by ocb.olr_customBuilderID, ocg.olr_configGroupID, ocb.displayName
+			) y on y.olr_configGroupID = x.olr_configGroupID
+		group by y.olr_customBuilderID, y.olr_customBuilderID, x.displayName
+		) z
+	) att
+where att.rn = 1
+</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="olr_customBuilderID">
+          <DataField>olr_customBuilderID</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="displayName">
+          <DataField>displayName</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="dualBoundaryMS">
+      <Query>
+        <DataSourceName>DataSource1</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@configGroupID">
+            <Value>=Parameters!configGroupID.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>select att.olr_customBuilderID, att.displayName
+from(
+	select z.olr_customBuilderID, z.displayName, 
+		row_number() over(partition by z.displayName order by z.olr_customBuilderID desc) as [rn]
+	from(
+		select case when y.olr_customBuilderID is null then 0 else y.olr_customBuilderID end as olr_customBuilderID, x.displayName
+		from(
+			select ocb.olr_customBuilderID, ocg.olr_configGroupID, ocb.displayName
+			from olr_customBuilder ocb
+				left join olr_configList ocl on ocl.olr_configListID = ocb.olr_configListID
+				left join olr_configGroup  ocg on ocg.olr_configGroupID = ocl.olr_configGroupID
+			where ocb.disabled = 0
+				and ocb.displayName in ('Dual Boundary Middle School')
+			group by ocb.olr_customBuilderID, ocb.displayName, ocg.olr_configGroupID
+			) x
+			left join (
+			select ocb.olr_customBuilderID, ocg.olr_configGroupID, ocb.displayName
+			from olr_configGroup ocg
+				left join olr_configList ocl on ocl.olr_configGroupID = ocg.olr_configGroupID
+				left join olr_customBuilder ocb on ocb.olr_configListID = ocl.olr_configListID
+			where ocg.olr_configGroupID = @configGroupID
+				and ocb.disabled = 0
+			and ocb.displayName in ('Dual Boundary Middle School')
+			group by ocb.olr_customBuilderID, ocg.olr_configGroupID, ocb.displayName
+			) y on y.olr_configGroupID = x.olr_configGroupID
+		group by y.olr_customBuilderID, y.olr_customBuilderID, x.displayName
+		) z
+	) att
+where att.rn = 1</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="olr_customBuilderID">
+          <DataField>olr_customBuilderID</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="displayName">
+          <DataField>displayName</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="dualBoundaryORT">
+      <Query>
+        <DataSourceName>DataSource1</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@configGroupID">
+            <Value>=Parameters!configGroupID.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>select att.olr_customBuilderID, att.displayName
+from(
+	select z.olr_customBuilderID, z.displayName, 
+		row_number() over(partition by z.displayName order by z.olr_customBuilderID desc) as [rn]
+	from(
+		select case when y.olr_customBuilderID is null then 0 else y.olr_customBuilderID end as olr_customBuilderID, x.displayName
+		from(
+			select ocb.olr_customBuilderID, ocg.olr_configGroupID, ocb.displayName
+			from olr_customBuilder ocb
+				left join olr_configList ocl on ocl.olr_configListID = ocb.olr_configListID
+				left join olr_configGroup  ocg on ocg.olr_configGroupID = ocl.olr_configGroupID
+			where ocb.disabled = 0
+				and ocb.displayName in ('Oak Ridge - Taylor')
+			group by ocb.olr_customBuilderID, ocb.displayName, ocg.olr_configGroupID
+			) x
+			left join (
+			select ocb.olr_customBuilderID, ocg.olr_configGroupID, ocb.displayName
+			from olr_configGroup ocg
+				left join olr_configList ocl on ocl.olr_configGroupID = ocg.olr_configGroupID
+				left join olr_customBuilder ocb on ocb.olr_configListID = ocl.olr_configListID
+			where ocg.olr_configGroupID = @configGroupID
+				and ocb.disabled = 0
+			and ocb.displayName in ('Oak Ridge - Taylor')
+			group by ocb.olr_customBuilderID, ocg.olr_configGroupID, ocb.displayName
+			) y on y.olr_configGroupID = x.olr_configGroupID
+		group by y.olr_customBuilderID, y.olr_customBuilderID, x.displayName
+		) z
+	) att
+where att.rn = 1</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="olr_customBuilderID">
+          <DataField>olr_customBuilderID</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="displayName">
+          <DataField>displayName</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="multiBoundaryArea">
+      <Query>
+        <DataSourceName>DataSource1</DataSourceName>
+        <CommandText>select MultiBoundaryArea
+from cust_og_MultiBoundaryAddress
+group by MultiBoundaryArea</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="MultiBoundaryArea">
+          <DataField>MultiBoundaryArea</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="olrAttQuad">
+      <Query>
+        <DataSourceName>DataSource1</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@configGroupID">
+            <Value>=Parameters!configGroupID.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>select olr_attributeID, element
+from olr_attribute
+where olr_configGroupID = @configGroupID
+	and element = 'multiBoundaryQuadList'</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="olr_attributeID">
+          <DataField>olr_attributeID</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="element">
+          <DataField>element</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="olrAttDR">
+      <Query>
+        <DataSourceName>DataSource1</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@configGroupID">
+            <Value>=Parameters!configGroupID.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>select olr_attributeID, element
+from olr_attribute
+where olr_configGroupID = @configGroupID
+	and element = 'multiBoundaryDR'</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="olr_attributeID">
+          <DataField>olr_attributeID</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="element">
+          <DataField>element</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="olrAttMS">
+      <Query>
+        <DataSourceName>DataSource1</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@configGroupID">
+            <Value>=Parameters!configGroupID.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>select olr_attributeID, element
+from olr_attribute
+where olr_configGroupID = @configGroupID
+	and element = 'multiBoundaryMS'</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="olr_attributeID">
+          <DataField>olr_attributeID</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="element">
+          <DataField>element</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="olrAttDual">
+      <Query>
+        <DataSourceName>DataSource1</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@configGroupID">
+            <Value>=Parameters!configGroupID.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>select olr_attributeID, element
+from olr_attribute
+where olr_configGroupID = @configGroupID
+	and element = 'multiBoundaryORT'</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="olr_attributeID">
+          <DataField>olr_attributeID</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="element">
+          <DataField>element</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="olrStartDate">
+      <Query>
+        <DataSourceName>DataSource1</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@configGroupID">
+            <Value>=Parameters!configGroupID.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>select linkStartDate
+from olr_configGroup
+where olr_configGroupID = @configGroupID</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="linkStartDate">
+          <DataField>linkStartDate</DataField>
+          <rd:TypeName>System.DateTime</rd:TypeName>
+        </Field>
+      </Fields>
+    </DataSet>
+  </DataSets>
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <ReportItems>
+          <Tablix Name="Tablix1">
+            <TablixBody>
+              <TablixColumns>
+                <TablixColumn>
+                  <Width>1.88542in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>1.70833in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>1in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>0.63542in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>0.63542in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>1.61458in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>2.97917in</Width>
+                </TablixColumn>
+              </TablixColumns>
+              <TablixRows>
+                <TablixRow>
+                  <Height>0.25in</Height>
+                  <TablixCells>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox1">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Last Name</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox1</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox33">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>First Name</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox33</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox35">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Birth Date</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox35</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox37">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Gender</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox37</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox39">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Grade</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox39</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox41">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Multi Boundary Area</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox41</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox43">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>School Choice</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>Textbox43</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                  </TablixCells>
+                </TablixRow>
+                <TablixRow>
+                  <Height>0.25in</Height>
+                  <TablixCells>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="lastName">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!lastName.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>lastName</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="firstName">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!firstName.Value</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>firstName</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="birthDate">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!birthDate.Value</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>birthDate</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="gender">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!gender.Value</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>gender</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="grade">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!grade.Value</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>grade</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="MultiBoundaryArea">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!MultiBoundaryArea.Value</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>MultiBoundaryArea</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="schoolChoice">
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!schoolChoice.Value</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <rd:DefaultName>schoolChoice</rd:DefaultName>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>=IIF(Fields!schoolChoice.Value = "","Orange","White")</BackgroundColor>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                  </TablixCells>
+                </TablixRow>
+              </TablixRows>
+            </TablixBody>
+            <TablixColumnHierarchy>
+              <TablixMembers>
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+              </TablixMembers>
+            </TablixColumnHierarchy>
+            <TablixRowHierarchy>
+              <TablixMembers>
+                <TablixMember>
+                  <TablixHeader>
+                    <Size>0.89583in</Size>
+                    <CellContents>
+                      <Textbox Name="Textbox25">
+                        <CanGrow>true</CanGrow>
+                        <KeepTogether>true</KeepTogether>
+                        <Paragraphs>
+                          <Paragraph>
+                            <TextRuns>
+                              <TextRun>
+                                <Value>Application #</Value>
+                                <Style>
+                                  <FontFamily>Arial</FontFamily>
+                                </Style>
+                              </TextRun>
+                            </TextRuns>
+                            <Style>
+                              <TextAlign>Left</TextAlign>
+                            </Style>
+                          </Paragraph>
+                        </Paragraphs>
+                        <rd:DefaultName>Textbox25</rd:DefaultName>
+                        <Style>
+                          <Border>
+                            <Color>LightGrey</Color>
+                            <Style>Solid</Style>
+                          </Border>
+                          <PaddingLeft>2pt</PaddingLeft>
+                          <PaddingRight>2pt</PaddingRight>
+                          <PaddingTop>2pt</PaddingTop>
+                          <PaddingBottom>2pt</PaddingBottom>
+                        </Style>
+                      </Textbox>
+                    </CellContents>
+                  </TablixHeader>
+                  <TablixMembers>
+                    <TablixMember>
+                      <TablixHeader>
+                        <Size>1.28125in</Size>
+                        <CellContents>
+                          <Textbox Name="Textbox27">
+                            <CanGrow>true</CanGrow>
+                            <KeepTogether>true</KeepTogether>
+                            <Paragraphs>
+                              <Paragraph>
+                                <TextRuns>
+                                  <TextRun>
+                                    <Value>OLR Start Date</Value>
+                                    <Style>
+                                      <FontFamily>Arial</FontFamily>
+                                    </Style>
+                                  </TextRun>
+                                </TextRuns>
+                                <Style />
+                              </Paragraph>
+                            </Paragraphs>
+                            <rd:DefaultName>Textbox27</rd:DefaultName>
+                            <Style>
+                              <Border>
+                                <Color>LightGrey</Color>
+                                <Style>Solid</Style>
+                              </Border>
+                              <PaddingLeft>2pt</PaddingLeft>
+                              <PaddingRight>2pt</PaddingRight>
+                              <PaddingTop>2pt</PaddingTop>
+                              <PaddingBottom>2pt</PaddingBottom>
+                            </Style>
+                          </Textbox>
+                        </CellContents>
+                      </TablixHeader>
+                      <TablixMembers>
+                        <TablixMember>
+                          <TablixHeader>
+                            <Size>1.625in</Size>
+                            <CellContents>
+                              <Textbox Name="Textbox29">
+                                <CanGrow>true</CanGrow>
+                                <KeepTogether>true</KeepTogether>
+                                <Paragraphs>
+                                  <Paragraph>
+                                    <TextRuns>
+                                      <TextRun>
+                                        <Value>OLR Submission Date</Value>
+                                        <Style>
+                                          <FontFamily>Arial</FontFamily>
+                                        </Style>
+                                      </TextRun>
+                                    </TextRuns>
+                                    <Style />
+                                  </Paragraph>
+                                </Paragraphs>
+                                <rd:DefaultName>Textbox29</rd:DefaultName>
+                                <Style>
+                                  <Border>
+                                    <Color>LightGrey</Color>
+                                    <Style>Solid</Style>
+                                  </Border>
+                                  <PaddingLeft>2pt</PaddingLeft>
+                                  <PaddingRight>2pt</PaddingRight>
+                                  <PaddingTop>2pt</PaddingTop>
+                                  <PaddingBottom>2pt</PaddingBottom>
+                                </Style>
+                              </Textbox>
+                            </CellContents>
+                          </TablixHeader>
+                          <TablixMembers>
+                            <TablixMember>
+                              <TablixHeader>
+                                <Size>1.46875in</Size>
+                                <CellContents>
+                                  <Textbox Name="Textbox31">
+                                    <CanGrow>true</CanGrow>
+                                    <KeepTogether>true</KeepTogether>
+                                    <Paragraphs>
+                                      <Paragraph>
+                                        <TextRuns>
+                                          <TextRun>
+                                            <Value>Application Status</Value>
+                                            <Style>
+                                              <FontFamily>Arial</FontFamily>
+                                            </Style>
+                                          </TextRun>
+                                        </TextRuns>
+                                        <Style />
+                                      </Paragraph>
+                                    </Paragraphs>
+                                    <rd:DefaultName>Textbox31</rd:DefaultName>
+                                    <Style>
+                                      <Border>
+                                        <Color>LightGrey</Color>
+                                        <Style>Solid</Style>
+                                      </Border>
+                                      <PaddingLeft>2pt</PaddingLeft>
+                                      <PaddingRight>2pt</PaddingRight>
+                                      <PaddingTop>2pt</PaddingTop>
+                                      <PaddingBottom>2pt</PaddingBottom>
+                                    </Style>
+                                  </Textbox>
+                                </CellContents>
+                              </TablixHeader>
+                              <TablixMembers>
+                                <TablixMember />
+                              </TablixMembers>
+                            </TablixMember>
+                          </TablixMembers>
+                        </TablixMember>
+                      </TablixMembers>
+                    </TablixMember>
+                  </TablixMembers>
+                </TablixMember>
+                <TablixMember>
+                  <Group Name="olr_applicationID">
+                    <GroupExpressions>
+                      <GroupExpression>=Fields!olr_applicationID.Value</GroupExpression>
+                    </GroupExpressions>
+                  </Group>
+                  <SortExpressions>
+                    <SortExpression>
+                      <Value>=Fields!olr_applicationID.Value</Value>
+                    </SortExpression>
+                  </SortExpressions>
+                  <TablixHeader>
+                    <Size>0.89583in</Size>
+                    <CellContents>
+                      <Textbox Name="olr_applicationID1">
+                        <CanGrow>true</CanGrow>
+                        <KeepTogether>true</KeepTogether>
+                        <Paragraphs>
+                          <Paragraph>
+                            <TextRuns>
+                              <TextRun>
+                                <Value>=Fields!olr_applicationID.Value</Value>
+                                <Style>
+                                  <FontFamily>Arial</FontFamily>
+                                </Style>
+                              </TextRun>
+                            </TextRuns>
+                            <Style>
+                              <TextAlign>Left</TextAlign>
+                            </Style>
+                          </Paragraph>
+                        </Paragraphs>
+                        <rd:DefaultName>olr_applicationID1</rd:DefaultName>
+                        <Style>
+                          <Border>
+                            <Color>LightGrey</Color>
+                            <Style>Solid</Style>
+                          </Border>
+                          <VerticalAlign>Middle</VerticalAlign>
+                          <PaddingLeft>2pt</PaddingLeft>
+                          <PaddingRight>2pt</PaddingRight>
+                          <PaddingTop>2pt</PaddingTop>
+                          <PaddingBottom>2pt</PaddingBottom>
+                        </Style>
+                      </Textbox>
+                    </CellContents>
+                  </TablixHeader>
+                  <TablixMembers>
+                    <TablixMember>
+                      <Group Name="regStartDate">
+                        <GroupExpressions>
+                          <GroupExpression>=Fields!regStartDate.Value</GroupExpression>
+                        </GroupExpressions>
+                      </Group>
+                      <SortExpressions>
+                        <SortExpression>
+                          <Value>=Fields!regStartDate.Value</Value>
+                        </SortExpression>
+                      </SortExpressions>
+                      <TablixHeader>
+                        <Size>1.28125in</Size>
+                        <CellContents>
+                          <Textbox Name="regStartDate">
+                            <CanGrow>true</CanGrow>
+                            <KeepTogether>true</KeepTogether>
+                            <Paragraphs>
+                              <Paragraph>
+                                <TextRuns>
+                                  <TextRun>
+                                    <Value>=Fields!regStartDate.Value</Value>
+                                    <Style>
+                                      <FontFamily>Arial</FontFamily>
+                                    </Style>
+                                  </TextRun>
+                                </TextRuns>
+                                <Style />
+                              </Paragraph>
+                            </Paragraphs>
+                            <rd:DefaultName>regStartDate</rd:DefaultName>
+                            <Style>
+                              <Border>
+                                <Color>LightGrey</Color>
+                                <Style>Solid</Style>
+                              </Border>
+                              <VerticalAlign>Middle</VerticalAlign>
+                              <PaddingLeft>2pt</PaddingLeft>
+                              <PaddingRight>2pt</PaddingRight>
+                              <PaddingTop>2pt</PaddingTop>
+                              <PaddingBottom>2pt</PaddingBottom>
+                            </Style>
+                          </Textbox>
+                        </CellContents>
+                      </TablixHeader>
+                      <TablixMembers>
+                        <TablixMember>
+                          <Group Name="submissionDate">
+                            <GroupExpressions>
+                              <GroupExpression>=Fields!submissionDate.Value</GroupExpression>
+                            </GroupExpressions>
+                          </Group>
+                          <SortExpressions>
+                            <SortExpression>
+                              <Value>=Fields!submissionDate.Value</Value>
+                            </SortExpression>
+                          </SortExpressions>
+                          <TablixHeader>
+                            <Size>1.625in</Size>
+                            <CellContents>
+                              <Textbox Name="submissionDate">
+                                <CanGrow>true</CanGrow>
+                                <KeepTogether>true</KeepTogether>
+                                <Paragraphs>
+                                  <Paragraph>
+                                    <TextRuns>
+                                      <TextRun>
+                                        <Value>=Fields!submissionDate.Value</Value>
+                                        <Style>
+                                          <FontFamily>Arial</FontFamily>
+                                        </Style>
+                                      </TextRun>
+                                    </TextRuns>
+                                    <Style />
+                                  </Paragraph>
+                                </Paragraphs>
+                                <rd:DefaultName>submissionDate</rd:DefaultName>
+                                <Style>
+                                  <Border>
+                                    <Color>LightGrey</Color>
+                                    <Style>Solid</Style>
+                                  </Border>
+                                  <VerticalAlign>Middle</VerticalAlign>
+                                  <PaddingLeft>2pt</PaddingLeft>
+                                  <PaddingRight>2pt</PaddingRight>
+                                  <PaddingTop>2pt</PaddingTop>
+                                  <PaddingBottom>2pt</PaddingBottom>
+                                </Style>
+                              </Textbox>
+                            </CellContents>
+                          </TablixHeader>
+                          <TablixMembers>
+                            <TablixMember>
+                              <Group Name="status">
+                                <GroupExpressions>
+                                  <GroupExpression>=Fields!status.Value</GroupExpression>
+                                </GroupExpressions>
+                              </Group>
+                              <SortExpressions>
+                                <SortExpression>
+                                  <Value>=Fields!status.Value</Value>
+                                </SortExpression>
+                              </SortExpressions>
+                              <TablixHeader>
+                                <Size>1.46875in</Size>
+                                <CellContents>
+                                  <Textbox Name="status">
+                                    <CanGrow>true</CanGrow>
+                                    <KeepTogether>true</KeepTogether>
+                                    <Paragraphs>
+                                      <Paragraph>
+                                        <TextRuns>
+                                          <TextRun>
+                                            <Value>=Fields!status.Value</Value>
+                                            <Style>
+                                              <FontFamily>Arial</FontFamily>
+                                            </Style>
+                                          </TextRun>
+                                        </TextRuns>
+                                        <Style />
+                                      </Paragraph>
+                                    </Paragraphs>
+                                    <rd:DefaultName>status</rd:DefaultName>
+                                    <Style>
+                                      <Border>
+                                        <Color>LightGrey</Color>
+                                        <Style>Solid</Style>
+                                      </Border>
+                                      <VerticalAlign>Middle</VerticalAlign>
+                                      <PaddingLeft>2pt</PaddingLeft>
+                                      <PaddingRight>2pt</PaddingRight>
+                                      <PaddingTop>2pt</PaddingTop>
+                                      <PaddingBottom>2pt</PaddingBottom>
+                                    </Style>
+                                  </Textbox>
+                                </CellContents>
+                              </TablixHeader>
+                              <TablixMembers>
+                                <TablixMember>
+                                  <Group Name="Details" />
+                                </TablixMember>
+                              </TablixMembers>
+                            </TablixMember>
+                          </TablixMembers>
+                        </TablixMember>
+                      </TablixMembers>
+                    </TablixMember>
+                  </TablixMembers>
+                </TablixMember>
+              </TablixMembers>
+            </TablixRowHierarchy>
+            <DataSetName>data</DataSetName>
+            <Height>0.5in</Height>
+            <Width>15.72917in</Width>
+            <Style>
+              <Border>
+                <Style>None</Style>
+              </Border>
+            </Style>
+          </Tablix>
+        </ReportItems>
+        <Height>0.5in</Height>
+        <Style />
+      </Body>
+      <Width>15.83333in</Width>
+      <Page>
+        <LeftMargin>1in</LeftMargin>
+        <RightMargin>1in</RightMargin>
+        <TopMargin>1in</TopMargin>
+        <BottomMargin>1in</BottomMargin>
+        <Style />
+      </Page>
+    </ReportSection>
+  </ReportSections>
+  <ReportParameters>
+    <ReportParameter Name="configGroupID">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <Values>
+          <Value>12</Value>
+        </Values>
+      </DefaultValue>
+      <Prompt>Application Year</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>appYear</DataSetName>
+          <ValueField>olr_configGroupID</ValueField>
+          <LabelField>displayName</LabelField>
+        </DataSetReference>
+      </ValidValues>
+    </ReportParameter>
+    <ReportParameter Name="quadBoundary">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>quadBoundary</DataSetName>
+          <ValueField>olr_customBuilderID</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>quad Boundary</Prompt>
+      <Hidden>true</Hidden>
+    </ReportParameter>
+    <ReportParameter Name="delRobleArea">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>delRobleArea</DataSetName>
+          <ValueField>olr_customBuilderID</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>del Roble Area</Prompt>
+      <Hidden>true</Hidden>
+    </ReportParameter>
+    <ReportParameter Name="dualBoundaryMS">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>dualBoundaryMS</DataSetName>
+          <ValueField>olr_customBuilderID</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>dual Boundary MS</Prompt>
+      <Hidden>true</Hidden>
+    </ReportParameter>
+    <ReportParameter Name="dualBoundaryORT">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>dualBoundaryORT</DataSetName>
+          <ValueField>olr_customBuilderID</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>dual Boundary ORT</Prompt>
+      <Hidden>true</Hidden>
+    </ReportParameter>
+    <ReportParameter Name="olrAttQuad">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>olrAttQuad</DataSetName>
+          <ValueField>olr_attributeID</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>olr Att Quad</Prompt>
+      <Hidden>true</Hidden>
+    </ReportParameter>
+    <ReportParameter Name="olrAttDR">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>olrAttDR</DataSetName>
+          <ValueField>olr_attributeID</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>olr Att DR</Prompt>
+      <Hidden>true</Hidden>
+    </ReportParameter>
+    <ReportParameter Name="olrAttMS">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>olrAttMS</DataSetName>
+          <ValueField>olr_attributeID</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>olr Att MS</Prompt>
+      <Hidden>true</Hidden>
+    </ReportParameter>
+    <ReportParameter Name="olrAttDual">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>olrAttDual</DataSetName>
+          <ValueField>olr_attributeID</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>olr Att Dual</Prompt>
+      <Hidden>true</Hidden>
+    </ReportParameter>
+    <ReportParameter Name="startDate">
+      <DataType>DateTime</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>olrStartDate</DataSetName>
+          <ValueField>linkStartDate</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>Submission Date From</Prompt>
+    </ReportParameter>
+    <ReportParameter Name="endDate">
+      <DataType>DateTime</DataType>
+      <DefaultValue>
+        <Values>
+          <Value>=Today()</Value>
+        </Values>
+      </DefaultValue>
+      <Prompt>Submission Date To</Prompt>
+    </ReportParameter>
+    <ReportParameter Name="mba">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>multiBoundaryArea</DataSetName>
+          <ValueField>MultiBoundaryArea</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>Multi Boundary Area</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>multiBoundaryArea</DataSetName>
+          <ValueField>MultiBoundaryArea</ValueField>
+          <LabelField>MultiBoundaryArea</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+    </ReportParameter>
+  </ReportParameters>
+  <ReportParametersLayout>
+    <GridLayoutDefinition>
+      <NumberOfColumns>4</NumberOfColumns>
+      <NumberOfRows>4</NumberOfRows>
+      <CellDefinitions>
+        <CellDefinition>
+          <ColumnIndex>0</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>configGroupID</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>2</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>quadBoundary</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>3</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>delRobleArea</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>0</ColumnIndex>
+          <RowIndex>1</RowIndex>
+          <ParameterName>dualBoundaryMS</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>1</ColumnIndex>
+          <RowIndex>1</RowIndex>
+          <ParameterName>dualBoundaryORT</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>2</ColumnIndex>
+          <RowIndex>1</RowIndex>
+          <ParameterName>olrAttQuad</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>3</ColumnIndex>
+          <RowIndex>1</RowIndex>
+          <ParameterName>olrAttDR</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>0</ColumnIndex>
+          <RowIndex>2</RowIndex>
+          <ParameterName>olrAttMS</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>1</ColumnIndex>
+          <RowIndex>2</RowIndex>
+          <ParameterName>olrAttDual</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>2</ColumnIndex>
+          <RowIndex>2</RowIndex>
+          <ParameterName>startDate</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>3</ColumnIndex>
+          <RowIndex>2</RowIndex>
+          <ParameterName>endDate</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>0</ColumnIndex>
+          <RowIndex>3</RowIndex>
+          <ParameterName>mba</ParameterName>
+        </CellDefinition>
+      </CellDefinitions>
+    </GridLayoutDefinition>
+  </ReportParametersLayout>
+  <rd:ReportUnitType>Inch</rd:ReportUnitType>
+  <rd:ReportID>93d6c2a6-4c99-4311-8cfd-6dea39cd82f4</rd:ReportID>
+</Report>

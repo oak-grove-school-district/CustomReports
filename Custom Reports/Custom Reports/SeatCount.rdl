@@ -9,7 +9,7 @@
       <am:Name>SSDTRS</am:Name>
       <am:Version>17.6.33801.468</am:Version>
     </am:UpdatedBy>
-    <am:LastModifiedTimestamp>2023-08-02T18:46:41.6164331Z</am:LastModifiedTimestamp>
+    <am:LastModifiedTimestamp>2024-08-21T19:31:58.8842564Z</am:LastModifiedTimestamp>
   </am:AuthoringMetadata>
   <AutoRefresh>0</AutoRefresh>
   <DataSources>
@@ -4724,7 +4724,7 @@ COUNTDISTINCT(IIF(Fields!sectionNumber.Value &lt;&gt; "Unrostered" AND Fields!se
       <DataType>String</DataType>
       <DefaultValue>
         <Values>
-          <Value>=2024</Value>
+          <Value>=2025</Value>
         </Values>
       </DefaultValue>
       <AllowBlank>true</AllowBlank>

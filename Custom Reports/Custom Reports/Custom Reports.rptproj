@@ -12,7 +12,7 @@
     <TargetDatasetFolder />
     <TargetDatasourceFolder>Data Sources</TargetDatasourceFolder>
     <TargetReportPartFolder />
-    <TargetServerURL>http://do-ts1/ReportServer</TargetServerURL>
+    <TargetServerURL>https://do-ts1.ogsd.net/ReportServer</TargetServerURL>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'DebugLocal' ">
     <FullPath>DebugLocal</FullPath>
@@ -50,8 +50,10 @@
   </PropertyGroup>
   <ItemGroup>
     <DataSource Include="campus.rds" />
+    <DataSource Include="campusStaging.rds" />
   </ItemGroup>
   <ItemGroup>
+    <Report Include="1to1Absences.rdl" />
     <Report Include="AbsencesDateRange.rdl" />
     <Report Include="AbsenceTardyByClass.rdl" />
     <Report Include="AllStudents.rdl" />
@@ -81,6 +83,8 @@
     <Report Include="DistanceLearningPLP.rdl" />
     <Report Include="DistrictClassAverage.rdl" />
     <Report Include="EmergencyCard.rdl" />
+    <Report Include="EmergencyCardGrade.rdl" />
+    <Report Include="EmergencyCardGradeSPA.rdl" />
     <Report Include="EmergencyCardSPA.rdl" />
     <Report Include="EnrolledBetween.rdl" />
     <Report Include="EnrollmentCount.rdl" />
@@ -93,6 +97,7 @@
     <Report Include="HearingScreening.rdl" />
     <Report Include="HHIncome.rdl" />
     <Report Include="HighSchool.rdl" />
+    <Report Include="HKF.rdl" />
     <Report Include="Home Primary Language.rdl" />
     <Report Include="HonorsNight.rdl" />
     <Report Include="HouseholdCheck.rdl" />
@@ -114,6 +119,8 @@
     <Report Include="OLRBase.rdl" />
     <Report Include="OLRHousing.rdl" />
     <Report Include="OLRLang.rdl" />
+    <Report Include="OLRMultiBoundary.rdl" />
+    <Report Include="OLRNewStudents.rdl" />
     <Report Include="OralHealthAssesment.rdl" />
     <Report Include="Parent Contact Information.rdl" />
     <Report Include="PBIS_Avg.rdl" />

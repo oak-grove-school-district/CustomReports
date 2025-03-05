@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner">
+<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:am="http://schemas.microsoft.com/sqlserver/reporting/authoringmetadata">
+  <am:AuthoringMetadata>
+    <am:CreatedBy>
+      <am:Name>SSDTRS</am:Name>
+      <am:Version>17.6.33801.468</am:Version>
+    </am:CreatedBy>
+    <am:UpdatedBy>
+      <am:Name>SSDTRS</am:Name>
+      <am:Version>17.6.33801.468</am:Version>
+    </am:UpdatedBy>
+    <am:LastModifiedTimestamp>2025-03-03T16:36:57.7518459Z</am:LastModifiedTimestamp>
+  </am:AuthoringMetadata>
   <AutoRefresh>0</AutoRefresh>
   <DataSources>
     <DataSource Name="campus">
@@ -65,7 +76,7 @@ select p.studentNumber, p.stateID, c.name as [calendarName]
 , max(ad.city + ', ' + ad.state + ' ' + ad.zip) as [Line 2]
 , hs.phone as [HHPhone]
 , max(case when me.rn = 1 then '*' else '' end) as [New]
-, i.homePrimaryLanguage as [HPL]
+, cdl.name as [HPL]
 , case when lep.programStatus in ('LEP','Not LEP','Pending') then '*' else '' end as LEP
 , max(case when pp.programID = 53 then '*' else '' end) as [I]
 , isnull(cs.value,'') as [APC]
@@ -76,6 +87,8 @@ select p.studentNumber, p.stateID, c.name as [calendarName]
 , isnull(ac.period,'') as [Period]
 from Person p
 join [Identity] i on i.personID = p.personID and i.identityID = p.currentIdentityID
+join CampusDictionary cdl on cdl.code = i.homePrimaryLanguage
+	and cdl.attributeID = 280
 join Enrollment e on e.personID = p.personID
 and e.calendarID in (@calendarID)
 and (e.startDate &lt;= @date) and (e.endDate &gt;= @date or e.endDate is null)
@@ -119,7 +132,7 @@ left join CampusDictionary cd on cd.code = cad.value
 left join School sc on sc.schoolID = hs.schID
 group by c.name
 , ac.courseName, ac.Teacher
-, e.grade, p.studentNumber, p.stateID, i.lastName, i.firstName, di.name, i.homePrimaryLanguage, hs.phone, cs.value, cd.name, i.gender
+, e.grade, p.studentNumber, p.stateID, i.lastName, i.firstName, di.name, cdl.name, hs.phone, cs.value, cd.name, i.gender
 , ac.period, me.rn, i.birthDate, lep.programStatus
 ) x
 where
@@ -596,7 +609,7 @@ GROUP BY c.startDate</CommandText>
                   <Width>1in</Width>
                 </TablixColumn>
                 <TablixColumn>
-                  <Width>0.36458in</Width>
+                  <Width>1.78125in</Width>
                 </TablixColumn>
                 <TablixColumn>
                   <Width>0.32292in</Width>
@@ -3005,7 +3018,7 @@ GROUP BY c.startDate</CommandText>
             </TablixRowHierarchy>
             <DataSetName>AllStudents</DataSetName>
             <Height>1in</Height>
-            <Width>27.84373in</Width>
+            <Width>29.2604in</Width>
             <Style>
               <Border>
                 <Style>None</Style>
@@ -3016,7 +3029,7 @@ GROUP BY c.startDate</CommandText>
         <Height>1in</Height>
         <Style />
       </Body>
-      <Width>27.84373in</Width>
+      <Width>29.2604in</Width>
       <Page>
         <LeftMargin>0.25in</LeftMargin>
         <RightMargin>0.25in</RightMargin>

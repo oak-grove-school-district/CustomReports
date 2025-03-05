@@ -9,7 +9,7 @@
       <am:Name>SSDTRS</am:Name>
       <am:Version>17.6.33801.468</am:Version>
     </am:UpdatedBy>
-    <am:LastModifiedTimestamp>2024-07-16T21:25:34.7028602Z</am:LastModifiedTimestamp>
+    <am:LastModifiedTimestamp>2024-08-21T21:48:40.0495362Z</am:LastModifiedTimestamp>
   </am:AuthoringMetadata>
   <df:DefaultFontFamily>Segoe UI</df:DefaultFontFamily>
   <AutoRefresh>0</AutoRefresh>
@@ -30,6 +30,9 @@
           </QueryParameter>
           <QueryParameter Name="@grade">
             <Value>=Parameters!grade.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@teacherPersonID">
+            <Value>=Parameters!teacherPersonID.Value</Value>
           </QueryParameter>
         </QueryParameters>
         <CommandText>select i.lastName + ', ' + i.firstName as studentName
@@ -259,8 +262,9 @@ from Person p
 					left join Address a on a.addressID = hl.addressID
 					left join Contact co on co.personID = gu.personID
 				where rp.name not like 'Sibling'
-					and (hmGu.householdID is null or hmGu.householdID &lt;&gt; hm2.householdID)
-					--and stu.personID = 129722
+					--and (hmGu.householdID is null or hmGu.householdID &lt;&gt; hm2.householdID)
+					--and stu.personID = 111205
+					and rp.guardian = 0
 				group by stu.personID, rp.name, gui.lastName, gui.firstName, h.phone, co.cellPhone, co.homePhone
 					, co.email, co.workPhone, a.number,  a.prefix, a.street, a.tag, a.dir, a.apt, a.city, a.state, a.zip, rp.seq
 			  ) emc on emc.stuID = p.personID
@@ -317,7 +321,7 @@ from Person p
 where 1 = 1
 	and cal.calendarID in (@calendarID)
 	and e.grade in (@grade)
-	--and teach.teacherPersonID in (@teacherPersonID)
+	and teach.teacherPersonID in (@teacherPersonID)
 group by p.personID, i.lastName, i.firstName, cal.name, i.birthdate, i.gender, e.grade, cd.name, a.number, a.prefix, a.street, a.tag, a.dir, a.apt, a.city ,a.state ,a.zip, hh.phone, ro.[Restraining Order], teach.teacherDisplay
 order by cal.name, i.lastName</CommandText>
       </Query>
@@ -6159,7 +6163,13 @@ order by gl.seq</CommandText>
         </Values>
       </DefaultValue>
       <Prompt>Teacher</Prompt>
-      <Hidden>true</Hidden>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>teachers</DataSetName>
+          <ValueField>teacherPersonID</ValueField>
+          <LabelField>teacherDisplay</LabelField>
+        </DataSetReference>
+      </ValidValues>
       <MultiValue>true</MultiValue>
     </ReportParameter>
   </ReportParameters>

@@ -9,7 +9,7 @@
       <am:Name>SSDTRS</am:Name>
       <am:Version>17.6.33801.468</am:Version>
     </am:UpdatedBy>
-    <am:LastModifiedTimestamp>2023-12-08T22:54:18.7716337Z</am:LastModifiedTimestamp>
+    <am:LastModifiedTimestamp>2024-10-29T18:49:39.2236534Z</am:LastModifiedTimestamp>
   </am:AuthoringMetadata>
   <df:DefaultFontFamily>Segoe UI</df:DefaultFontFamily>
   <AutoRefresh>0</AutoRefresh>
@@ -69,89 +69,46 @@ order by cal.name</CommandText>
             <Value>=Parameters!nCalID.Value</Value>
           </QueryParameter>
         </QueryParameters>
-        <CommandText>SELECT *
+        <CommandText>SELECT        *
 FROM            (SELECT        p.studentNumber, i.lastName, i.firstName, e.grade AS cGrade, cal.name AS cSchool, cal.calendarID, e.endDate, ISNULL(MAX(CASE WHEN cs.attributeID = 123 THEN cs.value END), '') AS AFC, 
-                                                    ISNULL(MAX(CASE WHEN cs.attributeID = 470 THEN cs.value END), '') AS APC, ISNULL(e.nextGrade, '') AS nGrade, ISNULL(cal2.name, '') AS nSchool, isnull(cal2.calendarID,'') as nCalID
-		, isnull(CASE WHEN e.grade IN ('TK', '00', '01', '02', '03', '04', '05') 
-				THEN sb.[New Home Elementary] WHEN e.grade IN ('06', '07') 
-				THEN sb.[New Home Jr. High] END, '') AS [Home School]
-		, isnull(sb.District, '') AS [District]
-		, csa.[2]
-		, csa.[3]
-		, csa.[4]
-		, csa.[5]
-		, csa.[6]
-		, csa.[8]
-		, csa.[10]
-		, csa.[11]
-		, csa.[TK]
-    FROM Person AS p 
-		INNER JOIN [Identity] AS i ON i.personID = p.personID 
-			AND i.identityID = p.currentIdentityID 
-		INNER JOIN Enrollment AS e ON e.personID = p.personID 
-			AND e.startDate &lt;= GETDATE() 
-			--AND (e.endDate IS NULL OR e.endDate &gt;= GETDATE()) 
-		INNER JOIN Calendar AS cal ON cal.calendarID = e.calendarID 
-			AND cal.endYear = e.endYear 
-			AND cal.endYear = @endYear 
-		LEFT OUTER JOIN CustomStudent AS cs ON cs.personID = p.personID 
-			AND cs.enrollmentID = e.enrollmentID 
-			AND cs.attributeID IN (123, 470) 
-		LEFT OUTER JOIN Calendar AS cal2 ON cal2.calendarID = e.nextCalendar 
-		LEFT JOIN HouseholdMember hm ON hm.personID = p.personID 
-			AND (hm.secondary = 0 OR hm.secondary IS NULL) 
-			AND (hm.endDate IS NULL OR hm.endDate &gt; getdate()) 
-		LEFT JOIN Household hh ON hh.householdID = hm.householdID 
-		LEFT JOIN HouseholdLocation hl ON hl.householdID = hh.householdID 
-			AND (hl.endDate IS NULL OR hl.endDate &gt; GETDATE()) 
-			AND (hl.secondary = 0 OR hl.secondary IS NULL) 
-		LEFT JOIN(
-				SELECT ad.addressID
-					, nb.[Home Elementary] AS [New Home Elementary]
-					, nb.[Home Jr. High] AS [New Home Jr. High]
-					, dis.name AS [District]
-				FROM [Address] ad 
-					LEFT JOIN (
-						SELECT hs.addressID
-							, COALESCE (max(CASE WHEN hs.bn = 1 AND hs.schID &lt;= 16 THEN sc.name END), '') + COALESCE (' or ' + max(CASE WHEN hs.bn = 2 
-								AND hs.schID &lt;= 16 THEN sc.name END), '') AS [Home Elementary]
-							, COALESCE (max(CASE WHEN ((hs.bn = 2 AND hs.schID &gt;= 17) OR (hs.bn = 3 AND hs.schID &gt;= 17)) THEN sc.name END), '') 
-								+ COALESCE (' or ' + max(CASE WHEN hs.bn = 4 AND hs.schID &gt;= 17 THEN sc.name ELSE NULL END), '') AS [Home Jr. High]
-						FROM(
-							SELECT hl.addressID
-								, sb.schoolID AS schID
-								, ROW_NUMBER() OVER (PARTITION BY hl.addressID ORDER BY sb.schoolID) AS bn
-							FROM HouseholdLocation hl 
-								JOIN SchoolBoundary sb ON sb.addressID = hl.addressID
-							WHERE sb.startDate = '03/08/2018'
-							GROUP BY hl.addressID, sb.schoolID
-							) hs 
-					JOIN School sc ON sc.schoolID = hs.schID
-				GROUP BY hs.addressID
-				) nb ON nb.addressID = ad.addressID 
-			LEFT JOIN District dis ON dis.districtID = ad.districtID
-			) sb ON sb.addressID = hl.addressID 
-				AND (hl.secondary = 0 OR hl.secondary IS NULL) AND (hm.secondary = 0 OR hm.secondary IS NULL)
-		left join cust_og_SchoolChoiceApps(@endYear -1) csa on csa.personID = p.personID
-	GROUP BY p.studentNumber, i.lastName, i.firstName, cal.name, cal2.name, e.endDate, e.grade, e.nextGrade, e.nextCalendar, cal.calendarID, sb.[New Home Elementary], sb.[New Home Jr. High], sb.District, cal2.calendarID
-	, csa.[2]
-		, csa.[3]
-		, csa.[4]
-		, csa.[5]
-		, csa.[6]
-		, csa.[8]
-		, csa.[10]
-		, csa.[11]
-		, csa.[TK]
-	) AS x
-WHERE 1=1
-AND (cGrade IN (@grade)) 
-AND (calendarID IN (@calendarID)) 
-AND (APC IN (@APC)) 
-AND (AFC IN (@AFC))
-AND (nCalID in (@nCalID))
-and cGrade &lt;&gt; '08'
-ORDER BY endDate ,APC DESC, nSchool</CommandText>
+                                                    ISNULL(MAX(CASE WHEN cs.attributeID = 470 THEN cs.value END), '') AS APC, ISNULL(e.nextGrade, '') AS nGrade, ISNULL(cal2.name, '') AS nSchool, isnull(cal2.calendarID, '') AS nCalID, 
+                                                    isnull(CASE WHEN e.grade IN ('TK', '00', '01', '02', '03', '04', '05') THEN sb.[New Home Elementary] WHEN e.grade IN ('06', '07') THEN sb.[New Home Jr. High] END, '') AS [Home School], isnull(sb.District, '') 
+                                                    AS [District], csa.[2], csa.[3], csa.[4], csa.[5], csa.[6], csa.[8], csa.[10], csa.[11], csa.[TK]
+                          FROM            Person AS p INNER JOIN
+                                                    [Identity] AS i ON i.personID = p.personID AND i.identityID = p.currentIdentityID INNER JOIN
+                                                    Enrollment AS e ON e.personID = p.personID AND e.startDate &lt;= GETDATE() /*AND (e.endDate IS NULL OR e.endDate &gt;= GETDATE()) */ INNER JOIN
+                                                    Calendar AS cal ON cal.calendarID = e.calendarID AND cal.endYear = e.endYear AND cal.endYear = @endYear LEFT OUTER JOIN
+                                                    CustomStudent AS cs ON cs.personID = p.personID AND cs.enrollmentID = e.enrollmentID AND cs.attributeID IN (123, 470) LEFT OUTER JOIN
+                                                    Calendar AS cal2 ON cal2.calendarID = e.nextCalendar LEFT JOIN
+                                                    HouseholdMember hm ON hm.personID = p.personID AND (hm.secondary = 0 OR
+                                                    hm.secondary IS NULL) AND (hm.endDate IS NULL OR
+                                                    hm.endDate &gt; getdate()) LEFT JOIN
+                                                    Household hh ON hh.householdID = hm.householdID LEFT JOIN
+                                                    HouseholdLocation hl ON hl.householdID = hh.householdID AND (hl.endDate IS NULL OR
+                                                    hl.endDate &gt; GETDATE()) AND (hl.secondary = 0 OR
+                                                    hl.secondary IS NULL) LEFT JOIN
+                                                        (SELECT        ad.addressID, nb.[Home Elementary] AS [New Home Elementary], nb.[Home Jr. High] AS [New Home Jr. High], dis.name AS [District]
+                                                          FROM            [Address] ad LEFT JOIN
+                                                                                        (SELECT        hs.addressID, COALESCE (max(CASE WHEN hs.bn = 1 AND hs.schID &lt;= 16 THEN sc.name END), '') + COALESCE (' or ' + max(CASE WHEN hs.bn = 2 AND 
+                                                                                                                    hs.schID &lt;= 16 THEN sc.name END), '') AS [Home Elementary], COALESCE (max(CASE WHEN ((hs.bn = 2 AND hs.schID &gt;= 17) OR
+                                                                                                                    (hs.bn = 3 AND hs.schID &gt;= 17)) THEN sc.name END), '') + COALESCE (' or ' + max(CASE WHEN hs.bn = 4 AND hs.schID &gt;= 17 THEN sc.name ELSE NULL END), '') 
+                                                                                                                    AS [Home Jr. High]
+                                                                                          FROM            (SELECT        hl.addressID, sb.schoolID AS schID, ROW_NUMBER() OVER (PARTITION BY hl.addressID
+                                                                                                                    ORDER BY sb.schoolID) AS bn
+                                                                                          FROM            HouseholdLocation hl JOIN
+                                                                                                                    SchoolBoundary sb ON sb.addressID = hl.addressID
+                                                                                          WHERE        sb.startDate = '03/08/2018'
+                                                                                          GROUP BY hl.addressID, sb.schoolID) hs JOIN
+                                                                                    School sc ON sc.schoolID = hs.schID
+                                                          GROUP BY hs.addressID) nb ON nb.addressID = ad.addressID LEFT JOIN
+                                                    District dis ON dis.districtID = ad.districtID) sb ON sb.addressID = hl.addressID AND (hl.secondary = 0 OR
+                         hl.secondary IS NULL) AND (hm.secondary = 0 OR
+                         hm.secondary IS NULL) LEFT JOIN
+                         cust_og_SchoolChoiceApps(@endYear) csa ON csa.personID = p.personID
+GROUP BY p.studentNumber, i.lastName, i.firstName, cal.name, cal2.name, e.endDate, e.grade, e.nextGrade, e.nextCalendar, cal.calendarID, sb.[New Home Elementary], sb.[New Home Jr. High], sb.District, cal2.calendarID, csa.[2], csa.[3], 
+                         csa.[4], csa.[5], csa.[6], csa.[8], csa.[10], csa.[11], csa.[TK]) AS x
+WHERE        1 = 1 AND (cGrade IN (@grade)) AND (calendarID IN (@calendarID)) AND (APC IN (@APC)) AND (AFC IN (@AFC)) AND (nCalID IN (@nCalID)) AND cGrade &lt;&gt; '08'
+ORDER BY endDate, APC DESC, nSchool</CommandText>
       </Query>
       <Fields>
         <Field Name="studentNumber">
@@ -2848,7 +2805,7 @@ ORDER BY nSchool, nCalID</CommandText>
       <DataType>String</DataType>
       <DefaultValue>
         <Values>
-          <Value>=2024</Value>
+          <Value>=2025</Value>
         </Values>
       </DefaultValue>
       <Prompt>end Year</Prompt>

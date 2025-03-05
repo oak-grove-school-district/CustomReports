@@ -9,7 +9,7 @@
       <am:Name>SSDTRS</am:Name>
       <am:Version>17.6.33801.468</am:Version>
     </am:UpdatedBy>
-    <am:LastModifiedTimestamp>2023-10-20T17:09:55.1693877Z</am:LastModifiedTimestamp>
+    <am:LastModifiedTimestamp>2024-10-23T18:15:24.8341091Z</am:LastModifiedTimestamp>
   </am:AuthoringMetadata>
   <df:DefaultFontFamily>Segoe UI</df:DefaultFontFamily>
   <AutoRefresh>0</AutoRefresh>
@@ -83,7 +83,7 @@ join Enrollment e on e.personID = p.personID
 join Calendar cal on cal.calendarID = e.calendarID
 	and cal.endYear = e.endYear
 join SchoolYear sy on sy.endYear = cal.endYear
-	and sy.endYear = ocg.endYear
+	--and sy.endYear = ocg.endYear
 left join Lep on lep.personID = p.personID
 left join (
 		select css.olr_personID, op.olr_applicationID, oso.chosenSchoolID, oso.grade
@@ -107,6 +107,7 @@ where (ap.submissionDate between @startDate and @endDate)
 	and op.personTypeValue = 'student'
 	and e.grade &lt;&gt; 'PK'
 	and cal.calendarID in (@calendarID)
+--and ap.type = 'New'
 group by ap.olr_applicationID
 	, op.olr_personID
 	, op.personID
@@ -2542,7 +2543,7 @@ END</CommandText>
       <DataType>String</DataType>
       <DefaultValue>
         <Values>
-          <Value>=10</Value>
+          <Value>=11</Value>
         </Values>
       </DefaultValue>
       <Prompt>Application Year</Prompt>
@@ -2684,7 +2685,7 @@ END</CommandText>
       <DataType>DateTime</DataType>
       <DefaultValue>
         <Values>
-          <Value>3/1/2023 12:00:00 AM</Value>
+          <Value>03/01/2024 00:00:00</Value>
         </Values>
       </DefaultValue>
       <Prompt>Application Start Date</Prompt>
